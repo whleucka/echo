@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Tests\Routing;
+namespace Tests\Http;
 
 use Echo\Framework\Http\Controller;
 use Echo\Framework\Http\Request;

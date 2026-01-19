@@ -137,6 +137,13 @@ class RouterTest extends TestCase
         $this->assertSame(null, $route); // Invalid UUID and token
     }
 
+    public function testRouteWithDotInParam()
+    {
+        $route = $this->dispatchRoute("/repo/mantis.nvim", "GET");
+        $this->assertSame("repo", $route["method"]);
+        $this->assertSame(['mantis.nvim'], $route["params"]);
+    }
+
     public function testSearchUri()
     {
         $uri = $this->router()->searchUri('routes.id', 420);
@@ -183,6 +190,12 @@ class Routes extends Controller
     public function user(string $uuid, string $token)
     {
         return $uuid.$token;
+    }
+
+    #[Get("/repo/{repo}", "routes.repo")]
+    public function repo(string $repo)
+    {
+        return $repo;
     }
 
     #[Get("/id/testing", "routes.testing")]
