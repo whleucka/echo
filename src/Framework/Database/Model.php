@@ -137,10 +137,8 @@ class Model implements DatabaseModel
         return $this;
     }
 
-    public function get(
-        int $limit = 0,
-        bool $lazy = true
-    ): null|array|static {
+    public function get(int $limit = 0): null|array|static
+    {
         $results = $this->qb
             ->select($this->columns)
             ->from($this->table_name)
@@ -151,17 +149,19 @@ class Model implements DatabaseModel
             ->params($this->params)
             ->execute()
             ->fetchAll(PDO::FETCH_OBJ);
-        $key = $this->primary_key;
-        if ($results && $lazy && count($results) === 1) {
-            $result = $results[0];
-            return self::find($result->$key);
+
+        if (!$results) {
+            return null;
         }
-        return $results
-            ? array_map(fn ($result) => $this->find($result->$key), $results)
-            : null;
+
+        if (count($results) === 1) {
+            return static::hydrate($results[0]);
+        }
+
+        return array_map(fn($row) => static::hydrate($row), $results);
     }
 
-    public function first(): ?Model
+    public function first(): ?static
     {
         $results = $this->qb
             ->select($this->columns)
@@ -169,18 +169,18 @@ class Model implements DatabaseModel
             ->where($this->where)
             ->orWhere($this->or_where)
             ->orderBy($this->order_by)
+            ->limit(1)
             ->params($this->params)
             ->execute()
             ->fetchAll(PDO::FETCH_OBJ);
-        $key = $this->primary_key;
+
         if ($results) {
-            $result = $results[0];
-            return self::find($result->$key);
+            return static::hydrate($results[0]);
         }
         return null;
     }
 
-    public function last(): ?Model
+    public function last(): ?static
     {
         $results = $this->qb
             ->select($this->columns)
@@ -191,10 +191,9 @@ class Model implements DatabaseModel
             ->params($this->params)
             ->execute()
             ->fetchAll(PDO::FETCH_OBJ);
-        $key = $this->primary_key;
+
         if ($results) {
-            $result = end($results);
-            return self::find($result->$key);
+            return static::hydrate(end($results));
         }
         return null;
     }
@@ -267,5 +266,17 @@ class Model implements DatabaseModel
     public function __get($name)
     {
         return $this->attributes[$name] ?? null;
+    }
+
+    /**
+     * Hydrate a model instance from data without additional queries
+     */
+    protected static function hydrate(object $data): static
+    {
+        $class = get_called_class();
+        $model = new $class();
+        $model->attributes = (array) $data;
+        $model->id = $data->{$model->primary_key} ?? null;
+        return $model;
     }
 }

@@ -12,7 +12,7 @@ This document tracks the improvement work for the Echo PHP framework, divided in
 | Phase | Description | Status | Progress |
 |-------|-------------|--------|----------|
 | 1 | Security Fixes | Complete | 5/5 |
-| 2 | Critical Bugs | In Progress | 1/5 |
+| 2 | Critical Bugs | Complete | 5/5 |
 | 3 | Testing | Not Started | 0/6 |
 | 4 | Features | Not Started | 0/5 |
 
@@ -180,7 +180,7 @@ public function send(): void
 **Goal:** Fix bugs that cause incorrect behavior or performance issues
 
 ### Task 2.1: Fix N+1 Query Problem in Model
-- [ ] **Complete**
+- [x] **Complete**
 
 **File:** `src/Framework/Database/Model.php`
 
@@ -235,7 +235,7 @@ Update `first()` and `last()` similarly to use `hydrate()`.
 ---
 
 ### Task 2.2: Add Config Caching
-- [ ] **Complete**
+- [x] **Complete**
 
 **File:** `app/Helpers/Functions.php`
 
@@ -287,7 +287,7 @@ function config(string $name): mixed
 ---
 
 ### Task 2.3: Fix Dotenv Loading
-- [ ] **Complete**
+- [x] **Complete**
 
 **File:** `app/Helpers/Functions.php`
 
@@ -322,7 +322,7 @@ function env(string $name): mixed
 ---
 
 ### Task 2.4: Add Migration Transaction Safety
-- [ ] **Complete**
+- [x] **Complete**
 
 **File:** `src/Framework/Console/Commands/Migrate.php`
 

@@ -115,14 +115,18 @@ function request(): HttpRequest
  */
 function env(string $name, mixed $default = null)
 {
-    // Load environment
-    $dotenv = Dotenv\Dotenv::createImmutable(config("paths.root"));
-    $dotenv->safeLoad();
+    static $loaded = false;
 
-    if (!isset($_ENV[$name])) {
-        $_ENV[$name] = $default;
+    if (!$loaded) {
+        $root = __DIR__ . "/../../";
+        if (file_exists($root . '.env')) {
+            $dotenv = Dotenv\Dotenv::createImmutable($root);
+            $dotenv->safeLoad();
+        }
+        $loaded = true;
     }
-    return $_ENV[$name];
+
+    return $_ENV[$name] ?? $_SERVER[$name] ?? $default;
 }
 
 /**
@@ -156,28 +160,35 @@ function dd(mixed $payload): void
  */
 function config(string $name): mixed
 {
+    static $cache = [];
+
     $name_split = explode(".", $name);
-    $config_target = __DIR__ . "/../../config/" . strtolower($name_split[0]) . ".php";
+    $file = strtolower($name_split[0]);
 
-    if (is_file($config_target)) {
-        $config = require $config_target;
-
-        // Traverse nested keys dynamically
-        $value = $config;
-        for ($i = 1; $i < count($name_split); $i++) {
-            if (!isset($value[$name_split[$i]])) {
-                return null;
-            }
-            $value = $value[$name_split[$i]];
-        }
-        if ($value === "true") {
-            return true;
-        }
-        if ($value === "false") {
-            return false;
-        }
-        return $value;
+    // Load and cache config file
+    if (!isset($cache[$file])) {
+        $config_target = __DIR__ . "/../../config/" . $file . ".php";
+        $cache[$file] = is_file($config_target) ? require $config_target : [];
     }
 
-    return null;
+    // Return full config if no nested key
+    if (count($name_split) === 1) {
+        return $cache[$file];
+    }
+
+    // Traverse nested keys
+    $value = $cache[$file];
+    for ($i = 1; $i < count($name_split); $i++) {
+        $key = $name_split[$i];
+        if (!is_array($value) || !array_key_exists($key, $value)) {
+            return null;
+        }
+        $value = $value[$key];
+    }
+
+    // Handle string booleans from env
+    if ($value === "true") return true;
+    if ($value === "false") return false;
+
+    return $value;
 }

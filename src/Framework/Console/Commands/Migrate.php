@@ -105,14 +105,27 @@ class Migrate extends \ConsoleKit\Command
     private function migrationUp(string $file_path)
     {
         $exists = $this->migrationHashExists(md5($file_path));
-        if (!$exists) {
-            $migration = $this->getMigration($file_path);
+        if ($exists) {
+            return;
+        }
+
+        $migration = $this->getMigration($file_path);
+
+        db()->beginTransaction();
+        try {
             $sql = $migration->up();
             $result = db()->execute($sql);
 
             if ($result) {
                 $this->insertMigration($file_path);
+                db()->commit();
+            } else {
+                db()->rollback();
+                throw new \Exception("Migration failed: " . basename($file_path));
             }
+        } catch (\Exception $e) {
+            db()->rollback();
+            throw $e;
         }
     }
 
@@ -122,14 +135,27 @@ class Migrate extends \ConsoleKit\Command
     private function migrationDown(string $file_path)
     {
         $exists = $this->migrationHashExists(md5($file_path));
-        if ($exists) {
-            $migration = $this->getMigration($file_path);
+        if (!$exists) {
+            return;
+        }
+
+        $migration = $this->getMigration($file_path);
+
+        db()->beginTransaction();
+        try {
             $sql = $migration->down();
             $result = db()->execute($sql);
 
             if ($result) {
                 $this->deleteMigration($file_path);
+                db()->commit();
+            } else {
+                db()->rollback();
+                throw new \Exception("Migration rollback failed: " . basename($file_path));
             }
+        } catch (\Exception $e) {
+            db()->rollback();
+            throw $e;
         }
     }
 
