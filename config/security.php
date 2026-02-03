@@ -3,6 +3,7 @@
 return [
     "authenticated_route" => "/admin/dashboard",
     "register_enabled" => env("AUTH_REGISTER_ENABLED", false),
+    "trusted_proxies" => array_filter(explode(',', env('TRUSTED_PROXIES') ?? '')),
     "whitelist" => [
     ],
     "blacklist" => [

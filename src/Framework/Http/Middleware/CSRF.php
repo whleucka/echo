@@ -46,10 +46,9 @@ class CSRF implements Middleware
     /**
      * Generate a CSRF token string
      */
-    function generateToken(): string
+    private function generateToken(): string
     {
-        $token = md5(random_bytes(32));
-        return bin2hex($token);
+        return bin2hex(random_bytes(32));
     }
 
     /**

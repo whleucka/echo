@@ -11,8 +11,8 @@ This document tracks the improvement work for the Echo PHP framework, divided in
 
 | Phase | Description | Status | Progress |
 |-------|-------------|--------|----------|
-| 1 | Security Fixes | Not Started | 0/5 |
-| 2 | Critical Bugs | Not Started | 0/5 |
+| 1 | Security Fixes | Complete | 5/5 |
+| 2 | Critical Bugs | In Progress | 1/5 |
 | 3 | Testing | Not Started | 0/6 |
 | 4 | Features | Not Started | 0/5 |
 
@@ -24,7 +24,7 @@ This document tracks the improvement work for the Echo PHP framework, divided in
 **Goal:** Address security vulnerabilities before any production use
 
 ### Task 1.1: Secure Session Cookie Settings
-- [ ] **Complete**
+- [x] **Complete**
 
 **File:** `src/Framework/Session/Session.php`
 
@@ -47,7 +47,7 @@ ini_set('session.use_only_cookies', 1);
 ---
 
 ### Task 1.2: Session Regeneration on Login
-- [ ] **Complete**
+- [x] **Complete**
 
 **File:** `app/Providers/SignInService.php`
 
@@ -76,7 +76,7 @@ public function signIn(string $email_address, string $password): bool
 ---
 
 ### Task 1.3: Fix IP Spoofing Vulnerability
-- [ ] **Complete**
+- [x] **Complete**
 
 **File:** `src/Framework/Http/Request.php`
 
@@ -118,7 +118,7 @@ public function getClientIp(array $trustedProxies = []): string
 ---
 
 ### Task 1.4: Fix CSRF Token Generation
-- [ ] **Complete**
+- [x] **Complete**
 
 **File:** `src/Framework/Http/Middleware/CSRF.php`
 
@@ -140,7 +140,7 @@ private function generateToken(): string
 ---
 
 ### Task 1.5: Add Security Headers
-- [ ] **Complete**
+- [x] **Complete**
 
 **File:** `src/Framework/Http/Response.php`
 
@@ -369,7 +369,7 @@ Update `migrationDown()` similarly.
 ---
 
 ### Task 2.5: Fix Request getAttribute Null Check
-- [ ] **Complete**
+- [x] **Complete**
 
 **File:** `src/Framework/Http/Request.php`
 

@@ -34,6 +34,13 @@ class Response implements HttpResponse
 
     private function sendHeaders(): void
     {
+        // Security headers
+        header("X-Frame-Options: DENY");
+        header("X-Content-Type-Options: nosniff");
+        header("Referrer-Policy: strict-origin-when-cross-origin");
+        header("X-XSS-Protection: 1; mode=block");
+
+        // Custom headers
         foreach ($this->headers as $key => $value) {
             header("$key: $value");
             if (in_array($key, ['Location', 'HX-Location', 'HX-Redirect'])) {

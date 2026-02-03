@@ -53,7 +53,7 @@ class Request implements HttpRequest
 
     public function getAttribute(string $name): mixed
     {
-        return $this->attributes[$name];
+        return $this->attributes[$name] ?? null;
     }
 
     public function getAttributes(): array
@@ -66,14 +66,25 @@ class Request implements HttpRequest
         $this->attributes[$name] = $value;
     }
 
-    public function getClientIp(): ?string
+    public function getClientIp(array $trustedProxies = []): ?string
     {
         if (php_sapi_name() == "cli") return null;
-        return  isset($_SERVER['HTTP_CLIENT_IP'])
-            ? $_SERVER['HTTP_CLIENT_IP']
-            : (isset($_SERVER['HTTP_X_FORWARDED_FOR'])
-                ? $_SERVER['HTTP_X_FORWARDED_FOR']
-                : $_SERVER['REMOTE_ADDR']);
+
+        $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+
+        // Only trust proxy headers if request comes from a known proxy
+        if (!empty($trustedProxies) && in_array($remoteAddr, $trustedProxies)) {
+            if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                // Take the first (client) IP from the chain
+                $ips = array_map('trim', explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']));
+                return $ips[0];
+            }
+            if (isset($_SERVER['HTTP_CLIENT_IP'])) {
+                return $_SERVER['HTTP_CLIENT_IP'];
+            }
+        }
+
+        return $remoteAddr;
     }
 
     public function curl(string $url, string $method = 'GET', array $headers = [], array|string|null $body = null, int $timeout = 10): array

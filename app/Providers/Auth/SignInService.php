@@ -11,6 +11,7 @@ class SignInService
         $user = User::where("email", $email_address)->get();
 
         if ($user && password_verify($password, $user->password)) {
+            session()->regenerate();
             session()->set("user_uuid", $user->uuid);
             return true;
         }
