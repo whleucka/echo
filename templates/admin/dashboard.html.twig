@@ -1,6 +1,9 @@
 <div id="dashboard">
   {% include "components/flash.html.twig" %}
 
+  <div id="widgets" class="mb-3" hx-get="/admin/dashboard/widgets" hx-trigger="load">
+  </div>
+
   <div id="alerts" class="bg-white shad rounded p-2">
     <div class="d-flex flex-wrap justify-content-md-evenly justify-content-center align-items-center">
 

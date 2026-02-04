@@ -5,6 +5,10 @@
         <span>
           <i class="bi bi-heart-pulse me-2"></i>
           System Health Overview
+
+          {% set status_class = overall_status == 'ok' ? 'text-success' : (overall_status == 'warning' ? 'text-warning' : 'text-danger') %}
+          {% set status_icon = overall_status == 'ok' ? 'check-circle-fill' : (overall_status == 'warning' ? 'exclamation-triangle-fill' : 'x-circle-fill') %}
+          <i class="bi bi-{{ status_icon }} {{ status_class }}" style="font-size: 1rem;"></i>
         </span>
         <div>
           <a href="/admin/health/api" target="_blank" class="btn btn-sm btn-outline-secondary me-2">
@@ -19,13 +23,6 @@
         </div>
       </div>
       <div class="card-body">
-        <div class="text-center mb-4">
-          {% set status_class = overall_status == 'ok' ? 'text-success' : (overall_status == 'warning' ? 'text-warning' : 'text-danger') %}
-          {% set status_icon = overall_status == 'ok' ? 'check-circle-fill' : (overall_status == 'warning' ? 'exclamation-triangle-fill' : 'x-circle-fill') %}
-          <i class="bi bi-{{ status_icon }} {{ status_class }}" style="font-size: 4rem;"></i>
-          <h2 class="{{ status_class }} mt-3">System Status: {{ overall_status|upper }}</h2>
-        </div>
-
         <div id="checks-list">
           {% include 'admin/health/checks-list.html.twig' %}
         </div>
