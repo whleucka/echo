@@ -9,5 +9,6 @@ return [
     "blacklist" => [
     ],
     "max_requests" => 200,
+    "max_requests_htmx" => 1000,  // Higher limit for HTMX (authenticated interactions)
     "decay_seconds" => 60,
 ];

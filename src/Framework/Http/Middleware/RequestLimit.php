@@ -22,10 +22,17 @@ class RequestLimit implements Middleware
             return $next($request);
         }
 
+        // Check if this is an HTMX request
+        $isHtmx = $request->isHTMX();
+
         // Get the max requests and decay seconds
         if (in_array("api", $middleware)) {
             $max_requests = 60;
             $decay_seconds = 60;
+        } elseif ($isHtmx) {
+            // Higher limit for HTMX requests (authenticated user interactions)
+            $max_requests = $middleware["max_requests"] ?? config("security.max_requests_htmx") ?? 1000;
+            $decay_seconds = $middleware["decay_seconds"] ?? config("security.decay_seconds");
         } else {
             $max_requests = $middleware["max_requests"] ?? config("security.max_requests");
             $decay_seconds = $middleware["decay_seconds"] ?? config("security.decay_seconds");
