@@ -32,6 +32,11 @@ class Response implements HttpResponse
         $this->headers[$key] = $value;
     }
 
+    public function getStatusCode(): int
+    {
+        return $this->code;
+    }
+
     private function sendHeaders(): void
     {
         // Security headers

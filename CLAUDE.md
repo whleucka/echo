@@ -6,26 +6,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Echo is a custom PHP 8.2+ MVC framework built for speed and simplicity. It uses PHP 8 attributes for routing, PHP-DI for dependency injection, and Twig for templating.
 
-## Common Commands
+## Docker Environment
+
+**IMPORTANT: The project runs in Docker containers. NEVER run PHP, composer, or bin/console commands directly on the host. ALL commands must be executed inside the `php` container using `docker-compose exec`.**
+
+### Container Names
+
+- `php` - PHP 8.3-FPM (run ALL PHP commands here: tests, composer, console)
+- `nginx` - Nginx web server
+- `db` / `mariadb` - MariaDB 11 database
+
+### Running Commands
 
 ```bash
-# Install dependencies
-composer install
+# Start Docker environment
+docker-compose up -d
 
-# Run tests
-composer test
+# Check running containers
+docker ps
 
-# Clear Twig template cache
-composer clear-cache
+# ALWAYS prefix PHP commands with: docker-compose exec -it php
+docker-compose exec -it php composer install
+docker-compose exec -it php ./vendor/phpunit/phpunit/phpunit tests
+docker-compose exec -it php composer clear-cache
+docker-compose exec -it php php bin/console migrate
+docker-compose exec -it php php bin/console server
 
-# Start Docker environment (PHP 8.3-FPM, Nginx, MariaDB 11)
-docker-compose up
+# View container logs
+docker-compose logs php
+docker-compose logs nginx
+docker-compose logs db
 
-# Run database migrations
-php bin/console migrate
+# Access database CLI
+docker-compose exec -it db mariadb -u root -p
 
-# Start development server
-php bin/console server
+# Interactive shell in PHP container
+docker-compose exec -it php bash
 ```
 
 ## Architecture

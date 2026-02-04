@@ -25,5 +25,8 @@ RUN apt-get update && apt-get install -y \
        bcmath \
     && docker-php-ext-enable pdo_mysql
 
+# Install PCOV for code coverage
+RUN pecl install pcov && docker-php-ext-enable pcov
+
 # Copy any custom PHP ini
 COPY ./local.ini /usr/local/etc/php/conf.d/local.ini
