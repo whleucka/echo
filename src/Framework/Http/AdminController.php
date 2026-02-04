@@ -3,7 +3,7 @@
 namespace Echo\Framework\Http;
 
 use App\Models\FileInfo;
-use App\Providers\Auth\SidebarService;
+use App\Services\Admin\SidebarService;
 use Echo\Framework\Http\Controller;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};

@@ -6,8 +6,6 @@ use App\Http\Kernel as HttpKernel;
 use App\Console\Kernel as ConsoleKernel;
 use Echo\Framework\Container\Container;
 use Echo\Framework\Database\Connection;
-use Echo\Framework\Database\Drivers\MariaDB;
-use Echo\Framework\Database\Drivers\MySQL;
 use Echo\Framework\Database\QueryBuilder;
 use Echo\Framework\Http\Request;
 use Echo\Framework\Routing\Router;
@@ -68,21 +66,17 @@ function twig()
 }
 
 /**
- * Get PDO DB
+ * Get PDO DB connection (resolved from container)
  */
-function db()
+function db(): ?Connection
 {
     $root_dir = config("paths.root");
-    $driver = config("db.driver");
-    $driver_class = match($driver) {
-        'mysql' => MySQL::class,
-        'mariadb' => MariaDB::class,
-    };
     $exists = file_exists($root_dir . '.env');
+
     if ($exists) {
-        $db_driver = container()->get($driver_class);
-        return Connection::getInstance($db_driver);
+        return container()->get(Connection::class);
     }
+
     return null;
 }
 

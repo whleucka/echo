@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Providers\Auth\DashboardService;
+use App\Services\Admin\DashboardService;
 use Echo\Framework\Http\AdminController;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;

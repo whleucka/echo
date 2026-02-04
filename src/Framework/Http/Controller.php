@@ -6,7 +6,6 @@ use App\Models\User;
 use Echo\Framework\Session\Flash;
 use Echo\Interface\Http\Controller as HttpController;
 use Echo\Interface\Http\Request;
-use Echo\Framework\View\TwigExtension;
 use Error;
 
 class Controller implements HttpController
@@ -38,7 +37,6 @@ class Controller implements HttpController
         "max_length" => "Input is too long",
         "regex" => "Does not match pattern",
     ];
-    private bool $twig_loaded = false;
 
     public function setHeader(string $key, string $value): void
     {
@@ -185,10 +183,6 @@ class Controller implements HttpController
     {
         $twig = twig();
         $data = array_merge($data, $this->getDefaultTemplateData());
-        if (!$this->twig_loaded) {
-            $this->twig_loaded = true;
-            $twig->addExtension(new TwigExtension);
-        }
         return $twig->render($template, $data);
     }
 }

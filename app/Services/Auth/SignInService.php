@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Providers\Auth;
+namespace App\Services\Auth;
 
 use App\Models\User;
 
@@ -17,5 +17,10 @@ class SignInService
         }
 
         return false;
+    }
+
+    public function signOut(): void
+    {
+        session()->destroy();
     }
 }

@@ -59,9 +59,19 @@ class Middleware
         return fn ($object) => $core($object);
     }
 
+    /**
+     * Create a middleware layer, resolving through container for DI support
+     */
     private function createLayer($nextLayer, $layer): Closure
     {
-        $layer = new $layer;
+        // If it's a class name string, resolve through container
+        if (is_string($layer) && class_exists($layer)) {
+            $layer = container()->get($layer);
+        } elseif (!($layer instanceof HttpMiddleware)) {
+            // If it's not already an instance, create it directly
+            $layer = new $layer;
+        }
+
         return fn ($object) => $layer->handle($object, $nextLayer);
     }
 }
