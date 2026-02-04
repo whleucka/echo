@@ -11,7 +11,7 @@ This document tracks the second phase of improvement work for the Echo PHP frame
 
 | Phase | Description | Status | Progress |
 |-------|-------------|--------|----------|
-| 1 | Security & API | Not Started | 0/5 |
+| 1 | Security & API | Complete | 5/5 |
 | 2 | Profiler & Debug | Not Started | 0/4 |
 | 3 | DI & Architecture | Not Started | 0/4 |
 | 4 | HTMX Enhancements | Not Started | 0/4 |
@@ -25,7 +25,7 @@ This document tracks the second phase of improvement work for the Echo PHP frame
 **Goal:** Fix API security gaps and add missing middleware
 
 ### Task 1.1: Add CORS Middleware
-- [ ] **Complete**
+- [x] **Complete**
 
 **File to create:** `src/Framework/Http/Middleware/CORS.php`
 
@@ -70,7 +70,7 @@ class CORS implements Middleware
 ---
 
 ### Task 1.2: Add Bearer Token Authentication
-- [ ] **Complete**
+- [x] **Complete**
 
 **File to create:** `src/Framework/Http/Middleware/BearerAuth.php`
 
@@ -90,7 +90,7 @@ class CORS implements Middleware
 ---
 
 ### Task 1.3: Add Security Headers to JsonResponse
-- [ ] **Complete**
+- [x] **Complete**
 
 **File:** `src/Framework/Http/JsonResponse.php`
 
@@ -111,7 +111,7 @@ header("Cache-Control: no-store, no-cache, must-revalidate");
 ---
 
 ### Task 1.4: Sanitize API Error Messages
-- [ ] **Complete**
+- [x] **Complete**
 
 **File:** `src/Framework/Http/Kernel.php`
 
@@ -144,7 +144,7 @@ header("Cache-Control: no-store, no-cache, must-revalidate");
 ---
 
 ### Task 1.5: Add API Versioning Support
-- [ ] **Complete**
+- [x] **Complete**
 
 **Files:**
 - `src/Framework/Http/Middleware/ApiVersion.php`

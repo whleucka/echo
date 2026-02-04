@@ -70,9 +70,9 @@ class Kernel implements HttpKernel
             // Set the content from the controller endpoint
             $content = $controller->$method(...$params);
         } catch (PDOException $ex) {
-            // Handle exception
+            // Handle database exception
             if (in_array("api", $middleware)) {
-                $api_error = $ex->getMessage();
+                $api_error = $this->sanitizeApiError($ex, 'DATABASE_ERROR', 'A database error occurred');
             } else {
                 $debug = db()->debug();
                 $extra = "<strong>SQL</strong><pre>" . $debug['sql'] . "</pre>";
@@ -92,7 +92,7 @@ class Kernel implements HttpKernel
         } catch (Exception $ex) {
             // Handle exception
             if (in_array("api", $middleware)) {
-                $api_error = $ex->getMessage();
+                $api_error = $this->sanitizeApiError($ex, 'SERVER_ERROR', 'An error occurred processing your request');
             } else {
                 $content = twig()->render("error/blue-screen.html.twig", [
                     "message" => "An uncaught exception occurred.",
@@ -108,7 +108,7 @@ class Kernel implements HttpKernel
         } catch (Error $err) {
             // Handle error
             if (in_array("api", $middleware)) {
-                $api_error = $err->getMessage();
+                $api_error = $this->sanitizeApiError($err, 'FATAL_ERROR', 'A fatal error occurred');
             } else {
                 $content = twig()->render("error/blue-screen.html.twig", [
                     "message" => "A fatal error occurred.",
@@ -133,14 +133,15 @@ class Kernel implements HttpKernel
                 "data" => $content ?? null,
                 "ts" => date(DATE_ATOM),
             ];
-            // Only show api errors when debug is enabled
-            if ($api_error && config("app.debug")) {
+            // Handle API errors with sanitized messages
+            if ($api_error) {
                 $api_response["error"] = $api_error;
                 $api_response["success"] = false;
-                $api_response["status"] = 400;
+                $api_response["status"] = 500;
+                $api_response["data"] = null;
             }
             // API response
-            $response = new JsonResponse($api_response);
+            $response = new JsonResponse($api_response, $api_response["status"]);
         } else {
             // Web response
             $response = new HttpResponse($content);
@@ -152,5 +153,38 @@ class Kernel implements HttpKernel
         }
 
         return $response;
+    }
+
+    /**
+     * Sanitize error messages for API responses
+     * Only expose details in debug mode, otherwise return generic message
+     */
+    private function sanitizeApiError(\Throwable $e, string $code, string $publicMessage): array
+    {
+        $error = [
+            'code' => $code,
+            'message' => $publicMessage,
+        ];
+
+        // Only include detailed error info in debug mode
+        if (config('app.debug')) {
+            $error['debug'] = [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ];
+        }
+
+        // Log the full error server-side
+        error_log(sprintf(
+            "[%s] %s: %s in %s:%d",
+            date('Y-m-d H:i:s'),
+            $code,
+            $e->getMessage(),
+            $e->getFile(),
+            $e->getLine()
+        ));
+
+        return $error;
     }
 }

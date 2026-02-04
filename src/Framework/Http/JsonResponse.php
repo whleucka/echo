@@ -33,8 +33,20 @@ class JsonResponse implements Response
         $this->headers[$key] = $value;
     }
 
+    public function getStatusCode(): int
+    {
+        return $this->code;
+    }
+
     private function sendHeaders(): void
     {
+        // Security headers
+        header("X-Content-Type-Options: nosniff");
+        header("X-Frame-Options: DENY");
+        header("Cache-Control: no-store, no-cache, must-revalidate");
+        header("Pragma: no-cache");
+
+        // Custom headers
         foreach ($this->headers as $key => $value) {
             header("$key: $value");
         }
