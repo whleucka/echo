@@ -23,6 +23,9 @@ For detailed information on various aspects of the Echo PHP framework, please re
 
 Please use these linked documents for in-depth understanding before attempting modifications or implementing new features.
 
-## Roadmap
+## Task Completion
 
 Make sure you update ROADMAP.md when a task is completed (if it exists)
+
+If something in the docs needs to be updated or added, then go
+ahead and do so. Keeping the agent docs up to date is important.
