@@ -110,17 +110,32 @@ class ProfilerStorage
             return;
         }
 
+        // Filter to only existing files and get their mtimes
+        $fileData = [];
+        foreach ($files as $file) {
+            if (file_exists($file)) {
+                $mtime = @filemtime($file);
+                if ($mtime !== false) {
+                    $fileData[] = ['path' => $file, 'mtime' => $mtime];
+                }
+            }
+        }
+
+        if (empty($fileData)) {
+            return;
+        }
+
         // Sort by modification time (oldest first)
-        usort($files, fn($a, $b) => filemtime($a) <=> filemtime($b));
+        usort($fileData, fn($a, $b) => $a['mtime'] <=> $b['mtime']);
 
         $now = time();
-        $count = count($files);
+        $count = count($fileData);
 
-        foreach ($files as $file) {
+        foreach ($fileData as $data) {
             $shouldDelete = false;
 
             // Delete if too old
-            if ($now - filemtime($file) > $this->ttlSeconds) {
+            if ($now - $data['mtime'] > $this->ttlSeconds) {
                 $shouldDelete = true;
             }
             // Delete if we have too many (keep newest)
@@ -129,8 +144,8 @@ class ProfilerStorage
                 $count--;
             }
 
-            if ($shouldDelete && file_exists($file)) {
-                unlink($file);
+            if ($shouldDelete && file_exists($data['path'])) {
+                @unlink($data['path']);
             }
         }
     }

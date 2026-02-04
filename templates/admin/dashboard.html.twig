@@ -6,7 +6,7 @@
 
       <div id="modules" class="d-flex align-items-center justify-content-center flex-column rounded top-alert">
         <i class="bi bi-box icon"></i>
-        <div class="text-end count" hx-get="/admin/dashboard/modules/count" hx-swap="textContent" hx-trigger="load">
+        <div class="text-end count" hx-get="/admin/dashboard/modules/count" hx-swap="textContent" hx-trigger="load, every 30s">
           --
         </div>
         <p>Modules</p>
@@ -14,7 +14,7 @@
 
       <div id="users-active" class="d-flex align-items-center justify-content-center flex-column rounded top-alert">
         <i class="bi bi-people icon"></i>
-        <div class="text-end count" hx-get="/admin/dashboard/users/active" hx-swap="textContent" hx-trigger="load">
+        <div class="text-end count" hx-get="/admin/dashboard/users/active" hx-swap="textContent" hx-trigger="load, every 30s">
           --
         </div>
         <p>Active Users</p>
@@ -22,7 +22,7 @@
 
       <div id="users" class="d-flex align-items-center justify-content-center flex-column rounded top-alert">
         <i class="bi bi-people icon"></i>
-        <div class="text-end count" hx-get="/admin/dashboard/users/count" hx-swap="textContent" hx-trigger="load">
+        <div class="text-end count" hx-get="/admin/dashboard/users/count" hx-swap="textContent" hx-trigger="load, every 30s">
           --
         </div>
         <p>Total Users</p>
@@ -46,7 +46,7 @@
 
       <div id="requests-today" class="d-flex align-items-center justify-content-center flex-column rounded top-alert">
         <i class="bi bi-clock icon"></i>
-        <div class="text-end count" hx-get="/admin/dashboard/requests/count/today" hx-swap="textContent" hx-trigger="load">
+        <div class="text-end count" hx-get="/admin/dashboard/requests/count/today" hx-swap="textContent" hx-trigger="load, every 30s">
           --
         </div>
         <p>Today's Requests</p>
@@ -54,7 +54,7 @@
 
       <div id="requests" class="d-flex align-items-center justify-content-center flex-column rounded top-alert">
         <i class="bi bi-graph-up icon"></i>
-        <div class="text-end count" hx-get="/admin/dashboard/requests/count/total" hx-swap="textContent" hx-trigger="load">
+        <div class="text-end count" hx-get="/admin/dashboard/requests/count/total" hx-swap="textContent" hx-trigger="load, every 30s">
           --
         </div>
         <p>Total Requests</p>

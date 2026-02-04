@@ -41,6 +41,62 @@ class Request implements HttpRequest
         return false;
     }
 
+    /**
+     * Get the HTMX trigger element ID
+     */
+    public function getHtmxTrigger(): ?string
+    {
+        return $this->headers->get("Hx-Trigger") ?: null;
+    }
+
+    /**
+     * Get the HTMX trigger name (from hx-trigger-name)
+     */
+    public function getHtmxTriggerName(): ?string
+    {
+        return $this->headers->get("Hx-Trigger-Name") ?: null;
+    }
+
+    /**
+     * Get the HTMX target element ID
+     */
+    public function getHtmxTarget(): ?string
+    {
+        return $this->headers->get("Hx-Target") ?: null;
+    }
+
+    /**
+     * Get the current URL that initiated the HTMX request
+     */
+    public function getHtmxCurrentUrl(): ?string
+    {
+        return $this->headers->get("Hx-Current-Url") ?: null;
+    }
+
+    /**
+     * Check if this is a boosted request (hx-boost)
+     */
+    public function isHtmxBoosted(): bool
+    {
+        return $this->headers->get("Hx-Boosted") === 'true';
+    }
+
+    /**
+     * Get the user's response to an hx-prompt
+     */
+    public function getHtmxPrompt(): ?string
+    {
+        return $this->headers->get("Hx-Prompt") ?: null;
+    }
+
+    /**
+     * Check if this is a history restore request
+     */
+    public function isHtmxHistoryRestore(): bool
+    {
+        return $this->headers->get("Hx-History-Restore-Request") === 'true';
+    }
+
     public function getUri(): string
     {
         return strtok($_SERVER["REQUEST_URI"], '?');
