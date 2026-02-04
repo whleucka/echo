@@ -794,4 +794,18 @@ All phases complete:
 
 **Total Tasks:** 21
 
-Once complete, request a follow-up code review to assess the improvements and identify any remaining issues.
+---
+
+## Next Steps
+
+**Roadmap v1 Complete!** All 21 tasks finished.
+
+See **[ROADMAP-v2.md](ROADMAP-v2.md)** for the next phase of improvements based on deep code audit:
+
+- Phase 1: Security & API (CORS, Bearer Auth, Error Handling)
+- Phase 2: Profiler & Debug (Query Timing, Debug Toolbar)
+- Phase 3: DI & Architecture (Interface Bindings, Service Providers)
+- Phase 4: HTMX Enhancements (Response Builder, Helpers)
+- Phase 5: Admin & Audit (Audit Logging, Dashboard Expansion)
+
+**Total v2 Tasks:** 22
