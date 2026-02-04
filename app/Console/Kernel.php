@@ -13,5 +13,6 @@ class Kernel extends ConsoleKernel
         'server' => \Echo\Framework\Console\Commands\Server::class,
         'admin' => \Echo\Framework\Console\Commands\Admin::class,
         'route' => \Echo\Framework\Console\Commands\Route::class,
+        'audit' => \Echo\Framework\Console\Commands\Audit::class,
     ];
 }

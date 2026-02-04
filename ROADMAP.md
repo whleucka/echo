@@ -624,10 +624,10 @@ php bin/console route cache
 php bin/console route clear
 php bin/console route list
 
-# New commands (Phase 2+)
-php bin/console debug:queries      # Show logged queries
-php bin/console audit:list         # List recent audits
-php bin/console health:check       # System health status
+# Audit commands
+php bin/console audit list         # List recent audits
+php bin/console audit stats        # Show audit statistics
+php bin/console audit purge        # Purge old audits (--days=90)
 ```
 
 ---
