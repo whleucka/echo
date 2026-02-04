@@ -279,4 +279,113 @@ class Model implements DatabaseModel
         $model->id = $data->{$model->primary_key} ?? null;
         return $model;
     }
+
+    /**
+     * Define a one-to-many relationship
+     *
+     * @param string $related The related model class
+     * @param string|null $foreignKey The foreign key on the related model
+     * @param string|null $localKey The local key on this model
+     * @return array Array of related models
+     */
+    public function hasMany(string $related, ?string $foreignKey = null, ?string $localKey = null): array
+    {
+        $foreignKey = $foreignKey ?? $this->getForeignKey();
+        $localKey = $localKey ?? $this->primary_key;
+
+        $localValue = $this->$localKey;
+        if ($localValue === null) {
+            return [];
+        }
+
+        return $related::where($foreignKey, $localValue)->get() ?? [];
+    }
+
+    /**
+     * Define an inverse one-to-many or one-to-one relationship
+     *
+     * @param string $related The related model class
+     * @param string|null $foreignKey The foreign key on this model
+     * @param string|null $ownerKey The primary key on the related model
+     * @return Model|null The related model or null
+     */
+    public function belongsTo(string $related, ?string $foreignKey = null, ?string $ownerKey = null): ?Model
+    {
+        $relatedInstance = new $related();
+        $foreignKey = $foreignKey ?? $relatedInstance->getForeignKey();
+        $ownerKey = $ownerKey ?? $relatedInstance->primary_key;
+
+        $foreignValue = $this->$foreignKey;
+        if ($foreignValue === null) {
+            return null;
+        }
+
+        return $related::where($ownerKey, $foreignValue)->first();
+    }
+
+    /**
+     * Define a one-to-one relationship
+     *
+     * @param string $related The related model class
+     * @param string|null $foreignKey The foreign key on the related model
+     * @param string|null $localKey The local key on this model
+     * @return Model|null The related model or null
+     */
+    public function hasOne(string $related, ?string $foreignKey = null, ?string $localKey = null): ?Model
+    {
+        $foreignKey = $foreignKey ?? $this->getForeignKey();
+        $localKey = $localKey ?? $this->primary_key;
+
+        $localValue = $this->$localKey;
+        if ($localValue === null) {
+            return null;
+        }
+
+        return $related::where($foreignKey, $localValue)->first();
+    }
+
+    /**
+     * Get the default foreign key name for this model
+     *
+     * @return string The foreign key name (e.g., 'user_id' for User model)
+     */
+    public function getForeignKey(): string
+    {
+        $class = (new \ReflectionClass($this))->getShortName();
+        return strtolower($class) . '_id';
+    }
+
+    /**
+     * Bulk insert multiple records
+     *
+     * @param array $records Array of associative arrays with column => value pairs
+     * @return bool True on success
+     */
+    public static function insert(array $records): bool
+    {
+        if (empty($records)) {
+            return false;
+        }
+
+        $model = new static();
+        $columns = array_keys($records[0]);
+        $placeholders = [];
+        $values = [];
+
+        foreach ($records as $record) {
+            $placeholders[] = '(' . implode(', ', array_fill(0, count($columns), '?')) . ')';
+            foreach ($columns as $col) {
+                $values[] = $record[$col] ?? null;
+            }
+        }
+
+        $sql = sprintf(
+            "INSERT INTO %s (%s) VALUES %s",
+            $model->table_name,
+            implode(', ', $columns),
+            implode(', ', $placeholders)
+        );
+
+        return db()->execute($sql, $values) !== false;
+    }
 }

@@ -5,6 +5,9 @@ namespace Echo\Framework\Database;
 class Blueprint
 {
     private array $definitions = [];
+    private array $alterDrops = [];
+    private array $alterRenames = [];
+    private bool $alterMode = false;
 
     public function last()
     {
@@ -743,5 +746,68 @@ class Blueprint
     {
         $this->definitions[] = sprintf("%s YEAR NOT NULL", $attribute);
         return $this;
+    }
+
+    /**
+     * Set alter mode for table modifications
+     */
+    public function setAlterMode(bool $mode): void
+    {
+        $this->alterMode = $mode;
+    }
+
+    /**
+     * Drop a column from the table
+     * @param string $column Column name to drop
+     */
+    public function dropColumn(string $column)
+    {
+        $this->alterDrops[] = $column;
+        return $this;
+    }
+
+    /**
+     * Rename a column
+     * @param string $from Original column name
+     * @param string $to New column name
+     */
+    public function renameColumn(string $from, string $to)
+    {
+        $this->alterRenames[] = ['from' => $from, 'to' => $to];
+        return $this;
+    }
+
+    /**
+     * Build ALTER TABLE statement
+     * @param string $table Table name
+     */
+    public function buildAlter(string $table): string
+    {
+        $statements = [];
+
+        // Add new columns
+        foreach ($this->definitions as $def) {
+            $statements[] = "ADD COLUMN $def";
+        }
+
+        // Drop columns
+        foreach ($this->alterDrops as $col) {
+            $statements[] = "DROP COLUMN $col";
+        }
+
+        // Rename columns
+        foreach ($this->alterRenames as $rename) {
+            $statements[] = "RENAME COLUMN {$rename['from']} TO {$rename['to']}";
+        }
+
+        if (empty($statements)) {
+            return '';
+        }
+
+        return sprintf(
+            "ALTER TABLE %s %s",
+            $table,
+            implode(", ", $statements)
+        );
     }
 }

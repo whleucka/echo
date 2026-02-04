@@ -18,6 +18,14 @@ class Schema
         return $sql;
     }
 
+    public static function alter(string $table_name, Closure $callback): string
+    {
+        $blueprint = new Blueprint();
+        $blueprint->setAlterMode(true);
+        $callback($blueprint);
+        return $blueprint->buildAlter($table_name);
+    }
+
     public static function drop(string $table_name): string
     {
         return sprintf("DROP TABLE IF EXISTS %s", $table_name);

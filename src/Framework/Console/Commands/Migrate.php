@@ -25,6 +25,7 @@ class Migrate extends \ConsoleKit\Command
             filepath TEXT NOT NULL,
             basename VARCHAR(255) NOT NULL,
             hash CHAR(32) NOT NULL,
+            batch INT UNSIGNED NOT NULL DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE (hash)
@@ -32,16 +33,43 @@ class Migrate extends \ConsoleKit\Command
     }
 
     /**
+     * Get the next batch number
+     */
+    private function getNextBatchNumber(): int
+    {
+        $result = db()->fetch("SELECT MAX(batch) as max_batch FROM migrations");
+        return ($result['max_batch'] ?? 0) + 1;
+    }
+
+    /**
+     * Get the last batch number
+     */
+    private function getLastBatchNumber(): int
+    {
+        $result = db()->fetch("SELECT MAX(batch) as max_batch FROM migrations");
+        return $result['max_batch'] ?? 0;
+    }
+
+    /**
+     * Get migrations from a specific batch
+     */
+    private function getMigrationsFromBatch(int $batch): array
+    {
+        return db()->fetchAll("SELECT * FROM migrations WHERE batch = ? ORDER BY id DESC", [$batch]);
+    }
+
+    /**
      * Record a successful migration
      */
-    private function insertMigration(string $file_path)
+    private function insertMigration(string $file_path, int $batch = 1)
     {
         $basename = basename($file_path);
-        return db()->execute("INSERT INTO migrations (filepath, basename, hash) 
-            VALUES (?, ?, ?)", [
+        return db()->execute("INSERT INTO migrations (filepath, basename, hash, batch)
+            VALUES (?, ?, ?, ?)", [
             $file_path,
             $basename,
             md5($file_path),
+            $batch,
         ]);
     }
 
@@ -102,11 +130,11 @@ class Migrate extends \ConsoleKit\Command
     /**
      * Run 'up' method on migration class
      */
-    private function migrationUp(string $file_path)
+    private function migrationUp(string $file_path, int $batch = 1)
     {
         $exists = $this->migrationHashExists(md5($file_path));
         if ($exists) {
-            return;
+            return false;
         }
 
         $migration = $this->getMigration($file_path);
@@ -117,8 +145,9 @@ class Migrate extends \ConsoleKit\Command
             $result = db()->execute($sql);
 
             if ($result) {
-                $this->insertMigration($file_path);
+                $this->insertMigration($file_path, $batch);
                 db()->commit();
+                return true;
             } else {
                 db()->rollback();
                 throw new \Exception("Migration failed: " . basename($file_path));
@@ -237,13 +266,62 @@ class Migrate extends \ConsoleKit\Command
 
         $this->writeln("Running migrations...");
 
+        $batch = $this->getNextBatchNumber();
+        $ran = false;
+
         $migration_files = $this->getMigrationFiles(config("paths.migrations"));
         foreach ($migration_files as $basename => $file_path) {
             $hash = md5($file_path);
             $migration = $this->migrationHashExists($hash);
             if (!$migration) {
-                $this->migrationUp($file_path);
+                if ($this->migrationUp($file_path, $batch)) {
+                    $ran = true;
+                }
             }
+        }
+
+        if (!$ran) {
+            $this->writeln("Nothing to migrate.");
+        }
+
+        $this->executeStatus([], []);
+    }
+
+    /**
+     * Rollback the last batch of migrations
+     */
+    public function executeRollback(array $args, array $options = []): void
+    {
+        $this->initMigrations();
+
+        $steps = isset($options['steps']) ? (int) $options['steps'] : 1;
+
+        $this->writeln("Rolling back migrations...");
+
+        $lastBatch = $this->getLastBatchNumber();
+
+        if ($lastBatch === 0) {
+            $this->writeln("Nothing to rollback.");
+            return;
+        }
+
+        $rolledBack = 0;
+        for ($i = 0; $i < $steps && $lastBatch > 0; $i++) {
+            $migrations = $this->getMigrationsFromBatch($lastBatch);
+
+            foreach ($migrations as $migration) {
+                $this->migrationDown($migration['filepath']);
+                $this->writeln("Rolled back: " . $migration['basename']);
+                $rolledBack++;
+            }
+
+            $lastBatch--;
+        }
+
+        if ($rolledBack === 0) {
+            $this->writeln("Nothing to rollback.");
+        } else {
+            $this->writeln("Rolled back $rolledBack migration(s).");
         }
 
         $this->executeStatus([], []);
