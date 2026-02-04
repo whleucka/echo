@@ -68,7 +68,9 @@ class Kernel implements HttpKernel
             }
 
             // Set the content from the controller endpoint
+            profiler()?->startSection('controller');
             $content = $controller->$method(...$params);
+            profiler()?->endSection('controller');
         } catch (PDOException $ex) {
             // Handle database exception
             if (in_array("api", $middleware)) {

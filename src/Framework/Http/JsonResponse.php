@@ -25,7 +25,23 @@ class JsonResponse implements Response
         ob_clean();
         http_response_code($this->code);
         $this->sendHeaders();
+        $this->sendDebugHeaders();
         echo json_encode($this->content, JSON_PRETTY_PRINT);
+    }
+
+    /**
+     * Send debug headers for request tracking
+     */
+    private function sendDebugHeaders(): void
+    {
+        if (!config('app.debug')) {
+            return;
+        }
+
+        $headers = \Echo\Framework\Debug\DebugToolbar::getDebugHeaders();
+        foreach ($headers as $name => $value) {
+            header("$name: $value");
+        }
     }
 
     public function setHeader(string $key, string $value): void

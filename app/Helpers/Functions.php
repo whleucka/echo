@@ -156,6 +156,25 @@ function dd(mixed $payload): void
 }
 
 /**
+ * Get logger instance
+ */
+function logger(): \Echo\Framework\Logging\Logger
+{
+    return \Echo\Framework\Logging\Logger::getInstance();
+}
+
+/**
+ * Get profiler instance (null if debug mode is off)
+ */
+function profiler(): ?\Echo\Framework\Debug\Profiler
+{
+    if (!config('app.debug')) {
+        return null;
+    }
+    return \Echo\Framework\Debug\Profiler::getInstance();
+}
+
+/**
  * Get application config
  */
 function config(string $name): mixed

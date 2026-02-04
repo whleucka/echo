@@ -23,8 +23,49 @@ class Response implements HttpResponse
         ob_start();
         ob_clean();
         $this->sendHeaders();
+        $this->sendDebugHeaders();
         http_response_code($this->code);
-        echo $this->content;
+
+        $content = $this->content;
+
+        // Inject debug toolbar for HTML responses (only on initial page load, not HTMX)
+        if (config('app.debug') && $this->isHtmlResponse() && !$this->isHtmxRequest()) {
+            $toolbar = \Echo\Framework\Debug\DebugToolbar::render();
+            $content = str_replace('</body>', $toolbar . '</body>', $content);
+        }
+
+        echo $content;
+    }
+
+    /**
+     * Send debug headers for HTMX request tracking
+     */
+    private function sendDebugHeaders(): void
+    {
+        if (!config('app.debug')) {
+            return;
+        }
+
+        $headers = \Echo\Framework\Debug\DebugToolbar::getDebugHeaders();
+        foreach ($headers as $name => $value) {
+            header("$name: $value");
+        }
+    }
+
+    /**
+     * Check if this is an HTMX request
+     */
+    private function isHtmxRequest(): bool
+    {
+        return isset($_SERVER['HTTP_HX_REQUEST']) && $_SERVER['HTTP_HX_REQUEST'] === 'true';
+    }
+
+    /**
+     * Check if response contains HTML body tag
+     */
+    private function isHtmlResponse(): bool
+    {
+        return $this->content && strpos($this->content, '</body>') !== false;
     }
 
     public function setHeader(string $key, string $value): void

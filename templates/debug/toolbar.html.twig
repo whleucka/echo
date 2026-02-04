@@ -1,0 +1,19 @@
+{#
+  Echo Debug Toolbar - Twig Template
+
+  Note: The primary toolbar is rendered by DebugToolbar::render() and injected
+  automatically into HTML responses. This template is provided as an alternative
+  if you prefer to manually include the toolbar in specific templates.
+
+  The toolbar now supports HTMX request tracking:
+  - Each HTMX request sends debug data via X-Echo-Debug-* headers
+  - JavaScript listens for htmx:afterRequest events
+  - Request history shows all requests made during the page session
+  - Click any request to see its queries, timing, and memory usage
+
+  Usage (if needed manually):
+    {{ include('debug/toolbar.html.twig', { debug: profiler().getSummary() }) }}
+#}
+
+{# The toolbar is automatically injected by Response::send() when APP_DEBUG=true #}
+{# This file is kept for reference and potential customization #}

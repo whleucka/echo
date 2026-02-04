@@ -125,11 +125,4 @@ Global helpers defined in `app/Helpers/Functions.php`:
 
 ## Development Roadmap
 
-See `ROADMAP.md` for the improvement plan divided into 4 phases:
-
-1. **Phase 1: Security Fixes** - Session security, CSRF, IP spoofing, security headers
-2. **Phase 2: Critical Bugs** - N+1 queries, config caching, migration transactions
-3. **Phase 3: Testing** - Session, Flash, Validation, CSRF, Model CRUD tests
-4. **Phase 4: Features** - Schema::alter(), rollback, route caching, relationships, bulk insert
-
-When working on roadmap tasks, update the checkboxes in `ROADMAP.md` to track progress.
+When working on roadmap tasks, update the checkboxes in `ROADMAP*.md` to track progress.

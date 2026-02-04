@@ -86,6 +86,9 @@ final class Connection implements DatabaseConnection
   public function execute(string $sql, array $params = []): mixed
   {
     if (!$this->connected) return null;
+
+    $startTime = microtime(true);
+
     $this->debug = [
       'sql' => $sql,
       'params' => $params,
@@ -93,6 +96,12 @@ final class Connection implements DatabaseConnection
     $stmt = $this->link->prepare($sql);
     $stmt->execute($params);
     $this->stmt = $stmt;
+
+    // Add profiling hook
+    if (config('app.debug') && class_exists('Echo\Framework\Debug\Profiler')) {
+      \Echo\Framework\Debug\Profiler::getInstance()->queries()?->log($sql, $params, $startTime);
+    }
+
     return $stmt;
   }
 

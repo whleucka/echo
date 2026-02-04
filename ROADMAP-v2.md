@@ -12,7 +12,7 @@ This document tracks the second phase of improvement work for the Echo PHP frame
 | Phase | Description | Status | Progress |
 |-------|-------------|--------|----------|
 | 1 | Security & API | Complete | 5/5 |
-| 2 | Profiler & Debug | Not Started | 0/4 |
+| 2 | Profiler & Debug | Complete | 4/4 |
 | 3 | DI & Architecture | Not Started | 0/4 |
 | 4 | HTMX Enhancements | Not Started | 0/4 |
 | 5 | Admin & Audit | Not Started | 0/5 |
@@ -167,7 +167,7 @@ header("Cache-Control: no-store, no-cache, must-revalidate");
 **Goal:** Add performance monitoring and debug tools
 
 ### Task 2.1: Create Query Profiler
-- [ ] **Complete**
+- [x] **Complete**
 
 **Files to create:**
 - `src/Framework/Debug/QueryProfiler.php`
@@ -205,7 +205,7 @@ class QueryProfiler
 ---
 
 ### Task 2.2: Create Request Profiler
-- [ ] **Complete**
+- [x] **Complete**
 
 **File to create:** `src/Framework/Debug/RequestProfiler.php`
 
@@ -223,7 +223,7 @@ class QueryProfiler
 ---
 
 ### Task 2.3: Create Debug Toolbar
-- [ ] **Complete**
+- [x] **Complete**
 
 **Files to create:**
 - `src/Framework/Debug/DebugBar.php`
@@ -247,7 +247,7 @@ class QueryProfiler
 ---
 
 ### Task 2.4: Add Logging Service
-- [ ] **Complete**
+- [x] **Complete**
 
 **Files to create:**
 - `src/Framework/Log/Logger.php`
@@ -605,7 +605,7 @@ CREATE TABLE audits (
 When all phases are complete:
 
 - [ ] Phase 1: Security & API (5/5)
-- [ ] Phase 2: Profiler & Debug (4/4)
+- [x] Phase 2: Profiler & Debug (4/4)
 - [ ] Phase 3: DI & Architecture (4/4)
 - [ ] Phase 4: HTMX Enhancements (4/4)
 - [ ] Phase 5: Admin & Audit (5/5)
