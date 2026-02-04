@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Services\Admin\DashboardService;
+use Echo\Framework\Admin\WidgetRegistry;
 use Echo\Framework\Http\AdminController;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;
@@ -92,6 +93,56 @@ class DashboardController extends AdminController
     public function requests_ytd_chart()
     {
         return $this->render('admin/dashboard-chart.html.twig', $this->provider->getYTDRequestsChart());
+    }
+
+    #[Get("/health", "health", ["max_requests" => 0])]
+    public function health(): string
+    {
+        return $this->render('admin/dashboard/health.html.twig', [
+            'health' => $this->provider->getSystemHealth(),
+        ]);
+    }
+
+    #[Get("/database", "database", ["max_requests" => 0])]
+    public function database(): string
+    {
+        return $this->render('admin/dashboard/database.html.twig', [
+            'stats' => $this->provider->getDatabaseStats(),
+        ]);
+    }
+
+    #[Get("/audit-summary", "audit-summary", ["max_requests" => 0])]
+    public function audit_summary(): string
+    {
+        return $this->render('admin/dashboard/audit-summary.html.twig', [
+            'audit' => $this->provider->getAuditSummary(),
+        ]);
+    }
+
+    #[Get("/activity-heatmap", "activity-heatmap", ["max_requests" => 0])]
+    public function activity_heatmap(): string
+    {
+        return $this->render('admin/dashboard/activity-heatmap.html.twig', [
+            'heatmap' => $this->provider->getUserActivityHeatmap(),
+        ]);
+    }
+
+    #[Get("/widgets/{id}", "widgets.render", ["max_requests" => 0])]
+    public function render_widget(string $id): string
+    {
+        $widget = WidgetRegistry::get($id);
+
+        if (!$widget) {
+            return '<div class="alert alert-danger">Widget not found</div>';
+        }
+
+        return $widget->render();
+    }
+
+    #[Get("/widgets", "widgets.all", ["max_requests" => 0])]
+    public function render_all_widgets(): string
+    {
+        return WidgetRegistry::renderAll();
     }
 
     protected function renderTable(): string

@@ -124,7 +124,7 @@ class Blueprint
      */
     public function index(array $attribute)
     {
-        $this->definitions[] = sprintf("INDEX (%s)", $attribute);
+        $this->definitions[] = sprintf("INDEX (%s)", implode(', ', $attribute));
         return $this;
     }
 

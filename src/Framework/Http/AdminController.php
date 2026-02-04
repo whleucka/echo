@@ -4,6 +4,7 @@ namespace Echo\Framework\Http;
 
 use App\Models\FileInfo;
 use App\Services\Admin\SidebarService;
+use Echo\Framework\Audit\AuditLogger;
 use Echo\Framework\Http\Controller;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
@@ -61,6 +62,7 @@ abstract class AdminController extends Controller
     protected bool $has_create = true;
     protected bool $has_delete = true;
     protected bool $has_export = true;
+    protected bool $has_show = true;
 
     protected array $validation_rules = [];
 
@@ -347,7 +349,7 @@ abstract class AdminController extends Controller
         $has_edit = new TwigFunction("has_edit", fn(int $id) => $this->hasEdit($id));
         $has_show = new TwigFunction("has_show", fn(int $id) => $this->hasShow($id));
         $has_delete = new TwigFunction("has_delete", fn(int $id) => $this->hasDelete($id));
-        $has_row_actions = new TwigFunction("has_row_actions", fn() => $this->has_edit || $this->has_delete);
+        $has_row_actions = new TwigFunction("has_row_actions", fn() => $this->has_show || $this->has_edit || $this->has_delete);
         $control = new TwigFunction("control", fn(string $column, ?string $value) => $this->control($column, $value));
         $format = new TwigFunction("format", fn(string $column, ?string $value) => $this->format($column, $value));
         twig()->addFunction($has_export);
@@ -830,7 +832,7 @@ abstract class AdminController extends Controller
 
     protected function hasShow(int $id): bool
     {
-        return !empty($this->form_columns);
+        return $this->has_show && !empty($this->form_columns);
     }
 
     protected function hasEdit(int $id): bool
@@ -1084,11 +1086,19 @@ abstract class AdminController extends Controller
     protected function handleDestroy(int $id): bool
     {
         try {
+            // Capture old values before delete for audit
+            $oldValues = db()->fetch(
+                "SELECT * FROM {$this->table_name} WHERE {$this->table_pk} = ?",
+                [$id]
+            );
+
             $result = qb()->delete()
                 ->from($this->table_name)
                 ->where(["{$this->table_pk} = ?"], $id)
                 ->execute();
             if ($result) {
+                // Log the deletion
+                AuditLogger::logDeleted($this->table_name, $id, $oldValues ?: []);
                 return true;
             }
             return false;
@@ -1102,6 +1112,12 @@ abstract class AdminController extends Controller
     protected function handleUpdate(int $id, array $request): bool
     {
         try {
+            // Capture old values before update for audit
+            $oldValues = db()->fetch(
+                "SELECT * FROM {$this->table_name} WHERE {$this->table_pk} = ?",
+                [$id]
+            );
+
             // Set the params before the where clause
             // so that we get the correct query param count
             $result = qb()->update($request)
@@ -1110,6 +1126,12 @@ abstract class AdminController extends Controller
                 ->where(["{$this->table_pk} = ?"], $id)
                 ->execute();
             if ($result) {
+                // Capture new values after update for audit
+                $newValues = db()->fetch(
+                    "SELECT * FROM {$this->table_name} WHERE {$this->table_pk} = ?",
+                    [$id]
+                );
+                AuditLogger::logUpdated($this->table_name, $id, $oldValues ?: [], $newValues ?: []);
                 return true;
             }
             return false;
@@ -1129,7 +1151,16 @@ abstract class AdminController extends Controller
                 ->execute();
             if ($result) {
                 // Returns the inserted ID
-                return db()->lastInsertId();
+                $id = db()->lastInsertId();
+
+                // Capture new record for audit
+                $newValues = db()->fetch(
+                    "SELECT * FROM {$this->table_name} WHERE {$this->table_pk} = ?",
+                    [$id]
+                );
+                AuditLogger::logCreated($this->table_name, $id, $newValues ?: []);
+
+                return $id;
             }
             return false;
         } catch (Throwable $ex) {

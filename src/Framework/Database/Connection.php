@@ -142,12 +142,23 @@ final class Connection implements DatabaseConnection
 
   public function commit(): bool
   {
-    return $this->link->commit();
+    if ($this->inTransaction()) {
+      return $this->link->commit();
+    }
+    return true;
   }
 
   public function rollback(): bool
   {
-    return $this->link->rollBack();
+    if ($this->inTransaction()) {
+      return $this->link->rollBack();
+    }
+    return false;
+  }
+
+  public function inTransaction(): bool
+  {
+    return $this->link->inTransaction();
   }
 
   public function getLink(): PDO

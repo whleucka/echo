@@ -12,6 +12,7 @@ class Kernel extends HttpKernel
         \Echo\Framework\Http\Middleware\CORS::class,          // CORS headers for API
         \Echo\Framework\Http\Middleware\ApiVersion::class,    // API versioning
         \Echo\Framework\Http\Middleware\Auth::class,
+        \Echo\Framework\Http\Middleware\AuditContext::class,  // Set audit context for logging
         \Echo\Framework\Http\Middleware\BearerAuth::class,    // Bearer token auth for API
         \Echo\Framework\Http\Middleware\Whitelist::class,
         \Echo\Framework\Http\Middleware\Blacklist::class,

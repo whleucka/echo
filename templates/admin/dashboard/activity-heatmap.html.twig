@@ -1,0 +1,59 @@
+<div class="card h-100">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-grid-3x3 me-2"></i>Activity Heatmap (7 days)</span>
+    <button class="btn btn-sm btn-outline-secondary"
+      hx-get="/admin/dashboard/activity-heatmap"
+      hx-swap="outerHTML"
+      hx-target="closest .card">
+      <i class="bi bi-arrow-clockwise"></i>
+    </button>
+  </div>
+  <div class="card-body p-2">
+    <div class="table-responsive">
+      <table class="table table-sm mb-0" style="font-size: 0.7rem;">
+        <thead>
+          <tr>
+            <th></th>
+            {% for hour in heatmap.hours %}
+            <th class="text-center p-0" style="width: 3%;">{{ hour }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for dow in 1..7 %}
+          <tr>
+            <td class="fw-bold p-1">{{ heatmap.days[dow - 1] }}</td>
+            {% for hour in heatmap.hours %}
+              {% set count = heatmap.matrix[dow][hour] %}
+              {% set intensity = heatmap.max > 0 ? (count / heatmap.max) : 0 %}
+              {% if intensity == 0 %}
+                {% set bg = 'bg-light' %}
+              {% elseif intensity < 0.25 %}
+                {% set bg = 'bg-success bg-opacity-25' %}
+              {% elseif intensity < 0.5 %}
+                {% set bg = 'bg-success bg-opacity-50' %}
+              {% elseif intensity < 0.75 %}
+                {% set bg = 'bg-success bg-opacity-75' %}
+              {% else %}
+                {% set bg = 'bg-success' %}
+              {% endif %}
+              <td class="text-center p-0 {{ bg }}" title="{{ heatmap.days[dow - 1] }} {{ hour }}:00 - {{ count }} requests">
+                {% if count > 0 %}<span class="small">{{ count }}</span>{% endif %}
+              </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="d-flex justify-content-end mt-2 small text-muted">
+      <span class="me-2">Less</span>
+      <span class="d-inline-block bg-light border" style="width: 12px; height: 12px;"></span>
+      <span class="d-inline-block bg-success bg-opacity-25 border" style="width: 12px; height: 12px;"></span>
+      <span class="d-inline-block bg-success bg-opacity-50 border" style="width: 12px; height: 12px;"></span>
+      <span class="d-inline-block bg-success bg-opacity-75 border" style="width: 12px; height: 12px;"></span>
+      <span class="d-inline-block bg-success border" style="width: 12px; height: 12px;"></span>
+      <span class="ms-2">More</span>
+    </div>
+  </div>
+</div>

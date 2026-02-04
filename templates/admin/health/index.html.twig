@@ -1,0 +1,88 @@
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
+          <i class="bi bi-heart-pulse me-2"></i>
+          System Health Overview
+        </span>
+        <div>
+          <a href="/admin/health/api" target="_blank" class="btn btn-sm btn-outline-secondary me-2">
+            <i class="bi bi-code-slash me-1"></i>JSON API
+          </a>
+          <button class="btn btn-sm btn-primary"
+            hx-get="/admin/health/refresh"
+            hx-target="#checks-list"
+            hx-swap="innerHTML">
+            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="text-center mb-4">
+          {% set status_class = overall_status == 'ok' ? 'text-success' : (overall_status == 'warning' ? 'text-warning' : 'text-danger') %}
+          {% set status_icon = overall_status == 'ok' ? 'check-circle-fill' : (overall_status == 'warning' ? 'exclamation-triangle-fill' : 'x-circle-fill') %}
+          <i class="bi bi-{{ status_icon }} {{ status_class }}" style="font-size: 4rem;"></i>
+          <h2 class="{{ status_class }} mt-3">System Status: {{ overall_status|upper }}</h2>
+        </div>
+
+        <div id="checks-list">
+          {% include 'admin/health/checks-list.html.twig' %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 mb-4">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-info-circle me-2"></i>System Information
+      </div>
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <tr>
+            <th class="text-muted">PHP Version</th>
+            <td>{{ constant('PHP_VERSION') }}</td>
+          </tr>
+          <tr>
+            <th class="text-muted">Operating System</th>
+            <td>{{ constant('PHP_OS') }}</td>
+          </tr>
+          <tr>
+            <th class="text-muted">Server Software</th>
+            <td>{{ app.request.server.SERVER_SOFTWARE ?? 'N/A' }}</td>
+          </tr>
+          <tr>
+            <th class="text-muted">Max Execution Time</th>
+            <td>{{ php_ini('max_execution_time') ?? '30' }}s</td>
+          </tr>
+          <tr>
+            <th class="text-muted">Upload Max Size</th>
+            <td>{{ php_ini('upload_max_filesize') ?? '2M' }}</td>
+          </tr>
+          <tr>
+            <th class="text-muted">Post Max Size</th>
+            <td>{{ php_ini('post_max_size') ?? '8M' }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 mb-4">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-puzzle me-2"></i>Loaded Extensions
+      </div>
+      <div class="card-body">
+        <div class="d-flex flex-wrap gap-1">
+          {% for ext in php_extensions() %}
+          <span class="badge bg-secondary">{{ ext }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

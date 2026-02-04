@@ -1,0 +1,31 @@
+<div class="row">
+  {% for name, check in checks %}
+  <div class="col-md-6 col-lg-4 mb-3">
+    <div class="card h-100 {% if check.status == 'ok' %}border-success{% elseif check.status == 'warning' %}border-warning{% else %}border-danger{% endif %}">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <h6 class="card-title mb-0">
+            {% set icon_class = check.status == 'ok' ? 'text-success' : (check.status == 'warning' ? 'text-warning' : 'text-danger') %}
+            {% set check_icon = check.status == 'ok' ? 'check-circle-fill' : (check.status == 'warning' ? 'exclamation-triangle-fill' : 'x-circle-fill') %}
+            <i class="bi bi-{{ check_icon }} {{ icon_class }} me-2"></i>
+            {{ name|replace({'_': ' '})|title }}
+          </h6>
+          <span class="badge {% if check.status == 'ok' %}bg-success{% elseif check.status == 'warning' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+            {{ check.status|upper }}
+          </span>
+        </div>
+        <p class="card-text small text-muted mb-2">{{ check.message }}</p>
+        {% if check.percent is defined %}
+        <div class="progress" style="height: 6px;">
+          {% set bar_class = check.status == 'ok' ? 'bg-success' : (check.status == 'warning' ? 'bg-warning' : 'bg-danger') %}
+          <div class="progress-bar {{ bar_class }}" role="progressbar" style="width: {{ check.percent }}%"></div>
+        </div>
+        {% endif %}
+        <div class="text-end mt-2">
+          <small class="text-muted">{{ check.duration_ms }}ms</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>

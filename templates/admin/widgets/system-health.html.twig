@@ -1,0 +1,42 @@
+<div class="col-{{ widget.width }} mb-4" id="widget-{{ widget.id }}"
+  {% if widget.refresh_interval > 0 %}
+  hx-get="/admin/dashboard/widgets/{{ widget.id }}"
+  hx-trigger="every {{ widget.refresh_interval }}s"
+  hx-swap="outerHTML"
+  {% endif %}>
+  <div class="card h-100">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-{{ widget.icon }} me-2"></i>{{ widget.title }}</span>
+      {% set status_class = data.overall_status == 'ok' ? 'text-success' : (data.overall_status == 'warning' ? 'text-warning' : 'text-danger') %}
+      {% set status_icon = data.overall_status == 'ok' ? 'check-circle-fill' : (data.overall_status == 'warning' ? 'exclamation-triangle-fill' : 'x-circle-fill') %}
+      <span class="{{ status_class }}">
+        <i class="bi bi-{{ status_icon }}"></i>
+        {{ data.overall_status|capitalize }}
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="list-group list-group-flush">
+        {% for key, check in data.checks %}
+        <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+          <div>
+            {% set icon_class = check.status == 'ok' ? 'text-success' : (check.status == 'warning' ? 'text-warning' : 'text-danger') %}
+            {% set check_icon = check.status == 'ok' ? 'check-circle' : (check.status == 'warning' ? 'exclamation-triangle' : 'x-circle') %}
+            <i class="bi bi-{{ check_icon }} {{ icon_class }} me-2"></i>
+            <span>{{ check.label }}</span>
+          </div>
+          <span class="text-muted small">{{ check.value }}</span>
+        </div>
+        {% if check.percent is defined %}
+        <div class="progress mb-2" style="height: 4px;">
+          {% set bar_class = check.status == 'ok' ? 'bg-success' : (check.status == 'warning' ? 'bg-warning' : 'bg-danger') %}
+          <div class="progress-bar {{ bar_class }}" role="progressbar" style="width: {{ check.percent }}%"></div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card-footer text-center">
+      <a href="/admin/health" class="btn btn-sm btn-outline-primary">View Details</a>
+    </div>
+  </div>
+</div>
