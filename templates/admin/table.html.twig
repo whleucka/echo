@@ -99,58 +99,71 @@
       </div>
     {% endif %}
   </div>
-  {% if pagination.total_pages > 1 %}
-    <nav 
-      id="pagination" 
-      class="mt-2"
-      hx-boost="true"
-      hx-target="#table"
-      hx-select="#table"
-      hx-swap="outerHTML">
-      <ul class="pagination">
-        {% if pagination.page != 1 and pagination.page > pagination.links %}
-        <li class="page-item">
-          <a class="page-link" href="/admin/{{ module.link }}/page/1">
-            <span><i class="bi bi-chevron-double-left"></i></span>
-          </a>
-        </li>
-        <li class="page-item {% if pagination.page - 1 <= 0 %}disabled{% endif %}">
-          <a class="page-link" href="/admin/{{ module.link }}/page/{{ pagination.page - 1}}">
-            <span><i class="bi bi-chevron-left"></i></span>
-          </a>
-        </li>
-        {% endif %}
-        {% for i in pagination.page - pagination.links..pagination.page - 1 %}
-          {% if i >= 1 %}
+  {% if pagination.total_pages > 1 or pagination.total_rows > 10 %}
+    <div id="pagination-controls" class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-3 px-2">
+      <div class="d-flex align-items-center gap-2 small text-muted order-2 order-sm-1">
+        <span>Show</span>
+        <select
+          class="form-select form-select-sm"
+          style="width: auto;"
+          hx-target="#module"
+          hx-select="#module"
+          hx-swap="outerHTML"
+          onchange="htmx.ajax('GET', '/admin/{{ module.link }}/per-page/' + this.value, {target: '#module', select: '#module', swap: 'outerHTML'})">
+          {% for opt in [10, 25, 50, 100] %}
+            <option value="{{ opt }}" {% if pagination.per_page == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+        <span>per page</span>
+      </div>
+      {% if pagination.total_pages > 1 %}
+      <nav id="pagination" class="order-1 order-sm-2" hx-boost="true" hx-target="#table" hx-select="#table" hx-swap="outerHTML">
+        <ul class="pagination pagination-sm mb-0">
+          {% if pagination.page != 1 and pagination.page > pagination.links %}
           <li class="page-item">
-            <a class="page-link" href="/admin/{{ module.link }}/page/{{ i }}">{{ i }}</a>
+            <a class="page-link" href="/admin/{{ module.link }}/page/1">
+              <span><i class="bi bi-chevron-double-left"></i></span>
+            </a>
+          </li>
+          <li class="page-item {% if pagination.page - 1 <= 0 %}disabled{% endif %}">
+            <a class="page-link" href="/admin/{{ module.link }}/page/{{ pagination.page - 1}}">
+              <span><i class="bi bi-chevron-left"></i></span>
+            </a>
           </li>
           {% endif %}
-        {% endfor %}
-        <li class="page-item active">
-          <a class="page-link" href="/admin/{{ module.link }}/page/{{ pagination.page }}">{{ pagination.page }}</a>
-        </li>
-        {% for i in pagination.page + 1..pagination.page + pagination.links %}
-          {% if i <= pagination.total_pages %}
+          {% for i in pagination.page - pagination.links..pagination.page - 1 %}
+            {% if i >= 1 %}
+            <li class="page-item">
+              <a class="page-link" href="/admin/{{ module.link }}/page/{{ i }}">{{ i }}</a>
+            </li>
+            {% endif %}
+          {% endfor %}
+          <li class="page-item active">
+            <a class="page-link" href="/admin/{{ module.link }}/page/{{ pagination.page }}">{{ pagination.page }}</a>
+          </li>
+          {% for i in pagination.page + 1..pagination.page + pagination.links %}
+            {% if i <= pagination.total_pages %}
+            <li class="page-item">
+              <a class="page-link" href="/admin/{{ module.link }}/page/{{ i }}">{{ i }}</a>
+            </li>
+            {% endif %}
+          {% endfor %}
+          {% if pagination.page != pagination.total_pages and pagination.page < pagination.total_pages - pagination.pagination_links %}
           <li class="page-item">
-            <a class="page-link" href="/admin/{{ module.link }}/page/{{ i }}">{{ i }}</a>
+            <a class="page-link {% if pagination.page + 1 >= pagination.total_pages %}disabled{% endif %}" href="/admin/{{ module.link }}/page/{{ pagination.page + 1 }}">
+              <span><i class="bi bi-chevron-right"></i></span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="/admin/{{ module.link }}/page/{{ pagination.total_pages }}">
+              <span><i class="bi bi-chevron-double-right"></i></span>
+            </a>
           </li>
           {% endif %}
-        {% endfor %}
-        {% if pagination.page != pagination.total_pages and pagination.page < pagination.total_pages - pagination.pagination_links %}
-        <li class="page-item">
-          <a class="page-link {% if pagination.page + 1 >= pagination.total_pages %}disabled{% endif %}" href="/admin/{{ module.link }}/page/{{ pagination.page + 1 }}">
-            <span><i class="bi bi-chevron-right"></i></span>
-          </a>
-        </li>
-        <li class="page-item">
-          <a class="page-link" href="/admin/{{ module.link }}/page/{{ pagination.total_pages }}">
-            <span><i class="bi bi-chevron-double-right"></i></span>
-          </a>
-        </li>
-        {% endif %}
-      </ul>
-    </nav>
+        </ul>
+      </nav>
+      {% endif %}
+    </div>
   {% endif %}
   </div>
 </div>

@@ -102,6 +102,17 @@ abstract class AdminController extends Controller
         return $this->index();
     }
 
+    #[Get("/per-page/{count}", "admin.per-page")]
+    public function perPage(int $count): string
+    {
+        $allowed = [10, 25, 50, 100];
+        if (in_array($count, $allowed)) {
+            $this->setSession("per_page", $count);
+            $this->setSession("page", 1); // Reset to first page
+        }
+        return $this->index();
+    }
+
     #[Get("/export-csv", "admin.export-csv")]
     public function export_csv(): mixed
     {
@@ -737,6 +748,7 @@ abstract class AdminController extends Controller
         if ($this->table_name && !empty($this->table_columns)) {
             $this->active_filter_link = $this->getSession("filter_link") ?? $this->active_filter_link;
             $this->page = $this->getSession("page") ?? $this->page;
+            $this->per_page = $this->getSession("per_page") ?? $this->per_page;
             $this->query_order_by = $this->getSession("order_by") ?? $this->query_order_by;
             $this->query_sort = $this->getSession("sort") ?? $this->query_sort;
             $this->search_term = $this->getFilter("search") ?? $this->search_term;
@@ -978,8 +990,9 @@ abstract class AdminController extends Controller
             ],
             "pagination" => [
                 "page" => $this->page,
+                "per_page" => $this->per_page,
                 "total_pages" => $this->total_pages,
-                "total_results" => $this->total_results,
+                "total_rows" => $this->total_results,
                 "links" => $this->pagination_links,
             ]
         ]);
