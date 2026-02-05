@@ -47,7 +47,28 @@
       <span class="badge bg-secondary">{{ count }}</span>
     </div>
     {% endfor %}
-    {% else %}
+    {% endif %}
+
+    {% if audit.recent|length > 0 %}
+    <hr class="my-3">
+    <div class="small text-muted mb-2">Recent Activity</div>
+    {% for item in audit.recent %}
+    <div class="d-flex align-items-center py-1 border-bottom">
+      {% if item.event == 'created' %}
+        <span class="badge bg-success me-2" style="width: 60px;">create</span>
+      {% elseif item.event == 'updated' %}
+        <span class="badge bg-warning text-dark me-2" style="width: 60px;">update</span>
+      {% else %}
+        <span class="badge bg-danger me-2" style="width: 60px;">delete</span>
+      {% endif %}
+      <div class="flex-grow-1 text-truncate small">
+        <strong>{{ item.type }}</strong> #{{ item.record_id }}
+        <span class="text-muted">by {{ item.user }}</span>
+      </div>
+      <small class="text-muted">{{ item.time_ago }}</small>
+    </div>
+    {% endfor %}
+    {% elseif audit.by_model|length == 0 %}
     <div class="text-center text-muted py-3">
       <i class="bi bi-inbox fs-3 d-block mb-2"></i>
       No audit data yet
