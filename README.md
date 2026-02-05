@@ -483,6 +483,76 @@ The toolbar automatically tracks HTMX requests via response headers:
 - `X-Echo-Debug-Memory` - Memory usage
 - `X-Echo-Debug-Queries` - Query count
 
+## Benchmarking
+
+Echo includes a built-in benchmark suite for measuring framework performance. The benchmarks follow TechEmpower Framework Benchmark conventions.
+
+### Running Benchmarks
+
+```bash
+# Basic usage (requires wrk, ab, or falls back to curl)
+./bin/benchmark
+
+# With custom parameters
+./bin/benchmark [base_url] [duration] [connections]
+
+# Example: Test against localhost for 30 seconds with 200 connections
+./bin/benchmark http://localhost 30 200
+```
+
+**Note:** For accurate results, install `wrk` (recommended) or Apache Bench (`ab`). The script will fall back to `curl` if neither is available, but results will be less accurate.
+
+### Benchmark Endpoints
+
+The following endpoints are available at `/benchmark/*` when `APP_DEBUG=true`:
+
+| Endpoint | Description |
+|----------|-------------|
+| `/benchmark/plaintext` | Raw framework overhead - returns "Hello, World!" as plain text |
+| `/benchmark/json` | JSON serialization - returns a simple JSON object |
+| `/benchmark/db` | Single database query - fetches one random row |
+| `/benchmark/queries/{count}` | Multiple queries - fetches N rows (1-500) |
+| `/benchmark/template` | Template rendering - renders a Twig template |
+| `/benchmark/fullstack` | Full stack test - database query + template rendering |
+| `/benchmark/memory` | Memory usage - reports current and peak memory consumption |
+
+### Sample Output
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║           Echo Framework Performance Benchmark                ║
+╚═══════════════════════════════════════════════════════════════╝
+
+Configuration:
+  Base URL:    http://localhost
+  Tool:        wrk
+  Duration:    10s
+  Connections: 100
+
+═══════════════════════════════════════════════════════════════
+                     Running Benchmarks
+═══════════════════════════════════════════════════════════════
+
+Running: Plaintext (raw overhead)
+  Requests/sec: 15234.56
+  Latency (avg): 6.52ms
+  Latency (max): 45.23ms
+
+Running: JSON Serialization
+  Requests/sec: 14521.33
+  Latency (avg): 6.89ms
+  ...
+```
+
+### Comparing Frameworks
+
+To compare Echo with other frameworks:
+
+1. Run the same benchmark tests against Laravel, Slim, Symfony, etc.
+2. Use identical hardware and database configuration
+3. Run multiple iterations and average the results
+4. Consider submitting results to [TechEmpower Benchmarks](https://www.techempower.com/benchmarks/)
+
 ## Testing
 
 Run the test suite:
