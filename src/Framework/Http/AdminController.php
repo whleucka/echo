@@ -599,11 +599,11 @@ abstract class AdminController extends Controller
                 $ordered_row = [];
                 foreach ($columns as $title => $subquery) {
                     $key = $this->getAlias($subquery);
-                    $ordered_row[] = $row[$key] ?? '';
+                    $ordered_row[] = $this->sanitizeCsvValue($row[$key] ?? '');
                 }
                 fputcsv($output_handle, $ordered_row);
             } else {
-                fputcsv($output_handle, $row);
+                fputcsv($output_handle, array_map([$this, 'sanitizeCsvValue'], $row));
             }
 
             flush(); // Free memory buffer
@@ -611,6 +611,19 @@ abstract class AdminController extends Controller
 
         fclose($output_handle);
         exit;
+    }
+
+    /**
+     * Sanitize value for CSV to prevent formula injection
+     * Prefixes cells starting with =, +, -, @, tab or carriage return with a single quote
+     */
+    private function sanitizeCsvValue(mixed $value): string
+    {
+        $value = (string) $value;
+        if (preg_match('/^[=+\-@\t\r]/', $value)) {
+            return "'" . $value;
+        }
+        return $value;
     }
 
     private function getModule()

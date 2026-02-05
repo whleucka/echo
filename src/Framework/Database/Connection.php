@@ -112,21 +112,34 @@ final class Connection implements DatabaseConnection
 
   public function fetchAll(string $sql, array $params = []): array
   {
-    return $this->execute($sql, $params)->fetchAll();
+    $stmt = $this->execute($sql, $params);
+    if ($stmt === null) {
+      throw new \RuntimeException('Database connection not established');
+    }
+    return $stmt->fetchAll();
   }
 
   public function lastInsertId(): string
   {
+    if ($this->link === null) {
+      throw new \RuntimeException('Database connection not established');
+    }
     return $this->link->lastInsertId();
   }
 
   public function errorInfo(): array
   {
+    if ($this->link === null) {
+      return ['', null, 'Database connection not established'];
+    }
     return $this->link->errorInfo();
   }
 
   public function errorCode(): ?string
   {
+    if ($this->link === null) {
+      return null;
+    }
     return $this->link->errorCode();
   }
 
@@ -137,11 +150,17 @@ final class Connection implements DatabaseConnection
 
   public function beginTransaction(): bool
   {
+    if ($this->link === null) {
+      throw new \RuntimeException('Database connection not established');
+    }
     return $this->link->beginTransaction();
   }
 
   public function commit(): bool
   {
+    if ($this->link === null) {
+      throw new \RuntimeException('Database connection not established');
+    }
     if ($this->inTransaction()) {
       return $this->link->commit();
     }
@@ -150,6 +169,9 @@ final class Connection implements DatabaseConnection
 
   public function rollback(): bool
   {
+    if ($this->link === null) {
+      return false;
+    }
     if ($this->inTransaction()) {
       return $this->link->rollBack();
     }
@@ -158,10 +180,13 @@ final class Connection implements DatabaseConnection
 
   public function inTransaction(): bool
   {
+    if ($this->link === null) {
+      return false;
+    }
     return $this->link->inTransaction();
   }
 
-  public function getLink(): PDO
+  public function getLink(): ?PDO
   {
     return $this->link;
   }

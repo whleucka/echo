@@ -105,7 +105,7 @@ class Controller implements HttpController
                 $request_value = $request[$field] ?? null;
                 $result = match($rule) {
                     'match' => $request_value == $request[$rule_val],
-                    'unique' => count(db()->fetch("SELECT 1 FROM $rule_val WHERE $field = ?", [$request_value])) === 0,
+                    'unique' => $this->validateUnique($rule_val, $field, $request_value),
                     'min_length' => strlen($request_value) >= $rule_val,
                     'max_length' => strlen($request_value) <= $rule_val,
                     'required' => !is_null($request_value) && $request_value !== '' && $request_value !== "NULL",
@@ -142,6 +142,22 @@ class Controller implements HttpController
             }
         }
         return $valid ? (object)$data : null;
+    }
+
+    /**
+     * Validate uniqueness with SQL injection protection
+     */
+    private function validateUnique(string $table, string $field, mixed $value): bool
+    {
+        // Sanitize table and field names - only allow alphanumeric and underscores
+        $safeTable = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
+        $safeField = preg_replace('/[^a-zA-Z0-9_]/', '', $field);
+
+        if ($safeTable !== $table || $safeField !== $field) {
+            throw new \InvalidArgumentException("Invalid table or field name for unique validation");
+        }
+
+        return count(db()->fetch("SELECT 1 FROM `$safeTable` WHERE `$safeField` = ?", [$value])) === 0;
     }
 
     protected function setValidationMessage(string $rule, string $message)

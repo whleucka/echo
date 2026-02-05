@@ -103,9 +103,9 @@ abstract class Widget
         }
 
         $content = file_get_contents($cacheFile);
-        $data = unserialize($content);
+        $data = json_decode($content, true);
 
-        if ($data === false || !isset($data['expires']) || $data['expires'] < time()) {
+        if ($data === null || !isset($data['expires']) || $data['expires'] < time()) {
             @unlink($cacheFile);
             return null;
         }
@@ -131,6 +131,6 @@ abstract class Widget
             'value' => $value,
         ];
 
-        file_put_contents($cacheFile, serialize($data));
+        file_put_contents($cacheFile, json_encode($data));
     }
 }

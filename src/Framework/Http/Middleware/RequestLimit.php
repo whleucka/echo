@@ -67,9 +67,12 @@ class RequestLimit implements Middleware
             return in_array("api", $middleware)
                 ? new JsonResponse([
                     "id" => $request->getAttribute("request_id"),
-                    "success" => 429,
-                    "status" => false,
-                    "data" => $message,
+                    "success" => false,
+                    "status" => 429,
+                    "error" => [
+                        "code" => "RATE_LIMIT_EXCEEDED",
+                        "message" => $message,
+                    ],
                     "ts" => date(DATE_ATOM)], 429)
                 : new HttpResponse($message, 429);
         }

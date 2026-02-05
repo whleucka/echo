@@ -4,6 +4,22 @@ namespace App\Services\Admin;
 
 class DashboardService
 {
+    private \DateTimeZone $appTimezone;
+
+    public function __construct()
+    {
+        $tz = config('app.timezone') ?? 'UTC';
+        $this->appTimezone = new \DateTimeZone($tz);
+    }
+
+    /**
+     * Get current date/time in app timezone
+     */
+    private function now(): \DateTimeImmutable
+    {
+        return new \DateTimeImmutable('now', $this->appTimezone);
+    }
+
     public function getTotalSales(): string
     {
         return '$' . number_format(0, 2);
@@ -68,14 +84,20 @@ class DashboardService
 
     public function getTodayRequestsChart(): array
     {
+        $now = $this->now();
+        $todayStart = $now->setTime(0, 0, 0)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $todayEnd = $now->setTime(23, 59, 59)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $tzOffset = $now->format('P'); // e.g., "+05:00" or "-08:00"
+
         $data = db()->fetchAll(
             "SELECT
-                HOUR(created_at) AS hour,
+                HOUR(CONVERT_TZ(created_at, '+00:00', ?)) AS hour,
                 COUNT(*) AS total
             FROM sessions
-            WHERE DATE(created_at) = CURDATE()
-            GROUP BY HOUR(created_at)
-            ORDER BY hour"
+            WHERE created_at BETWEEN ? AND ?
+            GROUP BY hour
+            ORDER BY hour",
+            [$tzOffset, $todayStart, $todayEnd]
         );
 
         $hours = range(0, 23);
@@ -86,7 +108,7 @@ class DashboardService
         }
 
         $labels = array_map(fn($h) => str_pad($h, 2, '0', STR_PAD_LEFT) . ":00", $hours);
-        $today = date("l, F d, Y");
+        $today = $now->format("l, F d, Y");
 
         return [
             'id' => 'requests-chart-today',
@@ -144,15 +166,19 @@ class DashboardService
 
     public function getWeekRequestsChart(): array
     {
+        $now = $this->now();
+        $tzOffset = $now->format('P');
+
         $data = db()->fetchAll(
             "SELECT
-                MIN(DAYNAME(created_at)) AS day_name,
-                DATE(created_at) AS day_date,
+                MIN(DAYNAME(CONVERT_TZ(created_at, '+00:00', ?))) AS day_name,
+                DATE(CONVERT_TZ(created_at, '+00:00', ?)) AS day_date,
                 COUNT(*) AS total
             FROM sessions
-            WHERE YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)
+            WHERE YEARWEEK(CONVERT_TZ(created_at, '+00:00', ?), 1) = YEARWEEK(?, 1)
             GROUP BY day_date
-            ORDER BY day_date"
+            ORDER BY day_date",
+            [$tzOffset, $tzOffset, $tzOffset, $now->format('Y-m-d')]
         );
 
         $labels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -165,7 +191,7 @@ class DashboardService
             }
         }
 
-        $week = date("W");
+        $week = $now->format("W");
 
         return [
             'id' => 'requests-chart-week',
@@ -216,18 +242,22 @@ class DashboardService
 
     public function getMonthRequestsChart(): array
     {
+        $now = $this->now();
+        $tzOffset = $now->format('P');
+
         $data = db()->fetchAll(
             "SELECT
-                DAY(created_at) AS day_number,
+                DAY(CONVERT_TZ(created_at, '+00:00', ?)) AS day_number,
                 COUNT(*) AS total
             FROM sessions
-            WHERE YEAR(created_at) = YEAR(CURDATE()) AND
-                MONTH(created_at) = MONTH(CURDATE())
+            WHERE YEAR(CONVERT_TZ(created_at, '+00:00', ?)) = ? AND
+                MONTH(CONVERT_TZ(created_at, '+00:00', ?)) = ?
             GROUP BY day_number
-            ORDER BY day_number"
+            ORDER BY day_number",
+            [$tzOffset, $tzOffset, $now->format('Y'), $tzOffset, $now->format('n')]
         );
 
-        $daysInMonth = date('t');
+        $daysInMonth = (int)$now->format('t');
         $labels = range(1, $daysInMonth);
         $payload = array_fill(0, $daysInMonth, 0);
 
@@ -235,7 +265,7 @@ class DashboardService
             $payload[$row['day_number'] - 1] = (int)$row['total'];
         }
 
-        $month = date('F, Y');
+        $month = $now->format('F, Y');
 
         return [
             'id' => 'requests-chart-month',
@@ -286,23 +316,29 @@ class DashboardService
 
     public function getYTDRequestsChart(): array
     {
+        $now = $this->now();
+        $tzOffset = $now->format('P');
+        $yearStart = $now->format('Y') . '-01-01';
+
         $data = db()->fetchAll(
-            "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS total
+            "SELECT DATE_FORMAT(CONVERT_TZ(created_at, '+00:00', ?), '%Y-%m') AS month, COUNT(*) AS total
             FROM sessions
-            WHERE created_at >= DATE_FORMAT(CURDATE(), '%Y-01-01')
+            WHERE CONVERT_TZ(created_at, '+00:00', ?) >= ?
             GROUP BY month
-            ORDER BY month"
+            ORDER BY month",
+            [$tzOffset, $tzOffset, $yearStart]
         );
 
         $labels = [];
         $payload = [];
 
         foreach ($data as $row) {
-            $labels[] = date('M Y', strtotime($row['month'] . '-01'));
+            $dt = \DateTimeImmutable::createFromFormat('Y-m', $row['month'], $this->appTimezone);
+            $labels[] = $dt->format('M Y');
             $payload[] = (int)$row['total'];
         }
 
-        $year = date("Y");
+        $year = $now->format("Y");
 
         return [
             'id' => 'requests-chart-ytd',
@@ -468,14 +504,19 @@ class DashboardService
      */
     public function getUserActivityHeatmap(): array
     {
+        $now = $this->now();
+        $tzOffset = $now->format('P');
+        $weekAgo = $now->modify('-7 days')->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+
         $data = db()->fetchAll(
             "SELECT
-                DAYOFWEEK(created_at) as dow,
-                HOUR(created_at) as hour,
+                DAYOFWEEK(CONVERT_TZ(created_at, '+00:00', ?)) as dow,
+                HOUR(CONVERT_TZ(created_at, '+00:00', ?)) as hour,
                 COUNT(*) as count
             FROM sessions
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-            GROUP BY dow, hour"
+            WHERE created_at >= ?
+            GROUP BY dow, hour",
+            [$tzOffset, $tzOffset, $weekAgo]
         );
 
         $matrix = [];
