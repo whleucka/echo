@@ -25,7 +25,7 @@
     </div>
 
     {% if stats.tables|length > 0 %}
-    <div class="table-responsive">
+    <div class="table-responsive" style="max-height: 140px;">
       <table class="table table-sm table-hover mb-0">
         <thead class="table-light">
           <tr>
@@ -35,7 +35,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for table in stats.tables|slice(0, 3) %}
+          {% for table in stats.tables %}
           <tr>
             <td class="text-truncate" style="max-width: 150px;">{{ table.table_name }}</td>
             <td class="text-end">{{ table.table_rows|number_format }}</td>

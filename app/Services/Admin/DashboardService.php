@@ -474,7 +474,7 @@ class DashboardService
             FROM audits
             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
             GROUP BY auditable_type
-            ORDER BY count DESC
+            ORDER BY count DESC 
             LIMIT 5"
         );
 
