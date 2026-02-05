@@ -43,18 +43,12 @@
 
   .hero-version {
     display: inline-block;
-    background: rgba(99, 102, 241, 0.2);
     color: var(--echo-primary);
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-bottom: 2rem;
   }
 
   .feature-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 1.5rem;
     margin: 4rem 0;
   }
@@ -204,8 +198,10 @@
 {% block content %}
 <div class="container">
   <section class="hero">
-    <span class="hero-version">v1.0</span>
-    <h1 class="hero-logo">Echo</h1>
+    <div class="d-flex justify-content-center">
+      <h1 class="hero-logo">Echo</h1>
+      <span class="hero-version">{{ version }}</span>
+    </div>
     <p class="hero-tagline">A blazing fast PHP framework built for the modern web</p>
     <div class="links">
       <a href="/admin" class="btn-echo">
@@ -274,7 +270,7 @@
   </div>
 
   <footer class="footer">
-    <p>Built with care by <a href="https://github.com/whleucka">whleucka</a></p>
+    <p>Built with care by <a href="https://github.com/whleucka">William Hleucka</a></p>
   </footer>
 </div>
 {% endblock %}
