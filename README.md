@@ -222,6 +222,142 @@ $data = $this->validate([
 ]);
 ```
 
+## Admin Backend
+
+Echo includes a powerful, feature-rich admin panel out of the box. The admin system provides CRUD operations, user management, activity tracking, and system monitoring capabilities.
+
+### Admin Modules
+
+The framework comes with several pre-built admin modules accessible at `/admin`:
+
+#### Dashboard
+- **Widgets System** - Extensible widget registry for custom dashboard components
+- **Analytics** - Request tracking with charts (today, week, month, YTD)
+- **System Health** - Real-time monitoring of database, cache, and system resources
+- **Activity Heatmap** - Visual representation of user activity patterns
+- **Audit Summary** - Overview of recent database changes
+
+#### User Management (`/admin/users`)
+- Full CRUD operations for user accounts
+- Role-based permissions (Standard, Admin)
+- Password strength validation with regex patterns
+- Avatar upload support
+- Search and filtering by role
+- Prevent users from deleting their own account
+
+#### Activity Tracking (`/admin/activity`)
+- Real-time session monitoring
+- IP address and URI tracking
+- Filter by frontend/backend activity
+- User-specific activity views
+- Read-only view (no create/edit/delete)
+
+#### Audit Logs (`/admin/audits`)
+- Automatic tracking of all database changes (create, update, delete)
+- Detailed diff viewer showing before/after values
+- Filter by event type, user, date range
+- IP address and user agent logging
+- Read-only view with detailed change inspection
+
+#### Modules Management (`/admin/modules`)
+- Manage sidebar navigation items
+- Parent/child hierarchical structure
+- Bootstrap Icons integration with autocomplete
+- Enable/disable modules dynamically
+- Custom ordering with drag-and-drop support
+- Real-time sidebar updates via HTMX
+
+#### User Permissions (`/admin/user-permissions`)
+- Granular permission control per module per user
+- Set create, edit, delete, and export permissions
+- Prevent duplicate permission entries
+- Admin users bypass permission checks
+
+#### System Health (`/admin/health`)
+- Database connectivity checks
+- Cache system monitoring
+- Disk space and memory usage
+- JSON API endpoint for external monitoring tools
+- Real-time health status refresh
+
+### Creating Custom Admin Modules
+
+Extend the `AdminController` base class to quickly create CRUD interfaces:
+
+```php
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use Echo\Framework\Http\AdminController;
+use Echo\Framework\Routing\Group;
+
+#[Group(path_prefix: "/products", name_prefix: "products")]
+class ProductsController extends AdminController
+{
+    public function __construct()
+    {
+        // Define table columns for listing
+        $this->table_columns = [
+            "ID" => "id",
+            "Name" => "name",
+            "Price" => "price",
+            "Stock" => "stock",
+            "Created" => "created_at",
+        ];
+
+        // Define searchable columns
+        $this->search_columns = ["Name"];
+
+        // Define form fields
+        $this->form_columns = [
+            "Name" => "name",
+            "Description" => "description",
+            "Price" => "price",
+            "Stock" => "stock",
+        ];
+
+        // Define form controls
+        $this->form_controls = [
+            "name" => "input",
+            "description" => "textarea",
+            "price" => "number",
+            "stock" => "number",
+        ];
+
+        // Define validation rules
+        $this->validation_rules = [
+            "name" => ["required"],
+            "price" => ["required", "numeric"],
+            "stock" => ["required", "numeric"],
+        ];
+
+        parent::__construct("products"); // table name
+    }
+}
+```
+
+The `AdminController` automatically provides:
+- Paginated listing with sorting
+- Search functionality
+- Create/Edit forms
+- Delete operations
+- Export to CSV
+- Filter dropdowns and quick links
+- Modal-based editing via HTMX
+- Automatic validation
+
+### Admin Features
+
+- **Auto-discovery**: Admin controllers are automatically registered
+- **HTMX Integration**: Fast, seamless interactions without page reloads
+- **Responsive Design**: Bootstrap 5-based UI works on all devices
+- **Customizable Tables**: Format columns, add custom actions, override behavior
+- **Validation**: Built-in validation with custom rules
+- **Security**: CSRF protection, authentication, and authorization
+- **Audit Trail**: Automatic tracking of all data changes
+- **Export**: Built-in CSV export for all modules
+
 ## Project Structure
 
 ```
@@ -229,22 +365,123 @@ echo/
 ├── app/                    # Application code
 │   ├── Http/
 │   │   ├── Controllers/    # Controllers (auto-discovered)
+│   │   │   └── Admin/      # Admin panel controllers
 │   │   └── Kernel.php      # Middleware configuration
 │   ├── Models/             # Database models
 │   ├── Providers/          # Service providers
+│   ├── Services/
+│   │   └── Admin/          # Admin service layer
 │   └── Helpers/            # Helper functions
 ├── src/                    # Framework code (Echo namespace)
 │   ├── Framework/          # Core framework classes
+│   │   └── Admin/          # Admin system components
+│   │       └── Widgets/    # Dashboard widgets
 │   └── Interface/          # Contracts/interfaces
 ├── config/                 # Configuration files
 ├── migrations/             # Database migrations
 ├── templates/              # Twig templates
+│   └── admin/              # Admin panel templates
 ├── public/                 # Web root
 │   └── index.php           # Application entry point
 ├── bin/
 │   └── console             # CLI entry point
 └── tests/                  # PHPUnit tests
 ```
+
+## Debug Profiler & Toolbar
+
+Echo includes a powerful built-in profiler and debug toolbar for development. When `APP_DEBUG=true`, the toolbar appears at the bottom of every page providing real-time performance insights.
+
+### Features
+
+- **Request Tracking** - Monitor all HTTP requests including HTMX calls
+- **Query Profiler** - Track every database query with timing and parameters
+- **Memory Usage** - View current and peak memory consumption
+- **Timeline Visualization** - Visual representation of request lifecycle
+- **Slow Query Detection** - Automatically flag queries exceeding threshold
+- **Backtrace Support** - See exactly where each query originates
+- **Request History** - Track up to 50 recent requests in a single session
+- **HTMX Integration** - Seamlessly profiles HTMX requests without page reloads
+
+### Toolbar Panels
+
+#### Request History
+- View all requests made during the session (page loads + HTMX calls)
+- Click any request to inspect its details
+- Initial page load is marked with a special indicator
+- Clear history with one click
+
+#### Request Details
+- URL and HTTP method
+- Total execution time
+- Memory usage (current and peak)
+- Request timestamp
+
+#### Database Queries
+- Complete list of all executed queries
+- SQL statement with bound parameters
+- Query execution time
+- Slow query highlighting (configurable threshold)
+- Backtrace showing where the query was called
+- Query count and total time
+
+#### Timeline
+- Visual timeline bar showing request lifecycle
+- Breakdown of time spent in different sections (controller, database, etc.)
+- Section timing with call counts
+
+### Configuration
+
+Configure the profiler in `config/debug.php`:
+
+```php
+return [
+    // Slow query threshold in milliseconds
+    'slow_query_threshold' => env('DEBUG_SLOW_QUERY_MS', 100),
+    
+    // Enable/disable debug toolbar
+    'toolbar_enabled' => env('DEBUG_TOOLBAR', true),
+    
+    // Toolbar position (bottom or top)
+    'toolbar_position' => 'bottom',
+];
+```
+
+### Using the Profiler in Code
+
+Access the profiler programmatically:
+
+```php
+// Get profiler instance
+$profiler = profiler();
+
+// Start timing a section
+$profiler->startSection('expensive-operation');
+
+// ... your code ...
+
+// End timing
+$profiler->endSection('expensive-operation');
+
+// Get query profiler
+$queryCount = $profiler->queries()->getQueryCount();
+$slowQueries = $profiler->queries()->getSlowQueries(100); // queries > 100ms
+
+// Get summary data
+$summary = $profiler->getSummary();
+```
+
+### Data Storage
+
+Profile data is stored server-side in `storage/profiler/` to avoid HTTP header size limits. Each request gets a unique ID, and the toolbar fetches detailed data on demand via AJAX.
+
+### HTMX Request Tracking
+
+The toolbar automatically tracks HTMX requests via response headers:
+- `X-Echo-Debug-Id` - Unique profile ID
+- `X-Echo-Debug-Time` - Request execution time
+- `X-Echo-Debug-Memory` - Memory usage
+- `X-Echo-Debug-Queries` - Query count
 
 ## Testing
 
