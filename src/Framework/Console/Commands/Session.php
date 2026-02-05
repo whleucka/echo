@@ -10,7 +10,7 @@ class Session extends \ConsoleKit\Command
     /**
      * Clean up old session records
      *
-     * Usage: php bin/console session:cleanup [--days=30]
+     * Usage: ./bin/console session cleanup [--days=30]
      */
     public function executeCleanup(array $args, array $options = []): void
     {
@@ -53,7 +53,7 @@ class Session extends \ConsoleKit\Command
     /**
      * Show session statistics
      *
-     * Usage: php bin/console session:stats
+     * Usage: ./bin/console session stats
      */
     public function executeStats(array $args, array $options = []): void
     {

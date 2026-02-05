@@ -10,7 +10,7 @@ class Audit extends \ConsoleKit\Command
     /**
      * List recent audit entries
      *
-     * Usage: php bin/console audit:list [--limit=20] [--event=created|updated|deleted] [--model=User]
+     * Usage: ./bin/console audit list [--limit=20] [--event=created|updated|deleted] [--model=User]
      */
     public function executeList(array $args, array $options = []): void
     {
@@ -90,7 +90,7 @@ class Audit extends \ConsoleKit\Command
     /**
      * Show audit statistics
      *
-     * Usage: php bin/console audit:stats
+     * Usage: ./bin/console audit stats
      */
     public function executeStats(array $args, array $options = []): void
     {
@@ -146,7 +146,7 @@ class Audit extends \ConsoleKit\Command
     /**
      * Purge old audit entries
      *
-     * Usage: php bin/console audit:purge --days=90
+     * Usage: ./bin/console audit purge [--days=90]
      */
     public function executePurge(array $args, array $options = []): void
     {
