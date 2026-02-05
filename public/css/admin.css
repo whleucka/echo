@@ -218,97 +218,18 @@ nav#nav-sidebar header h4 {
 /**
 * Dashboard
 */
-#dashboard .top-alert {
-  height: 150px;
-  width: 24%;
-  margin: 10px;
-  flex: 1 1 200px; /* grow, shrink, basis */
-  flex-grow: 3;
-  position: relative;
+#dashboard .card {
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
-#dashboard .top-alert .count {
-  font-family: "Ubuntu Mono", monospace;
-  position: absolute;
-  bottom: 60px;
-  font-size: 3.2rem;
-  font-weight: 900;
-  padding: 0;
-  margin: 0;
-}
-#dashboard .top-alert p {
-  position: absolute;
-  bottom: 20px;
-  font-weight: 900;
-  font-size: 1.3rem;
-  padding: 0;
-  margin: 0;
-}
-#dashboard .top-alert .icon {
-  left: 30px;
-  font-size: 4.5rem;
-  position: absolute;
-  opacity: 0.4;
-}
-/* Apple-inspired colors (soft, distinct, premium) */
-
-#dashboard #users {
-  color: #fff;
-  background-color: #5fbf72;          /* calm Apple green */
-  border-left: 8px solid #d8f7e1;     /* frosted mint glow */
-}
-
-#dashboard #users-active {
-  color: #fff;
-  background-color: #ffb05e;          /* warm peach/orange */
-  border-left: 8px solid #ffe8d1;     /* gentle peach glow */
-}
-
-#dashboard #requests {
-  color: #fff;
-  background-color: #c77aff;          /* soft lavender-purple */
-  border-left: 8px solid #eedcff;     /* cloud lilac glow */
-}
-
-#dashboard #requests-today {
-  color: #fff;
-  background-color: #6f8dff;          /* soft periwinkle blue */
-  border-left: 8px solid #dfe6ff;     /* airy sky glow */
-}
-
-#dashboard #modules {
-  color: #fff;
-  background-color: #ff7474;          /* pastel coral red */
-  border-left: 8px solid #ffe0e0;     /* soft coral glow */
-}
-
-#dashboard #sales {
-  color: #fff;
-  background-color: #5ab8aa;          /* aqua-teal */
-  border-left: 8px solid #dbfaf4;     /* frosty aqua glow */
-}
-
-#dashboard #sales-today {
-  color: #fff;
-  background-color: #e2c558;          /* warm honey gold */
-  border-left: 8px solid #fff5d2;     /* soft golden glow */
-}
-
-#dashboard #customers {
-  color: #fff;
-  background-color: #8665ff;          /* smooth violet */
-  border-left: 8px solid #e7e1ff;     /* lavender fog glow */
-}
-
-#dashboard #customers-new {
-  color: #fff;
-  background-color: #ff6fbf;          /* soft rose pink */
-  border-left: 8px solid #ffe1f2;     /* airy pink glow */
-}
-#dashboard #requests-today-chart {
-  width: 100%;
+#dashboard .card-header {
+  background-color: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  font-weight: 600;
+  color: #324554;
 }
 #dashboard .chart {
-  height: 350px;
+  height: 300px;
 }
 
 /**

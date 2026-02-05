@@ -11,10 +11,10 @@
     <div class="card-body">
       <div class="row g-3">
         {% for stat in data.stats %}
-        <div class="col-md-3 col-6">
+        <div class="col-xl col-md-4 col-6">
           <div class="d-flex align-items-center">
             <div class="flex-shrink-0">
-              <div class="bg-{{ stat.color }} bg-opacity-10 rounded-circle p-3">
+              <div class="bg-{{ stat.color }} bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                 <i class="bi bi-{{ stat.icon }} text-{{ stat.color }} fs-4"></i>
               </div>
             </div>

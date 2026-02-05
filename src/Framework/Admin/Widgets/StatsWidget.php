@@ -28,8 +28,16 @@ class StatsWidget extends Widget
             "SELECT COUNT(*) FROM sessions WHERE DATE(created_at) = CURDATE()"
         )->fetchColumn();
 
+        $totalRequests = db()->execute(
+            "SELECT COUNT(*) FROM sessions"
+        )->fetchColumn();
+
         $modulesCount = db()->execute(
             "SELECT COUNT(*) FROM modules WHERE parent_id IS NOT NULL"
+        )->fetchColumn();
+
+        $auditCount = db()->execute(
+            "SELECT COUNT(*) FROM audits WHERE DATE(created_at) = CURDATE()"
         )->fetchColumn();
 
         return [
@@ -53,10 +61,22 @@ class StatsWidget extends Widget
                     'color' => 'warning',
                 ],
                 [
+                    'label' => 'Total Requests',
+                    'value' => (int)$totalRequests,
+                    'icon' => 'graph-up',
+                    'color' => 'info',
+                ],
+                [
                     'label' => 'Modules',
                     'value' => (int)$modulesCount,
                     'icon' => 'puzzle',
-                    'color' => 'info',
+                    'color' => 'secondary',
+                ],
+                [
+                    'label' => "Today's Changes",
+                    'value' => (int)$auditCount,
+                    'icon' => 'journal-text',
+                    'color' => 'danger',
                 ],
             ],
         ];

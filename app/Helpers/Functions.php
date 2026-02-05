@@ -38,12 +38,12 @@ function console(): Application
     return new Application($kernel);
 }
 
-function user()
+function user(): ?User
 {
     $uuid = session()->get("user_uuid");
-    return $uuid 
+    return $uuid
         ? User::where("uuid", $uuid)->get()
-        : false;
+        : null;
 }
 
 /**

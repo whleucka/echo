@@ -101,21 +101,41 @@ class DashboardService
                         (object)[
                             'label' => "$today",
                             'data' => $payload,
-                            'fill' => false,
-                            'backgroundColor' => 'rgba(0, 94, 255, 0.5)',
-                            'borderColor' => 'rgb(0, 94, 255)',
+                            'fill' => true,
+                            'backgroundColor' => 'rgba(59, 130, 246, 0.1)',
+                            'borderColor' => '#3b82f6',
                             'borderWidth' => 2,
-                            'tension' => 0.1,
+                            'tension' => 0.3,
+                            'pointBackgroundColor' => '#3b82f6',
+                            'pointBorderColor' => '#fff',
+                            'pointBorderWidth' => 2,
+                            'pointRadius' => 4,
+                            'pointHoverRadius' => 6,
+                            'pointHoverBackgroundColor' => '#fff',
+                            'pointHoverBorderColor' => '#3b82f6',
                         ]
                     ]
                 ],
                 'options' => (object)[
                     'responsive' => true,
                     'maintainAspectRatio' => false,
+                    'plugins' => (object)[
+                        'legend' => (object)[
+                            'display' => false,
+                        ],
+                    ],
                     'scales' => (object)[
                         'y' => (object)[
                             'beginAtZero' => true,
-                        ]
+                            'grid' => (object)[
+                                'color' => 'rgba(0, 0, 0, 0.05)',
+                            ],
+                        ],
+                        'x' => (object)[
+                            'grid' => (object)[
+                                'display' => false,
+                            ],
+                        ],
                     ],
                 ],
             ]),
@@ -160,20 +180,34 @@ class DashboardService
                         (object)[
                             'label' => "Week $week",
                             'data' => $payload,
-                            'fill' => false,
-                            'backgroundColor' => 'rgba(255, 159, 64, 0.5)',
-                            'borderColor' => 'rgb(255, 159, 64)',
-                            'borderWidth' => 2,
+                            'backgroundColor' => 'rgba(245, 158, 11, 0.8)',
+                            'borderColor' => '#f59e0b',
+                            'borderWidth' => 0,
+                            'borderRadius' => 6,
+                            'hoverBackgroundColor' => '#d97706',
                         ]
                     ]
                 ],
                 'options' => (object)[
                     'responsive' => true,
                     'maintainAspectRatio' => false,
+                    'plugins' => (object)[
+                        'legend' => (object)[
+                            'display' => false,
+                        ],
+                    ],
                     'scales' => (object)[
                         'y' => (object)[
                             'beginAtZero' => true,
-                        ]
+                            'grid' => (object)[
+                                'color' => 'rgba(0, 0, 0, 0.05)',
+                            ],
+                        ],
+                        'x' => (object)[
+                            'grid' => (object)[
+                                'display' => false,
+                            ],
+                        ],
                     ],
                 ],
             ]),
@@ -216,20 +250,34 @@ class DashboardService
                         (object)[
                             'label' => "$month",
                             'data' => $payload,
-                            'fill' => false,
-                            'backgroundColor' => 'rgba(153, 102, 255, 0.5)',
-                            'borderColor' => 'rgb(153, 102, 255)',
-                            'borderWidth' => 2,
+                            'backgroundColor' => 'rgba(139, 92, 246, 0.8)',
+                            'borderColor' => '#8b5cf6',
+                            'borderWidth' => 0,
+                            'borderRadius' => 6,
+                            'hoverBackgroundColor' => '#7c3aed',
                         ]
                     ]
                 ],
                 'options' => (object)[
                     'responsive' => true,
                     'maintainAspectRatio' => false,
+                    'plugins' => (object)[
+                        'legend' => (object)[
+                            'display' => false,
+                        ],
+                    ],
                     'scales' => (object)[
                         'y' => (object)[
                             'beginAtZero' => true,
-                        ]
+                            'grid' => (object)[
+                                'color' => 'rgba(0, 0, 0, 0.05)',
+                            ],
+                        ],
+                        'x' => (object)[
+                            'grid' => (object)[
+                                'display' => false,
+                            ],
+                        ],
                     ],
                 ],
             ]),
@@ -269,20 +317,34 @@ class DashboardService
                         (object)[
                             'label' => "$year",
                             'data' => $payload,
-                            'fill' => false,
-                            'backgroundColor' => 'rgba(91, 235, 52, 0.5)',
-                            'borderColor' => 'rgb(91, 235, 52)',
-                            'borderWidth' => 2,
+                            'backgroundColor' => 'rgba(34, 197, 94, 0.8)',
+                            'borderColor' => '#22c55e',
+                            'borderWidth' => 0,
+                            'borderRadius' => 6,
+                            'hoverBackgroundColor' => '#16a34a',
                         ]
                     ]
                 ],
                 'options' => (object)[
                     'responsive' => true,
                     'maintainAspectRatio' => false,
+                    'plugins' => (object)[
+                        'legend' => (object)[
+                            'display' => false,
+                        ],
+                    ],
                     'scales' => (object)[
                         'y' => (object)[
                             'beginAtZero' => true,
-                        ]
+                            'grid' => (object)[
+                                'color' => 'rgba(0, 0, 0, 0.05)',
+                            ],
+                        ],
+                        'x' => (object)[
+                            'grid' => (object)[
+                                'display' => false,
+                            ],
+                        ],
                     ],
                 ],
             ]),
