@@ -216,6 +216,14 @@ nav#nav-sidebar header h4 {
 }
 
 /**
+* Cards (consistent styling across admin)
+*/
+#admin .card-header {
+  font-weight: 600;
+  color: #324554;
+}
+
+/**
 * Dashboard
 */
 #dashboard .card {
@@ -225,8 +233,6 @@ nav#nav-sidebar header h4 {
 #dashboard .card-header {
   background-color: #fff;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  font-weight: 600;
-  color: #324554;
 }
 #dashboard .chart-container {
   position: relative;
