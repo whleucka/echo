@@ -9,10 +9,26 @@
     </button>
   </div>
   <div class="card-body">
-    <canvas id="{{ id }}" class="chart"></canvas>
+    <div class="chart-container">
+      <canvas id="{{ id }}"></canvas>
+    </div>
   </div>
 </div>
 <script>
-var ctx = document.getElementById('{{ id }}').getContext('2d');
-new Chart(ctx, {{ options|raw }});
+(function() {
+  var chartId = '{{ id }}';
+  var options = {{ options|raw }};
+
+  // Destroy any existing chart with this ID
+  var existing = Chart.getChart(chartId);
+  if (existing) existing.destroy();
+
+  // Wait for DOM to settle before creating chart
+  requestAnimationFrame(function() {
+    var canvas = document.getElementById(chartId);
+    if (canvas) {
+      new Chart(canvas, options);
+    }
+  });
+})();
 </script>

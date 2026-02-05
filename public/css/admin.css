@@ -228,8 +228,27 @@ nav#nav-sidebar header h4 {
   font-weight: 600;
   color: #324554;
 }
-#dashboard .chart {
+#dashboard .chart-container {
+  position: relative;
   height: 300px;
+  width: 100%;
+  overflow: hidden;
+}
+#dashboard .chart-container canvas {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/**
+ * Modal
+ */
+#modal {
+  padding-left: 0 !important;
+}
+#modal .modal-dialog {
+  max-width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /**
