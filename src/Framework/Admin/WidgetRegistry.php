@@ -5,6 +5,7 @@ namespace Echo\Framework\Admin;
 class WidgetRegistry
 {
     private static array $widgets = [];
+    private static array $instances = [];
 
     /**
      * Register a widget
@@ -18,10 +19,12 @@ class WidgetRegistry
         }
 
         self::$widgets[$id] = $class;
+        // Clear cached instance if re-registering
+        unset(self::$instances[$id]);
     }
 
     /**
-     * Get a widget by ID
+     * Get a widget by ID (lazy instantiation)
      */
     public static function get(string $id): ?Widget
     {
@@ -29,18 +32,23 @@ class WidgetRegistry
             return null;
         }
 
-        $class = self::$widgets[$id];
-        return new $class();
+        // Lazy instantiation - only create when first requested
+        if (!isset(self::$instances[$id])) {
+            $class = self::$widgets[$id];
+            self::$instances[$id] = new $class();
+        }
+
+        return self::$instances[$id];
     }
 
     /**
-     * Get all registered widgets
+     * Get all registered widgets (lazy instantiation)
      */
     public static function all(): array
     {
         $widgets = [];
         foreach (self::$widgets as $id => $class) {
-            $widgets[$id] = new $class();
+            $widgets[$id] = self::get($id);
         }
         return $widgets;
     }
@@ -67,6 +75,7 @@ class WidgetRegistry
     public static function unregister(string $id): void
     {
         unset(self::$widgets[$id]);
+        unset(self::$instances[$id]);
     }
 
     /**
@@ -75,6 +84,7 @@ class WidgetRegistry
     public static function clear(): void
     {
         self::$widgets = [];
+        self::$instances = [];
     }
 
     /**

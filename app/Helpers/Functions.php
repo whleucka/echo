@@ -173,35 +173,45 @@ function profiler(): ?\Echo\Framework\Debug\Profiler
  */
 function config(string $name): mixed
 {
-    static $cache = [];
+    static $files = [];
+    static $resolved = [];
+
+    // Return cached resolved value if exists
+    if (array_key_exists($name, $resolved)) {
+        return $resolved[$name];
+    }
 
     $name_split = explode(".", $name);
     $file = strtolower($name_split[0]);
 
     // Load and cache config file
-    if (!isset($cache[$file])) {
+    if (!isset($files[$file])) {
         $config_target = __DIR__ . "/../../config/" . $file . ".php";
-        $cache[$file] = is_file($config_target) ? require $config_target : [];
+        $files[$file] = is_file($config_target) ? require $config_target : [];
     }
 
     // Return full config if no nested key
     if (count($name_split) === 1) {
-        return $cache[$file];
+        $resolved[$name] = $files[$file];
+        return $resolved[$name];
     }
 
     // Traverse nested keys
-    $value = $cache[$file];
+    $value = $files[$file];
     for ($i = 1; $i < count($name_split); $i++) {
         $key = $name_split[$i];
         if (!is_array($value) || !array_key_exists($key, $value)) {
+            $resolved[$name] = null;
             return null;
         }
         $value = $value[$key];
     }
 
     // Handle string booleans from env
-    if ($value === "true") return true;
-    if ($value === "false") return false;
+    if ($value === "true") $value = true;
+    if ($value === "false") $value = false;
 
+    // Cache the resolved value
+    $resolved[$name] = $value;
     return $value;
 }

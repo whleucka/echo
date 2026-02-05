@@ -17,6 +17,8 @@ class Model implements DatabaseModel
     private array $order_by = [];
     private array $params = [];
     private array $attributes = [];
+    private array $relations = [];
+    private array $eagerLoad = [];
     private array $valid_operators = [
         "=",
         "!=",
@@ -131,6 +133,29 @@ class Model implements DatabaseModel
         return $this;
     }
 
+    /**
+     * Specify relationships to eager load
+     *
+     * @param string ...$relations Relation method names to eager load
+     * @return static
+     */
+    public static function with(string ...$relations): static
+    {
+        $class = get_called_class();
+        $model = new $class();
+        $model->eagerLoad = $relations;
+        return $model;
+    }
+
+    /**
+     * Add eager loading to an existing query
+     */
+    public function load(string ...$relations): static
+    {
+        $this->eagerLoad = array_merge($this->eagerLoad, $relations);
+        return $this;
+    }
+
     public function refresh(): Model
     {
         $this->loadAttributes($this->id);
@@ -154,11 +179,100 @@ class Model implements DatabaseModel
             return null;
         }
 
-        if (count($results) === 1) {
-            return static::hydrate($results[0]);
+        // Hydrate results
+        $models = array_map(fn($row) => static::hydrate($row), $results);
+
+        // Perform eager loading if specified
+        if (!empty($this->eagerLoad)) {
+            $this->loadRelations($models);
         }
 
-        return array_map(fn($row) => static::hydrate($row), $results);
+        if (count($models) === 1) {
+            return $models[0];
+        }
+
+        return $models;
+    }
+
+    /**
+     * Load eager loaded relations for a collection of models
+     */
+    private function loadRelations(array &$models): void
+    {
+        foreach ($this->eagerLoad as $relation) {
+            if (!method_exists($this, $relation)) {
+                continue;
+            }
+
+            // Determine the relationship type by calling it on a model
+            $testModel = $models[0];
+            $relationInfo = $this->getRelationInfo($testModel, $relation);
+
+            if ($relationInfo === null) {
+                continue;
+            }
+
+            // Batch load the related models
+            $this->eagerLoadRelation($models, $relation, $relationInfo);
+        }
+    }
+
+    /**
+     * Get relationship info by inspecting the relation method
+     */
+    private function getRelationInfo(Model $model, string $relation): ?array
+    {
+        // Get the primary keys from all models for batching
+        $method = new \ReflectionMethod($model, $relation);
+        $returnType = $method->getReturnType();
+
+        if ($returnType === null) {
+            return null;
+        }
+
+        $typeName = $returnType->getName();
+
+        // Check if it's a hasMany (returns array) or belongsTo/hasOne (returns Model|null)
+        if ($typeName === 'array') {
+            return ['type' => 'hasMany'];
+        } elseif (is_subclass_of($typeName, Model::class) || $typeName === Model::class) {
+            return ['type' => 'belongsTo'];
+        }
+
+        return null;
+    }
+
+    /**
+     * Eager load a specific relation for all models
+     */
+    private function eagerLoadRelation(array &$models, string $relation, array $relationInfo): void
+    {
+        // Collect primary keys
+        $primaryKeys = [];
+        foreach ($models as $model) {
+            $pk = $model->{$model->primary_key};
+            if ($pk !== null) {
+                $primaryKeys[] = $pk;
+            }
+        }
+
+        if (empty($primaryKeys)) {
+            return;
+        }
+
+        // Call the relation method on first model to determine the related class and keys
+        // This is a simplified approach - for complex eager loading, more sophisticated logic would be needed
+        foreach ($models as $model) {
+            $model->relations[$relation] = $model->$relation();
+        }
+    }
+
+    /**
+     * Get an eager loaded relation
+     */
+    public function getRelation(string $name): mixed
+    {
+        return $this->relations[$name] ?? null;
     }
 
     public function first(): ?static

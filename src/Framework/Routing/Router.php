@@ -7,8 +7,18 @@ use Echo\Interface\Routing\Router as RouterInterface;
 
 class Router implements RouterInterface
 {
+    private array $compiledPatterns = [];
+
     public function __construct(private Collector $collector)
     {
+    }
+
+    /**
+     * Set pre-compiled patterns from cache
+     */
+    public function setCompiledPatterns(array $patterns): void
+    {
+        $this->compiledPatterns = $patterns;
     }
 
     /**
@@ -48,8 +58,19 @@ class Router implements RouterInterface
 
         // Check for parameterized routes
         foreach ($routes as $route => $methods) {
-            $pattern = preg_replace('/\{(\w+)\}/', '([A-Za-z0-9_.-]+)', $route);
-            if (preg_match("#^$pattern$#", $uri, $matches)) {
+            // Use pre-compiled pattern if available, otherwise compile on the fly
+            if (isset($this->compiledPatterns[$route])) {
+                $pattern = $this->compiledPatterns[$route];
+            } else {
+                // Only compile if route has parameters
+                if (!str_contains($route, '{')) {
+                    continue;
+                }
+                $compiled = preg_replace('/\{(\w+)\}/', '([A-Za-z0-9_.-]+)', $route);
+                $pattern = "#^$compiled$#";
+            }
+
+            if (preg_match($pattern, $uri, $matches)) {
                 // Ensure the requested method is valid for this route
                 if (!isset($methods[$method])) {
                     return null;

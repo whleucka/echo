@@ -82,7 +82,7 @@ class Route extends \ConsoleKit\Command
         $cache = new RouteCache();
 
         if ($cache->isCached()) {
-            $routes = $cache->get();
+            $routes = $cache->getRoutes();
             $this->writeln("Routes (from cache):");
         } else {
             // Collect routes fresh

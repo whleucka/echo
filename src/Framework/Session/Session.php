@@ -26,21 +26,32 @@ class Session
 {
     use Singleton;
 
-    private $data = [];
+    private bool $started = false;
+    private array $data = [];
 
     public function __construct()
     {
-        $this->data = $this->all();
+        // Don't start session in constructor - lazy start on first access
     }
 
     /**
-     * Set a session value
+     * Ensure session is started (lazy initialization)
+     */
+    private function ensureStarted(): void
+    {
+        if (!$this->started && session_status() === PHP_SESSION_NONE) {
+            @session_start();
+            $this->data = $_SESSION ?? [];
+            $this->started = true;
+        }
+    }
+
+    /**
+     * Get a session value
      */
     public function get(string $key): mixed
     {
-        @session_start();
-        session_write_close();
-        $this->data = $_SESSION;
+        $this->ensureStarted();
         return $this->data[$key] ?? null;
     }
 
@@ -49,10 +60,9 @@ class Session
      */
     public function set(string $key, mixed $value): void
     {
-        @session_start();
+        $this->ensureStarted();
         $this->data[$key] = $value;
-        $_SESSION = $this->data;
-        session_write_close();
+        $_SESSION[$key] = $value;
     }
 
     /**
@@ -60,10 +70,9 @@ class Session
      */
     public function delete(string $key): void
     {
-        @session_start();
+        $this->ensureStarted();
         unset($this->data[$key]);
-        $_SESSION = $this->data;
-        session_write_close();
+        unset($_SESSION[$key]);
     }
 
     /**
@@ -71,6 +80,7 @@ class Session
      */
     public function has(string $key): bool
     {
+        $this->ensureStarted();
         return isset($this->data[$key]);
     }
 
@@ -79,9 +89,8 @@ class Session
      */
     public function all(): array
     {
-        @session_start();
-        session_write_close();
-        return $_SESSION;
+        $this->ensureStarted();
+        return $this->data;
     }
 
     /**
@@ -89,10 +98,10 @@ class Session
      */
     public function destroy(): void
     {
-        @session_start();
+        $this->ensureStarted();
         $_SESSION = $this->data = [];
         session_destroy();
-        session_write_close();
+        $this->started = false;
     }
 
     /**
@@ -100,9 +109,17 @@ class Session
      */
     public function regenerate(bool $deleteOldSession = true): bool
     {
-        @session_start();
-        $result = session_regenerate_id($deleteOldSession);
-        session_write_close();
-        return $result;
+        $this->ensureStarted();
+        return session_regenerate_id($deleteOldSession);
+    }
+
+    /**
+     * Write session data and close at end of request
+     */
+    public function __destruct()
+    {
+        if ($this->started && session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
     }
 }

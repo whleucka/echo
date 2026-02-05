@@ -5,6 +5,7 @@ use Echo\Framework\Database\Drivers\{ MariaDB, MySQL };
 use Echo\Framework\Http\Request;
 use Echo\Framework\Routing\Collector;
 use Echo\Framework\Routing\Router;
+use Echo\Framework\Routing\RouteCache;
 
 // Interface imports
 use Echo\Interface\Database\Connection as ConnectionInterface;
@@ -61,18 +62,42 @@ return [
     // ===================
     Request::class => DI\create()->constructor($_GET, $_POST, $_REQUEST, $_FILES, $_COOKIE, function_exists("getallheaders") ? getallheaders() : []),
     Collector::class => function() {
-        // Get web controllers
+        $cache = new RouteCache();
+
+        // Use cached routes if available
+        if ($cache->isCached()) {
+            $collector = new Collector();
+            // Load routes from cache into collector
+            $cachedRoutes = $cache->getRoutes();
+            $reflection = new \ReflectionClass($collector);
+            $prop = $reflection->getProperty('routes');
+            $prop->setAccessible(true);
+            $prop->setValue($collector, $cachedRoutes);
+            return $collector;
+        }
+
+        // Get web controllers and register routes
         $controller_path = config("paths.controllers");
         $controllers = getClasses($controller_path);
 
-        // Register application routes
         $collector = new Collector();
         foreach ($controllers as $controller) {
             $collector->register($controller);
         }
         return $collector;
     },
-    Router::class => DI\create()->constructor(DI\Get(Collector::class)),
+    Router::class => function($container) {
+        $collector = $container->get(Collector::class);
+        $router = new Router($collector);
+
+        // Set pre-compiled patterns if available
+        $cache = new RouteCache();
+        if ($cache->isCached()) {
+            $router->setCompiledPatterns($cache->getPatterns());
+        }
+
+        return $router;
+    },
     MySQL::class => DI\create()->constructor(
         name: config("db.name"),
         username: config("db.username"),

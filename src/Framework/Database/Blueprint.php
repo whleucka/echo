@@ -7,6 +7,8 @@ class Blueprint
     private array $definitions = [];
     private array $alterDrops = [];
     private array $alterRenames = [];
+    private array $alterIndexes = [];
+    private array $alterDropIndexes = [];
     private bool $alterMode = false;
 
     public function last()
@@ -778,6 +780,27 @@ class Blueprint
     }
 
     /**
+     * Add an index to existing table (for ALTER mode)
+     * @param string $name Index name
+     * @param array $columns Columns to index
+     */
+    public function addIndex(string $name, array $columns)
+    {
+        $this->alterIndexes[] = ['name' => $name, 'columns' => $columns];
+        return $this;
+    }
+
+    /**
+     * Drop an index from table (for ALTER mode)
+     * @param string $name Index name to drop
+     */
+    public function dropIndex(string $name)
+    {
+        $this->alterDropIndexes[] = $name;
+        return $this;
+    }
+
+    /**
      * Build ALTER TABLE statement
      * @param string $table Table name
      */
@@ -798,6 +821,17 @@ class Blueprint
         // Rename columns
         foreach ($this->alterRenames as $rename) {
             $statements[] = "RENAME COLUMN {$rename['from']} TO {$rename['to']}";
+        }
+
+        // Add indexes
+        foreach ($this->alterIndexes as $idx) {
+            $columns = implode(', ', $idx['columns']);
+            $statements[] = "ADD INDEX {$idx['name']} ($columns)";
+        }
+
+        // Drop indexes
+        foreach ($this->alterDropIndexes as $name) {
+            $statements[] = "DROP INDEX $name";
         }
 
         if (empty($statements)) {

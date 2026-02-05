@@ -19,10 +19,14 @@ final class Connection implements DatabaseConnection
   private Driver $driver;
   private PDOStatement $stmt;
   private array $debug = [];
+  private bool $debugEnabled;
+  private bool $profilerAvailable;
 
   public function __construct(Driver $driver)
   {
     $this->driver = $driver;
+    $this->debugEnabled = config('app.debug') ?? false;
+    $this->profilerAvailable = class_exists('Echo\Framework\Debug\Profiler');
     $this->connect();
   }
 
@@ -97,8 +101,8 @@ final class Connection implements DatabaseConnection
     $stmt->execute($params);
     $this->stmt = $stmt;
 
-    // Add profiling hook
-    if (config('app.debug') && class_exists('Echo\Framework\Debug\Profiler')) {
+    // Add profiling hook (using cached flags for performance)
+    if ($this->debugEnabled && $this->profilerAvailable) {
       \Echo\Framework\Debug\Profiler::getInstance()->queries()?->log($sql, $params, $startTime);
     }
 
