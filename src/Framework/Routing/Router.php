@@ -62,12 +62,22 @@ class Router implements RouterInterface
             if (isset($this->compiledPatterns[$route])) {
                 $pattern = $this->compiledPatterns[$route];
             } else {
-                // Only compile if route has parameters
-                if (!str_contains($route, '{')) {
+                // Check if route has parameters or regex patterns
+                $hasParams = str_contains($route, '{');
+                $hasRegex = str_contains($route, '[') || str_contains($route, '(');
+                
+                if (!$hasParams && !$hasRegex) {
                     continue;
                 }
-                $compiled = preg_replace('/\{(\w+)\}/', '([A-Za-z0-9_.-]+)', $route);
-                $pattern = "#^$compiled$#";
+                
+                if ($hasParams) {
+                    // Replace {param} placeholders with regex
+                    $compiled = preg_replace('/\{(\w+)\}/', '([A-Za-z0-9_.-]+)', $route);
+                    $pattern = "#^$compiled$#";
+                } else {
+                    // Route already contains regex pattern, just wrap it
+                    $pattern = "#^$route$#";
+                }
             }
 
             if (preg_match($pattern, $uri, $matches)) {

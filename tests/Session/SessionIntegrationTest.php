@@ -117,18 +117,14 @@ class SessionIntegrationTest extends TestCase
     {
         $this->session->set('persist', 'value');
 
-        // Get original session ID
-        @session_start();
+        // Get original session ID (session is already started by set())
         $originalId = session_id();
-        session_write_close();
 
         // Regenerate
         $this->session->regenerate(true);
 
         // Get new session ID
-        @session_start();
         $newId = session_id();
-        session_write_close();
 
         $this->assertNotEquals($originalId, $newId);
         // Data should persist
