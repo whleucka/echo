@@ -2,12 +2,6 @@
   {% include "components/flash.html.twig" %}
 </div>
 <div id="table" class="card shad border-0">
-  <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-    <span>
-      <i class="bi bi-{{ module.icon|default('table') }} me-2"></i>{{ module.title|default('Module') }}
-    </span>
-    <span class="badge bg-secondary">{{ pagination.total_rows|default(data.rows|length) }} record{{ pagination.total_rows|default(data.rows|length) != 1 ? 's' : '' }}</span>
-  </div>
   <div class="card-body p-2">
   <div id="table-actions" class="p-2">
     <form>

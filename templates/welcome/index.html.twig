@@ -1,5 +1,280 @@
 {% extends "layout/base.html.twig" %}
 
+{% block title %}Echo - A Modern PHP Framework{% endblock %}
+
+{% block head_css %}
+<style>
+  :root {
+    --echo-primary: #6366f1;
+    --echo-primary-dark: #4f46e5;
+    --echo-secondary: #0ea5e9;
+    --echo-dark: #0f172a;
+    --echo-light: #f8fafc;
+  }
+
+  body {
+    background: linear-gradient(135deg, var(--echo-dark) 0%, #1e293b 100%);
+    min-height: 100vh;
+  }
+
+  .hero {
+    padding: 6rem 0;
+    text-align: center;
+    color: var(--echo-light);
+  }
+
+  .hero-logo {
+    font-size: 5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--echo-primary) 0%, var(--echo-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+    letter-spacing: -2px;
+  }
+
+  .hero-tagline {
+    font-size: 1.5rem;
+    color: #94a3b8;
+    margin-bottom: 2rem;
+    font-weight: 300;
+  }
+
+  .hero-version {
+    display: inline-block;
+    background: rgba(99, 102, 241, 0.2);
+    color: var(--echo-primary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 2rem;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin: 4rem 0;
+  }
+
+  .feature-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    padding: 2rem;
+    transition: all 0.3s ease;
+  }
+
+  .feature-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(99, 102, 241, 0.3);
+    transform: translateY(-4px);
+  }
+
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--echo-primary) 0%, var(--echo-secondary) 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+  }
+
+  .feature-title {
+    color: var(--echo-light);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .feature-desc {
+    color: #94a3b8;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .code-block {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    padding: 2rem;
+    margin: 3rem 0;
+    overflow-x: auto;
+  }
+
+  .code-block pre {
+    margin: 0;
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  .code-keyword { color: #c084fc; }
+  .code-attr { color: #fbbf24; }
+  .code-string { color: #4ade80; }
+  .code-comment { color: #64748b; }
+  .code-func { color: #60a5fa; }
+
+  .btn-echo {
+    background: linear-gradient(135deg, var(--echo-primary) 0%, var(--echo-primary-dark) 100%);
+    color: white;
+    border: none;
+    padding: 0.875rem 2rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-echo:hover {
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--echo-light);
+  }
+
+  .btn-outline:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    box-shadow: none;
+  }
+
+  .links {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 3rem 0;
+    color: #64748b;
+    font-size: 0.875rem;
+  }
+
+  .footer a {
+    color: #94a3b8;
+    text-decoration: none;
+  }
+
+  .footer a:hover {
+    color: var(--echo-primary);
+  }
+
+  .tech-stack {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .tech-item {
+    color: #64748b;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .tech-item i {
+    font-size: 1.25rem;
+  }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+{% endblock %}
+
 {% block content %}
-    <p>Hello, world!</p>
+<div class="container">
+  <section class="hero">
+    <span class="hero-version">v1.0</span>
+    <h1 class="hero-logo">Echo</h1>
+    <p class="hero-tagline">A blazing fast PHP framework built for the modern web</p>
+    <div class="links">
+      <a href="/admin" class="btn-echo">
+        <i class="bi bi-speedometer2"></i>
+        Admin Panel
+      </a>
+      <a href="https://github.com/whleucka/echo" class="btn-echo btn-outline" target="_blank">
+        <i class="bi bi-github"></i>
+        GitHub
+      </a>
+    </div>
+  </section>
+
+  <section class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+      <h3 class="feature-title">Blazing Fast</h3>
+      <p class="feature-desc">Optimized for performance with minimal overhead. Route caching, lazy loading, and efficient database queries out of the box.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="bi bi-code-slash"></i></div>
+      <h3 class="feature-title">Modern PHP 8.2+</h3>
+      <p class="feature-desc">Built with PHP 8 attributes for routing, constructor promotion, named arguments, and all the latest language features.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="bi bi-box-seam"></i></div>
+      <h3 class="feature-title">Simple & Clean</h3>
+      <p class="feature-desc">No magic, no complexity. Intuitive APIs that do what you expect. Easy to learn, easy to master.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="bi bi-plug"></i></div>
+      <h3 class="feature-title">Dependency Injection</h3>
+      <p class="feature-desc">PHP-DI container for clean, testable code. Automatic resolution of dependencies in controllers and services.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="bi bi-layout-text-window"></i></div>
+      <h3 class="feature-title">Twig Templates</h3>
+      <p class="feature-desc">Beautiful, secure templating with Twig. Inheritance, includes, macros, and automatic escaping.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="bi bi-arrow-repeat"></i></div>
+      <h3 class="feature-title">HTMX Ready</h3>
+      <p class="feature-desc">First-class support for HTMX. Build dynamic, modern UIs without writing JavaScript.</p>
+    </div>
+  </section>
+
+  <section class="code-block">
+    <pre><span class="code-comment">// Define routes with PHP 8 attributes</span>
+<span class="code-keyword">class</span> <span class="code-func">UserController</span> <span class="code-keyword">extends</span> Controller
+{
+    <span class="code-attr">#[Get("/users/{id}", "user.show")]</span>
+    <span class="code-keyword">public function</span> <span class="code-func">show</span>(<span class="code-keyword">int</span> $id): <span class="code-keyword">string</span>
+    {
+        $user = User::<span class="code-func">find</span>($id);
+        <span class="code-keyword">return</span> $this-><span class="code-func">render</span>(<span class="code-string">'user/show.html.twig'</span>, [<span class="code-string">'user'</span> => $user]);
+    }
+}</pre>
+  </section>
+
+  <div class="tech-stack">
+    <span class="tech-item"><i class="bi bi-filetype-php"></i> PHP 8.2+</span>
+    <span class="tech-item"><i class="bi bi-database"></i> MySQL / MariaDB</span>
+    <span class="tech-item"><i class="bi bi-box"></i> Docker</span>
+    <span class="tech-item"><i class="bi bi-file-code"></i> Twig</span>
+    <span class="tech-item"><i class="bi bi-lightning"></i> HTMX</span>
+  </div>
+
+  <footer class="footer">
+    <p>Built with care by <a href="https://github.com/whleucka">whleucka</a></p>
+  </footer>
+</div>
 {% endblock %}
