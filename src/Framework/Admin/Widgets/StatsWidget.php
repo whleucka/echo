@@ -21,9 +21,7 @@ class StatsWidget extends Widget
 
     public function getData(): array
     {
-        $usersCount = db()->execute(
-            "SELECT COUNT(*) FROM users"
-        )->fetchColumn();
+        $usersCount = $this->dashboardService->getUsersCount();
 
         $activeUsers = $this->dashboardService->getActiveUsersCount();
 

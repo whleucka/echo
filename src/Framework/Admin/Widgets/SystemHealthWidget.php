@@ -2,8 +2,8 @@
 
 namespace Echo\Framework\Admin\Widgets;
 
+use App\Services\Admin\SystemHealthService;
 use Echo\Framework\Admin\Widget;
-use Echo\Framework\Redis\RedisManager;
 
 class SystemHealthWidget extends Widget
 {
@@ -16,92 +16,78 @@ class SystemHealthWidget extends Widget
     protected int $cacheTtl = 60;
     protected int $priority = 30;
 
+    public function __construct(private SystemHealthService $healthService)
+    {
+    }
+
     public function getData(): array
     {
+        $results = $this->healthService->runAllChecks();
         $checks = [];
 
-        // PHP Version check
-        $checks['php'] = [
-            'label' => 'PHP Version',
-            'value' => PHP_VERSION,
-            'status' => version_compare(PHP_VERSION, '8.2.0', '>=') ? 'ok' : 'error',
-        ];
-
-        // Memory check
-        $memoryUsage = memory_get_usage(true);
-        $memoryLimit = $this->parseBytes(ini_get('memory_limit'));
-        $memoryPercent = $memoryLimit > 0 ? round(($memoryUsage / $memoryLimit) * 100, 1) : 0;
-        $checks['memory'] = [
-            'label' => 'Memory',
-            'value' => $this->formatBytes($memoryUsage) . ' / ' . ini_get('memory_limit'),
-            'status' => $memoryPercent < 70 ? 'ok' : ($memoryPercent < 90 ? 'warning' : 'error'),
-            'percent' => $memoryPercent,
-        ];
-
-        // Disk check
-        $diskFree = disk_free_space('/');
-        $diskTotal = disk_total_space('/');
-        $diskPercent = $diskTotal > 0 ? round((($diskTotal - $diskFree) / $diskTotal) * 100, 1) : 0;
-        $checks['disk'] = [
-            'label' => 'Disk Space',
-            'value' => $this->formatBytes($diskFree) . ' free',
-            'status' => $diskPercent < 80 ? 'ok' : ($diskPercent < 95 ? 'warning' : 'error'),
-            'percent' => $diskPercent,
-        ];
-
-        // Database check
-        try {
-            $dbCheck = db()->execute("SELECT 1")->fetchColumn();
-            $checks['database'] = [
-                'label' => 'Database',
-                'value' => 'Connected',
-                'status' => $dbCheck ? 'ok' : 'error',
-            ];
-        } catch (\Exception $e) {
-            $checks['database'] = [
-                'label' => 'Database',
-                'value' => 'Error',
-                'status' => 'error',
+        // PHP Version
+        if (isset($results['php_version'])) {
+            $checks['php'] = [
+                'label' => 'PHP Version',
+                'value' => $results['php_version']['current'] ?? PHP_VERSION,
+                'status' => $results['php_version']['status'],
             ];
         }
 
-        // Redis check
-        try {
-            $redis = RedisManager::getInstance();
-            if ($redis->isAvailable()) {
-                $checks['redis'] = [
-                    'label' => 'Redis',
-                    'value' => 'Connected',
-                    'status' => 'ok',
-                ];
-            } else {
-                $checks['redis'] = [
-                    'label' => 'Redis',
-                    'value' => 'Unavailable',
-                    'status' => 'warning',
-                ];
-            }
-        } catch (\Throwable $e) {
+        // Memory
+        if (isset($results['memory'])) {
+            $checks['memory'] = [
+                'label' => 'Memory',
+                'value' => $results['memory']['message'] ?? '',
+                'status' => $results['memory']['status'],
+                'percent' => $results['memory']['percent'] ?? 0,
+            ];
+        }
+
+        // Disk
+        if (isset($results['disk'])) {
+            $checks['disk'] = [
+                'label' => 'Disk Space',
+                'value' => isset($results['disk']['free'])
+                    ? $this->formatBytes($results['disk']['free']) . ' free'
+                    : ($results['disk']['message'] ?? ''),
+                'status' => $results['disk']['status'],
+                'percent' => $results['disk']['percent'] ?? 0,
+            ];
+        }
+
+        // Database
+        if (isset($results['database'])) {
+            $checks['database'] = [
+                'label' => 'Database',
+                'value' => $results['database']['status'] === 'ok' ? 'Connected' : 'Error',
+                'status' => $results['database']['status'],
+            ];
+        }
+
+        // Redis
+        if (isset($results['redis'])) {
             $checks['redis'] = [
                 'label' => 'Redis',
-                'value' => 'Error',
-                'status' => 'warning',
+                'value' => match ($results['redis']['status']) {
+                    'ok' => 'Connected',
+                    'warning' => 'Unavailable',
+                    default => 'Error',
+                },
+                'status' => $results['redis']['status'],
             ];
         }
 
-        // Extensions check
-        $requiredExtensions = ['pdo', 'pdo_mysql', 'json', 'mbstring', 'openssl'];
-        $missingExtensions = [];
-        foreach ($requiredExtensions as $ext) {
-            if (!extension_loaded($ext)) {
-                $missingExtensions[] = $ext;
-            }
+        // Extensions
+        if (isset($results['extensions'])) {
+            $checks['extensions'] = [
+                'label' => 'PHP Extensions',
+                'value' => $results['extensions']['status'] === 'ok'
+                    ? 'All loaded'
+                    : ($results['extensions']['message'] ?? 'Missing extensions'),
+                'status' => $results['extensions']['status'],
+            ];
         }
-        $checks['extensions'] = [
-            'label' => 'PHP Extensions',
-            'value' => empty($missingExtensions) ? 'All loaded' : 'Missing: ' . implode(', ', $missingExtensions),
-            'status' => empty($missingExtensions) ? 'ok' : 'error',
-        ];
 
         // Overall status
         $overallStatus = 'ok';
@@ -130,23 +116,5 @@ class SystemHealthWidget extends Widget
         $bytes /= pow(1024, $pow);
 
         return round($bytes, $precision) . ' ' . $units[$pow];
-    }
-
-    private function parseBytes(string $value): int
-    {
-        $value = trim($value);
-        $last = strtolower($value[strlen($value) - 1]);
-        $value = (int)$value;
-
-        switch ($last) {
-            case 'g':
-                $value *= 1024;
-            case 'm':
-                $value *= 1024;
-            case 'k':
-                $value *= 1024;
-        }
-
-        return $value;
     }
 }

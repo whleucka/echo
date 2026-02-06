@@ -32,10 +32,9 @@ class AuditStatsCommand extends Command
                 "SELECT auditable_type, COUNT(*) as count FROM audits GROUP BY auditable_type ORDER BY count DESC LIMIT 10"
             );
             $output->writeln("");
-            $output->writeln("  By Model (top 10):");
+            $output->writeln("  By Table (top 10):");
             foreach ($byModel as $row) {
-                $modelName = $this->getShortModelName($row['auditable_type']);
-                $output->writeln(sprintf("    %-20s %s", $modelName . ':', number_format($row['count'])));
+                $output->writeln(sprintf("    %-20s %s", $row['auditable_type'] . ':', number_format($row['count'])));
             }
 
             $today = db()->execute(
@@ -58,11 +57,5 @@ class AuditStatsCommand extends Command
         return Command::SUCCESS;
     }
 
-    private function getShortModelName(string $className): string
-    {
-        if (str_contains($className, '\\')) {
-            return substr(strrchr($className, '\\'), 1);
-        }
-        return $className;
-    }
+
 }

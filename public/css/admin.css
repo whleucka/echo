@@ -258,11 +258,17 @@ nav#nav-sidebar header h4 {
   justify-content: center;
 }
 #dashboard #widget-activity-heatmap .table {
-  max-width: 580px;
+  font-size: 0.5rem;
+  max-width: 800px;
+}
+#dashboard #widget-activity-heatmap td {
+  vertical-align: middle;
 }
 #dashboard #widget-activity-heatmap td.cell {
-  height: 28px;
-  width: 28px;
+  margin: 0;
+  padding: 0;
+  height: 22px;
+  width: 22px;
 }
 #dashboard .chart-container {
   position: relative;
@@ -353,22 +359,15 @@ nav#nav-sidebar header h4 {
 }
 
 @media (min-width: 992px) {
-  #dashboard #widget-activity-heatmap .table {
-    max-width: 800px;
-  }
-  #dashboard #widget-activity-heatmap td.cell {
-    width: 32px;
-    height: 32px;
-  }
 }
 
 @media (min-width: 1200px) {
   #dashboard #widget-activity-heatmap .table {
-    max-width: 1000px;
+    font-size: 0.7rem;
   }
   #dashboard #widget-activity-heatmap td.cell {
-    width: 42px;
-    height: 42px;
+    height: 32px;
+    width: 32px;
   }
 }
 

@@ -34,7 +34,7 @@ trait Auditable
 
             if ($newModel) {
                 AuditLogger::logCreated(
-                    $class,
+                    $model->table_name,
                     $id,
                     $newModel->getAttributes()
                 );
@@ -70,7 +70,7 @@ trait Auditable
             $this->loadAttributesForAudit($this->id);
 
             AuditLogger::logUpdated(
-                get_class($this),
+                $this->table_name,
                 $this->id,
                 $oldAttributes,
                 $this->getAttributes()
@@ -102,7 +102,7 @@ trait Auditable
             $this->loadAttributesForAudit($this->id);
 
             AuditLogger::logUpdated(
-                get_class($this),
+                $this->table_name,
                 $this->id,
                 $oldAttributes,
                 $this->getAttributes()
@@ -129,7 +129,7 @@ trait Auditable
 
         if ($result) {
             AuditLogger::logDeleted(
-                get_class($this),
+                $this->table_name,
                 $this->id,
                 $oldAttributes
             );

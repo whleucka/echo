@@ -44,15 +44,11 @@ class Audit extends Model
     }
 
     /**
-     * Get the short class name of the auditable type
+     * Get the auditable type (table name)
      */
     public function getAuditableShortType(): string
     {
-        $type = $this->auditable_type;
-        if (str_contains($type, '\\')) {
-            return substr(strrchr($type, '\\'), 1);
-        }
-        return $type;
+        return $this->auditable_type ?? '';
     }
 
     /**

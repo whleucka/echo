@@ -60,7 +60,6 @@ class AuditListCommand extends Command
         }
 
         foreach ($audits as $audit) {
-            $modelType = $this->getShortModelName($audit['auditable_type']);
             $user = $audit['user_email'] ?? 'System';
             $date = date('Y-m-d H:i:s', strtotime($audit['created_at']));
 
@@ -68,7 +67,7 @@ class AuditListCommand extends Command
                 "  #%-6d %-10s %-20s %-30s %s",
                 $audit['id'],
                 $this->formatEvent($audit['event']),
-                $modelType . ' #' . $audit['auditable_id'],
+                $audit['auditable_type'] . ' #' . $audit['auditable_id'],
                 $user,
                 $date
             ));
@@ -98,11 +97,5 @@ class AuditListCommand extends Command
         };
     }
 
-    private function getShortModelName(string $className): string
-    {
-        if (str_contains($className, '\\')) {
-            return substr(strrchr($className, '\\'), 1);
-        }
-        return $className;
-    }
+
 }

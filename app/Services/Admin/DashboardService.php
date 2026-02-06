@@ -498,11 +498,7 @@ class DashboardService
 
         $modelCounts = [];
         foreach ($byModel as $row) {
-            $type = $row['auditable_type'];
-            if (str_contains($type, '\\')) {
-                $type = substr(strrchr($type, '\\'), 1);
-            }
-            $modelCounts[$type] = (int)$row['count'];
+            $modelCounts[$row['auditable_type']] = (int)$row['count'];
         }
 
         // Get recent activity (last 5)
@@ -522,14 +518,10 @@ class DashboardService
 
         $recent = [];
         foreach ($recentAudits as $audit) {
-            $type = $audit['auditable_type'];
-            if (str_contains($type, '\\')) {
-                $type = substr(strrchr($type, '\\'), 1);
-            }
             $recent[] = [
                 'id' => $audit['id'],
                 'event' => $audit['event'],
-                'type' => $type,
+                'type' => $audit['auditable_type'],
                 'record_id' => $audit['auditable_id'],
                 'user' => $audit['user_name'],
                 'time_ago' => $this->timeAgo($audit['created_at']),

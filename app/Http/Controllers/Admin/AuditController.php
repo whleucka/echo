@@ -101,17 +101,11 @@ class AuditController extends AdminController
     }
 
     /**
-     * Format the auditable type to show only class name
+     * Format the auditable type (table name)
      */
     private function formatType(?string $type): string
     {
-        if (!$type) {
-            return '';
-        }
-        if (str_contains($type, '\\')) {
-            return substr(strrchr($type, '\\'), 1);
-        }
-        return $type;
+        return $type ?? '';
     }
 
     /**
