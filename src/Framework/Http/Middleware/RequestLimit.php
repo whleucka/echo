@@ -49,7 +49,7 @@ class RequestLimit implements Middleware
         $limiter = $this->getLimiter();
 
         // Create a rate limit key based on IP
-        $key = "request_limit:" . md5($request->getClientIp());
+        $key = "request_limit:" . md5($request->getClientIp() ?? 'unknown');
 
         // Attempt the request
         if (!$limiter->attempt($key, $max_requests, $decay_seconds)) {
