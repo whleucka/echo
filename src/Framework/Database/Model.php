@@ -16,7 +16,7 @@ class Model implements DatabaseModel
     private array $or_where = [];
     private array $order_by = [];
     private array $params = [];
-    private array $attributes = [];
+    protected array $attributes = [];
     private array $relations = [];
     private array $eagerLoad = [];
     private array $valid_operators = [
@@ -31,7 +31,7 @@ class Model implements DatabaseModel
         "like",
     ];
 
-    public function __construct(private string $table_name, private ?string $id = null)
+    public function __construct(protected string $table_name, protected ?string $id = null)
     {
         // Initialize the query builder
         $this->qb = new QueryBuilder();
