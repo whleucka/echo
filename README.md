@@ -63,7 +63,7 @@ docker-compose exec -it php ./bin/console migrate:run
 
 ### 6. Access the Application
 
-Open your browser to `http://localhost:8080`
+Open your browser to `http://localhost`
 
 ## Docker Commands
 
