@@ -16,5 +16,6 @@ class Kernel extends ConsoleKernel
         'audit' => \Echo\Framework\Console\Commands\Audit::class,
         'session' => \Echo\Framework\Console\Commands\Session::class,
         'storage' => \Echo\Framework\Console\Commands\Storage::class,
+        'db' => \Echo\Framework\Console\Commands\Db::class,
     ];
 }
