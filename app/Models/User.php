@@ -21,8 +21,7 @@ class User extends Model
 
     public function avatar()
     {
-        $fi = new FileInfo($this->avatar);
-        return $fi ? $fi->path : null;
+        return $this->belongsTo(FileInfo::class, "avatar");
     }
 
     public function gravatar(int $size = 80, string $default = "mp", string $rating = "g")

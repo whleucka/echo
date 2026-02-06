@@ -68,7 +68,7 @@ class ApiToken extends Model
     /**
      * Get user that owns this token
      */
-    public function user(): ?Model
+    public function user(): ?User
     {
         return $this->belongsTo(User::class);
     }

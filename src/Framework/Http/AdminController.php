@@ -1071,7 +1071,7 @@ abstract class AdminController extends Controller
                 "name" => $this->user->first_name . " " . $this->user->surname,
                 "email" => $this->user->email,
                 "avatar" => $this->user->avatar
-                    ? $this->user->avatar()
+                    ? $this->user->avatar()->path
                     : $this->user->gravatar(38)
             ],
             "module" => [

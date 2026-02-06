@@ -13,4 +13,14 @@ class UserPermission extends Model
     {
         parent::__construct('user_permissions', $id);
     }
+
+    public function user(): ?User
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function module(): ?Module
+    {
+        return $this->belongsTo(Module::class);
+    }
 }
