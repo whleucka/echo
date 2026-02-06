@@ -6,6 +6,24 @@ This file serves as a high-level overview and primary entry point for agents lik
 
 Echo is a custom PHP 8.2+ MVC framework built for speed and simplicity. It leverages PHP 8 attributes for routing, PHP-DI for dependency injection, and Twig for templating. The project runs in a Dockerized environment.
 
+## Console Commands
+
+Console commands use space-separated syntax, **not** Laravel-style colons:
+
+```bash
+# Correct
+./bin/console migrate fresh
+./bin/console route cache
+
+# Incorrect (Laravel-style)
+php echo migrate:fresh
+php artisan route:cache
+```
+
+## Dashboard Widgets
+
+Dashboard widgets are **not** defined inline. They are registered in the `WidgetServiceProvider`. To add or modify widgets, update `app/Providers/WidgetServiceProvider.php`.
+
 ## Comprehensive Documentation
 
 For detailed information on various aspects of the Echo PHP framework, please refer to the following documents in the `docs/` directory:
