@@ -11,7 +11,7 @@ use Echo\Framework\Session\Flash;
 #[Group(path_prefix: '/admin')]
 class SignInController extends Controller
 {
-    public function __construct(private SignInService $provider)
+    public function __construct(private SignInService $service)
     {
     }
 
@@ -31,7 +31,7 @@ class SignInController extends Controller
             "password" => ["required"],
         ]);
         if ($valid) {
-            $success = $this->provider->signIn($valid->email, $valid->password);
+            $success = $this->service->signIn($valid->email, $valid->password);
             if ($success) {
                 $path = config("security.authenticated_route");
                 Flash::add("success", "Welcome, " . user()->fullName() . ". You are now signed in");

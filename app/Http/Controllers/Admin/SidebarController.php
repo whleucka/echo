@@ -10,17 +10,17 @@ use Echo\Framework\Routing\Route\Get;
 #[Group(path_prefix: "/admin", middleware: ["auth"])]
 class SidebarController extends Controller
 {
-    public function __construct(private SidebarService $provider)
+    public function __construct(private SidebarService $service)
     {
     }
 
     #[Get("/sidebar", "admin.sidebar.load")]
     public function load(): string
     {
-        $links = $this->provider->getLinks([], [], user());
+        $links = $this->service->getLinks([], [], user());
         // Non-admin users must be granted permission
         return $this->render("admin/sidebar.html.twig", [
-            "hide" => $this->provider->getState(),
+            "hide" => $this->service->getState(),
             "links" => $links
         ]);
     }
@@ -28,7 +28,7 @@ class SidebarController extends Controller
     #[Get("/sidebar/toggle", "admin.sidebar.toggle")]
     public function toggle(): string
     {
-        $this->provider->toggleState();
+        $this->service->toggleState();
         return $this->load();
     }
 }

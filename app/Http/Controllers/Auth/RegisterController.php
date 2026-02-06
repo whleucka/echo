@@ -11,7 +11,7 @@ use Echo\Framework\Session\Flash;
 #[Group(path_prefix: '/admin')]
 class RegisterController extends Controller
 {
-    public function __construct(private RegisterService $provider)
+    public function __construct(private RegisterService $service)
     {
         if (!config("security.register_enabled")) {
             $this->permissionDenied();
@@ -38,7 +38,7 @@ class RegisterController extends Controller
             "password_match" => ["required", "match:password"],
         ]);
         if ($valid) {
-            $success = $this->provider->register($valid->first_name, $valid->surname, $valid->email, $valid->password);
+            $success = $this->service->register($valid->first_name, $valid->surname, $valid->email, $valid->password);
             if ($success) {
                 $path = config("security.authenticated_route");
                 header("HX-Redirect: $path");
