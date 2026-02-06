@@ -1,0 +1,63 @@
+<div class="col-12 col-lg-{{ widget.width }} mb-4" id="widget-{{ widget.id }}"
+  {% if widget.refresh_interval > 0 %}
+  hx-get="/admin/dashboard/widgets/{{ widget.id }}"
+  hx-trigger="every {{ widget.refresh_interval }}s"
+  hx-swap="outerHTML"
+  {% endif %}>
+  <div class="card shad border-0 h-100">
+    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-{{ widget.icon }} me-2"></i>{{ widget.title }}</span>
+      <button class="btn btn-sm btn-outline-secondary"
+        hx-get="/admin/dashboard/widgets/{{ widget.id }}"
+        hx-swap="outerHTML"
+        hx-target="#widget-{{ widget.id }}">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
+    <div class="card-body">
+      <div class="row g-3 mb-3">
+        <div class="col-3 text-center">
+          <div class="small text-muted">Total</div>
+          <strong class="fs-4">{{ data.total }}</strong>
+        </div>
+        <div class="col-3 text-center">
+          <div class="small text-muted">Active</div>
+          <strong class="fs-4 text-success">{{ data.active }}</strong>
+        </div>
+        <div class="col-3 text-center">
+          <div class="small text-muted">New (7d)</div>
+          <strong class="fs-4 text-primary">{{ data.new_week }}</strong>
+        </div>
+        <div class="col-3 text-center">
+          <div class="small text-muted">Today</div>
+          <strong class="fs-4 text-info">{{ data.new_today }}</strong>
+        </div>
+      </div>
+
+      {% if data.recent|length > 0 %}
+      <div class="table-responsive" style="max-height: 180px;">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th class="text-end">Joined</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in data.recent %}
+            <tr>
+              <td class="text-truncate" style="max-width: 120px;">{{ user.name ?: 'N/A' }}</td>
+              <td class="text-truncate" style="max-width: 150px;">{{ user.email }}</td>
+              <td class="text-end text-muted small">{{ user.time_ago }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted text-center mb-0">No users found</p>
+      {% endif %}
+    </div>
+  </div>
+</div>

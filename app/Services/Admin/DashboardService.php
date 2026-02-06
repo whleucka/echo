@@ -576,6 +576,55 @@ class DashboardService
     }
 
     /**
+     * Get users widget data (totals, recent signups, active now)
+     */
+    public function getUsersWidgetData(): array
+    {
+        $totalUsers = $this->getUsersCount();
+        $activeUsers = $this->getActiveUsersCount();
+
+        // New users in the last 7 days
+        $sevenDaysAgo = $this->now()->modify('-7 days')->format('Y-m-d H:i:s');
+        $newUsersWeek = db()->execute(
+            "SELECT COUNT(*) FROM users WHERE created_at >= ?",
+            [$sevenDaysAgo]
+        )->fetchColumn();
+
+        // New users today
+        $today = $this->now()->format('Y-m-d');
+        $newUsersToday = db()->execute(
+            "SELECT COUNT(*) FROM users WHERE DATE(created_at) = ?",
+            [$today]
+        )->fetchColumn();
+
+        // Recent users (last 5 signups)
+        $recentUsers = db()->fetchAll(
+            "SELECT id, first_name, surname, email, created_at
+            FROM users
+            ORDER BY created_at DESC
+            LIMIT 5"
+        );
+
+        $recent = [];
+        foreach ($recentUsers as $user) {
+            $recent[] = [
+                'id' => $user['id'],
+                'name' => trim(($user['first_name'] ?? '') . ' ' . ($user['surname'] ?? '')),
+                'email' => $user['email'],
+                'time_ago' => $this->timeAgo($user['created_at']),
+            ];
+        }
+
+        return [
+            'total' => (int)$totalUsers,
+            'active' => (int)$activeUsers,
+            'new_week' => (int)$newUsersWeek,
+            'new_today' => (int)$newUsersToday,
+            'recent' => $recent,
+        ];
+    }
+
+    /**
      * Get user activity heatmap (7 days x 24 hours)
      */
     public function getUserActivityHeatmap(): array
