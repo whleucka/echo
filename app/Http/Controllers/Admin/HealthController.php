@@ -7,7 +7,7 @@ use Echo\Framework\Http\AdminController;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;
 
-#[Group(path_prefix: "/health", name_prefix: "health")]
+#[Group(path_prefix: "/health", name_prefix: "health", middleware: ["max_requests" => 0])]
 class HealthController extends AdminController
 {
     public function __construct(private SystemHealthService $service)
@@ -33,7 +33,7 @@ class HealthController extends AdminController
     /**
      * Run a specific health check
      */
-    #[Get("/check/{name}", "check", ["max_requests" => 0])]
+    #[Get("/check/{name}", "check")]
     public function check(string $name): string
     {
         $result = $this->service->getCheck($name);
@@ -55,21 +55,9 @@ class HealthController extends AdminController
     }
 
     /**
-     * Get health status as JSON (for monitoring tools)
-     */
-    #[Get("/api", "api", ["max_requests" => 0])]
-    public function api(): string
-    {
-        $data = $this->service->getStatusJson();
-
-        header('Content-Type: application/json');
-        return json_encode($data, JSON_PRETTY_PRINT);
-    }
-
-    /**
      * Refresh all health checks
      */
-    #[Get("/refresh", "refresh", ["max_requests" => 0])]
+    #[Get("/refresh", "refresh")]
     public function refresh(): string
     {
         $checks = $this->service->runAllChecks();

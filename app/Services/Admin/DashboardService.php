@@ -43,7 +43,7 @@ class DashboardService
         $threshold = date('Y-m-d H:i:s', strtotime('-30 minutes', strtotime($now)));
         return db()->execute(
             "SELECT COUNT(DISTINCT user_id) AS active_users
-            FROM sessions
+            FROM activity
             WHERE created_at >= ?",
             [$threshold]
         )->fetchColumn();
@@ -69,7 +69,7 @@ class DashboardService
     public function getTotalRequests(): int
     {
         return db()->execute(
-            "SELECT count(*) FROM sessions"
+            "SELECT count(*) FROM activity"
         )->fetchColumn();
     }
 
@@ -79,7 +79,7 @@ class DashboardService
         $todayStart = $now->setTime(0, 0, 0)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
         $todayEnd = $now->setTime(23, 59, 59)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
         return db()->execute(
-            "SELECT count(*) FROM sessions WHERE created_at BETWEEN ? AND ?",
+            "SELECT count(*) FROM activity WHERE created_at BETWEEN ? AND ?",
             [$todayStart, $todayEnd]
         )->fetchColumn();
     }
@@ -100,7 +100,7 @@ class DashboardService
             "SELECT
                 HOUR(CONVERT_TZ(created_at, '+00:00', ?)) AS hour,
                 COUNT(*) AS total
-            FROM sessions
+            FROM activity
             WHERE created_at BETWEEN ? AND ?
             GROUP BY hour
             ORDER BY hour",
@@ -181,7 +181,7 @@ class DashboardService
                 MIN(DAYNAME(CONVERT_TZ(created_at, '+00:00', ?))) AS day_name,
                 DATE(CONVERT_TZ(created_at, '+00:00', ?)) AS day_date,
                 COUNT(*) AS total
-            FROM sessions
+            FROM activity
             WHERE YEARWEEK(CONVERT_TZ(created_at, '+00:00', ?), 1) = YEARWEEK(?, 1)
             GROUP BY day_date
             ORDER BY day_date",
@@ -256,7 +256,7 @@ class DashboardService
             "SELECT
                 DAY(CONVERT_TZ(created_at, '+00:00', ?)) AS day_number,
                 COUNT(*) AS total
-            FROM sessions
+            FROM activity
             WHERE YEAR(CONVERT_TZ(created_at, '+00:00', ?)) = ? AND
                 MONTH(CONVERT_TZ(created_at, '+00:00', ?)) = ?
             GROUP BY day_number
@@ -329,7 +329,7 @@ class DashboardService
 
         $data = db()->fetchAll(
             "SELECT DATE_FORMAT(CONVERT_TZ(created_at, '+00:00', ?), '%Y-%m') AS month, COUNT(*) AS total
-            FROM sessions
+            FROM activity
             WHERE CONVERT_TZ(created_at, '+00:00', ?) >= ?
             GROUP BY month
             ORDER BY month",
@@ -630,7 +630,7 @@ class DashboardService
                 DAYOFWEEK(CONVERT_TZ(created_at, '+00:00', ?)) as dow,
                 HOUR(CONVERT_TZ(created_at, '+00:00', ?)) as hour,
                 COUNT(*) as count
-            FROM sessions
+            FROM activity
             WHERE created_at >= ?
             GROUP BY dow, hour",
             [$tzOffset, $tzOffset, $weekAgo]

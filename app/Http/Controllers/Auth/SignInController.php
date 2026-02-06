@@ -23,7 +23,7 @@ class SignInController extends Controller
         ]);
     }
 
-    #[Post("/sign-in", "auth.sign-in.post", ["max_requests" => 30])]
+    #[Post("/sign-in", "auth.sign-in.post", ["max_requests" => 50])]
     public function post(): string
     {
         $valid = $this->validate([
