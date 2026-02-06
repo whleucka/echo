@@ -6,6 +6,17 @@ This document tracks the third phase of improvement work for the Echo PHP framew
 **Updated:** 2026-02-05
 **Previous Roadmaps:** v1 (21/21 complete), v2 (22/22 complete)
 
+## Recent Completions
+
+### Redis Integration (2026-02-05)
+- Added Redis service to Docker stack
+- Implemented `RedisManager` for connection pooling
+- Created `CacheInterface` with Redis and File implementations
+- Added `RateLimiter` interface with Redis and Session implementations
+- Updated `Session` class to support Redis session handler
+- Added `cache()` and `redis()` helper functions
+- All features gracefully fall back if Redis unavailable
+
 ---
 
 ## Current Focus: Stability
@@ -22,8 +33,9 @@ This document tracks the third phase of improvement work for the Echo PHP framew
 | 1 | Critical Bug Fixes | **Complete** | 6/6 ✓ |
 | 2 | Performance Optimizations | **Complete** | 8/8 ✓ |
 | 3 | Test Coverage | **Active** | 0/6 |
-| 4 | AdminController Enhancements | On Hold | 0/6 |
-| 5 | Framework Features | On Hold | 0/8 |
+| 4 | AdminController Review | **Queued** | 0/1 |
+| 5 | AdminController Enhancements | On Hold | 0/6 |
+| 6 | Framework Features | On Hold | 0/7 |
 
 ---
 
@@ -523,16 +535,117 @@ public static function get(): ?array
 
 ---
 
-## Phase 4: AdminController Enhancements (ON HOLD)
+## Phase 4: AdminController Review
 
-**Priority:** DEFERRED
-**Status:** On hold pending stability work
-**Goal:** Improve admin panel functionality
+**Priority:** HIGH
+**Status:** Queued (after Phase 3)
+**Goal:** Code review and refactoring of AdminController
 
-### Task 4.1: Advanced Bulk Operations
+### Task 4.1: AdminController Architecture Review
 - [ ] **Pending**
 
-**File:** `src/Framework/Http/AdminController.php`
+**File:** `src/Framework/Http/AdminController.php` (~1200 lines)
+
+**Current Issues:**
+The AdminController uses array properties for configuration which can become unwieldy:
+
+```php
+$this->table_columns = [...];
+$this->table_joins = [...];
+$this->table_format = [...];
+$this->form_columns = [...];
+$this->form_controls = [...];
+$this->form_dropdowns = [...];
+$this->filter_dropdowns = [...];
+$this->validation_rules = [...];
+```
+
+**Review Areas:**
+
+1. **Array Configuration Pattern**
+   - Evaluate current approach of setting arrays in constructor
+   - Consider alternatives: fluent builder, config classes, attributes
+   - Assess developer experience and discoverability
+
+2. **Code Organization**
+   - AdminController is ~1200 lines - consider splitting
+   - Separate concerns: table rendering, form handling, filtering, exports
+   - Extract into traits or service classes where appropriate
+
+3. **Performance**
+   - Review query building efficiency
+   - Check for N+1 queries in table rendering
+   - Evaluate caching opportunities for dropdown options
+
+4. **Type Safety**
+   - Add proper type hints throughout
+   - Consider typed configuration DTOs instead of arrays
+   - Improve IDE autocompletion support
+
+5. **Extensibility**
+   - Review override points for customization
+   - Ensure child controllers can easily extend behavior
+   - Document extension patterns
+
+**Alternative Approaches to Evaluate:**
+
+```php
+// Option A: Fluent Builder
+class ProductsController extends AdminController
+{
+    protected function configure(): void
+    {
+        $this->table()
+            ->columns(['ID' => 'id', 'Name' => 'name'])
+            ->searchable(['Name'])
+            ->sortable(['ID', 'Name', 'Created']);
+            
+        $this->form()
+            ->field('name')->input()->required()
+            ->field('price')->number()->required()
+            ->field('category_id')->dropdown($categories);
+    }
+}
+
+// Option B: Attribute-based (like routes)
+#[AdminModule(table: 'products')]
+#[TableColumn('ID', 'id')]
+#[TableColumn('Name', 'name', searchable: true)]
+#[FormField('name', type: 'input', required: true)]
+class ProductsController extends AdminController { }
+
+// Option C: Configuration DTOs
+class ProductsController extends AdminController
+{
+    protected function tableConfig(): TableConfig
+    {
+        return new TableConfig(
+            columns: [
+                new Column('ID', 'id'),
+                new Column('Name', 'name', searchable: true),
+            ],
+            joins: [...],
+        );
+    }
+}
+```
+
+**Deliverables:**
+- Code review document with findings
+- Recommendations for refactoring approach
+- Migration path if breaking changes needed
+- Updated documentation
+
+---
+
+## Phase 5: AdminController Enhancements (ON HOLD)
+
+**Priority:** DEFERRED
+**Status:** On hold pending Phase 4 review
+**Goal:** Improve admin panel functionality
+
+### Task 5.1: Advanced Bulk Operations
+- [ ] **Pending**
 
 **Enhancement:** Extend bulk actions beyond delete.
 
@@ -724,13 +837,13 @@ public function export(string $format, Request $request): Response
 
 ---
 
-## Phase 5: Framework Features (ON HOLD)
+## Phase 6: Framework Features (ON HOLD)
 
 **Priority:** DEFERRED
 **Status:** On hold pending stability work
 **Goal:** Add missing framework capabilities
 
-### Task 5.1: Event/Listener System
+### Task 6.1: Event/Listener System
 - [ ] **Pending**
 
 **Create files:**
@@ -784,50 +897,7 @@ function event(Event $event): void
 
 ---
 
-### Task 5.2: Cache Service
-- [ ] **Pending**
-
-**Create files:**
-- `src/Framework/Cache/Cache.php`
-- `src/Framework/Cache/Drivers/FileCache.php`
-- `src/Framework/Cache/Drivers/NullCache.php`
-- `config/cache.php`
-
-**Implementation:**
-```php
-class Cache
-{
-    use Singleton;
-
-    private CacheDriver $driver;
-
-    public function get(string $key, mixed $default = null): mixed;
-    public function set(string $key, mixed $value, int $ttl = 3600): bool;
-    public function has(string $key): bool;
-    public function delete(string $key): bool;
-    public function clear(): bool;
-
-    public function remember(string $key, int $ttl, callable $callback): mixed
-    {
-        if ($this->has($key)) {
-            return $this->get($key);
-        }
-        $value = $callback();
-        $this->set($key, $value, $ttl);
-        return $value;
-    }
-}
-
-// Helper
-function cache(): Cache
-{
-    return Cache::getInstance();
-}
-```
-
----
-
-### Task 5.3: Queue/Job System
+### Task 6.2: Queue/Job System
 - [ ] **Pending**
 
 **Create files:**
@@ -870,7 +940,7 @@ php bin/console queue:work --queue=default --timeout=60
 
 ---
 
-### Task 5.4: Mail Service
+### Task 6.3: Mail Service
 - [ ] **Pending**
 
 **Create files:**
@@ -907,7 +977,7 @@ Mail::queue(new WeeklyReportEmail($data));
 
 ---
 
-### Task 5.5: Authorization Gates
+### Task 6.4: Authorization Gates
 - [ ] **Pending**
 
 **Create files:**
@@ -967,7 +1037,7 @@ if (!can('edit-user', $targetUser)) {
 
 ---
 
-### Task 5.6: CLI Code Generators
+### Task 6.5: CLI Code Generators
 - [ ] **Pending**
 
 **Create commands:**
@@ -988,7 +1058,7 @@ php bin/console make:middleware RateLimitMiddleware
 
 ---
 
-### Task 5.7: Convert to Enums
+### Task 6.6: Convert to Enums
 - [ ] **Pending**
 
 **Convert these constant classes to enums:**
@@ -1048,7 +1118,7 @@ enum HttpMethod: string
 
 ---
 
-### Task 5.8: Development Helpers
+### Task 6.7: Development Helpers
 - [ ] **Pending**
 
 **File:** `app/Helpers/Functions.php`
@@ -1112,20 +1182,25 @@ function route(string $name, array $params = []): string
 
 ## Completion Checklist
 
-**Active Phases (Stability Focus):**
+**Completed:**
 
 - [x] Phase 1: Critical Bug Fixes (6/6) ✓
 - [x] Phase 2: Performance Optimizations (8/8) ✓
-- [ ] Phase 3: Test Coverage (0/6)
+- [x] Redis Integration (Cache Service from Phase 5.2) ✓
 
-**Active Tasks:** 6 remaining
+**Active Phases (Stability Focus):**
+
+- [ ] Phase 3: Test Coverage (0/6)
+- [ ] Phase 4: AdminController Review (0/1)
+
+**Active Tasks:** 7 remaining
 
 **On Hold (New Features):**
 
-- [ ] Phase 4: AdminController Enhancements (0/6) - Deferred
-- [ ] Phase 5: Framework Features (0/8) - Deferred
+- [ ] Phase 5: AdminController Enhancements (0/6) - Deferred
+- [ ] Phase 6: Framework Features (0/7) - Deferred (Cache complete)
 
-**Deferred Tasks:** 14
+**Deferred Tasks:** 13
 
 ---
 
@@ -1156,13 +1231,14 @@ php bin/console session:cleanup --days=30    # Phase 2.6
 
 **Current Focus: Stability First**
 
-1. **Phase 1 (Bug Fixes)** - Critical security and stability issues
-2. **Phase 2 (Performance)** - High-impact optimizations
+1. ~~**Phase 1 (Bug Fixes)**~~ - Complete ✓
+2. ~~**Phase 2 (Performance)**~~ - Complete ✓
 3. **Phase 3 (Tests)** - Ensure stability with comprehensive test coverage
+4. **Phase 4 (AdminController Review)** - Code review and potential refactoring
 
 **Deferred until stable:**
-- Phase 4 (Admin Enhancements) - On hold
-- Phase 5 (Framework Features) - On hold
+- Phase 5 (Admin Enhancements) - On hold
+- Phase 6 (Framework Features) - On hold (Cache complete via Redis)
 
 ---
 

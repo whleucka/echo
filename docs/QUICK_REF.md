@@ -33,6 +33,13 @@ Global helpers defined in `app/Helpers/Functions.php`:
 - `console()` - Get Console kernel
 - `view()` - Render Twig template
 - `redirect()` - HTTP redirect
+- `config()` - Get configuration value
+- `session()` - Get session instance
+- `cache()` - Get cache instance (Redis or file)
+- `redis()` - Get Redis manager
+- `db()` - Get database connection
+- `user()` - Get current authenticated user
+- `profiler()` - Get debug profiler (if debug mode)
 
 ## Conventions
 

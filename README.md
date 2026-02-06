@@ -11,6 +11,7 @@ Echo is a modern PHP 8.2+ MVC framework built for speed, simplicity, and flexibi
 - **Twig Templating** - Modern template engine with caching
 - **Custom ORM** - Intuitive query builder and model system
 - **Middleware Stack** - Comprehensive middleware for auth, CSRF, rate limiting, and more
+- **Redis Integration** - Optional Redis for caching, sessions, and rate limiting
 - **Docker-Ready** - Fully containerized development environment
 - **Testing** - Built-in PHPUnit integration
 
@@ -28,30 +29,39 @@ git clone https://github.com/whleucka/echo.git
 cd echo
 ```
 
-### 2. Start Docker Environment
+### 2. Configure Environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your database credentials and other settings.
+
+### 3. Start Docker Environment
 
 ```bash
 docker-compose up -d
 ```
 
-This starts three containers:
-- `php` - PHP 8.3-FPM
+This starts four containers:
+- `php` - PHP 8.3-FPM with Redis extension
 - `nginx` - Nginx web server
 - `db` - MariaDB 11 database
+- `redis` - Redis 7 Alpine (caching, sessions, rate limiting)
 
-### 3. Install Dependencies
+### 4. Install Dependencies
 
 ```bash
 docker-compose exec -it php composer install
 ```
 
-### 4. Run Migrations
+### 5. Run Migrations
 
 ```bash
 docker-compose exec -it php php bin/console migrate
 ```
 
-### 5. Access the Application
+### 6. Access the Application
 
 Open your browser to `http://localhost:8080`
 
@@ -70,6 +80,7 @@ docker-compose down
 docker-compose logs php
 docker-compose logs nginx
 docker-compose logs db
+docker-compose logs redis
 
 # Run Composer
 docker-compose exec -it php composer install
@@ -86,6 +97,9 @@ docker-compose exec -it php composer clear-cache
 
 # Access database CLI
 docker-compose exec -it db mariadb -u root -p
+
+# Access Redis CLI
+docker-compose exec -it redis redis-cli
 
 # Interactive shell
 docker-compose exec -it php bash
@@ -193,6 +207,14 @@ $debug = config('app.debug');
 
 // Database helper
 $users = db()->fetchAll("SELECT * FROM users WHERE active = ?", [1]);
+
+// Cache helper (uses Redis if available, falls back to file)
+$users = cache()->remember('active_users', 300, fn() => 
+    User::where('active', 1)->get()
+);
+
+// Redis helper (direct access)
+redis()->connection('default')->set('key', 'value');
 ```
 
 ### Middleware
@@ -220,6 +242,77 @@ $data = $this->validate([
     'age' => 'required|numeric|min:18',
     'website' => 'url'
 ]);
+```
+
+## Redis Integration
+
+Echo includes optional Redis support for caching, sessions, and rate limiting. All features gracefully fall back to file-based alternatives if Redis is unavailable.
+
+### Configuration
+
+Configure Redis in your `.env` file:
+
+```env
+# Redis Connection
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_PREFIX=echo:
+
+# Drivers (set to "redis" to enable, "file" for fallback)
+SESSION_DRIVER=file
+CACHE_DRIVER=file
+```
+
+### Caching
+
+Use the `cache()` helper for application caching:
+
+```php
+// Store a value (TTL in seconds)
+cache()->set('key', 'value', 3600);
+
+// Retrieve a value
+$value = cache()->get('key', 'default');
+
+// Remember pattern - get from cache or compute and store
+$users = cache()->remember('active_users', 300, fn() => 
+    User::where('active', 1)->get()
+);
+
+// Delete
+cache()->delete('key');
+
+// Check existence
+if (cache()->has('key')) { ... }
+
+// Bulk operations
+cache()->setMany(['key1' => 'val1', 'key2' => 'val2'], 3600);
+$values = cache()->getMany(['key1', 'key2']);
+```
+
+### Sessions
+
+Sessions automatically use Redis when `SESSION_DRIVER=redis`. No code changes required - the existing `session()` helper works identically.
+
+### Rate Limiting
+
+Rate limiting automatically uses Redis when available, providing:
+- IP-based limiting (not session-based)
+- Shared limits across load-balanced servers
+- Accurate request counting with atomic operations
+
+### Direct Redis Access
+
+For advanced use cases, access Redis directly:
+
+```php
+// Get a connection (connections are lazy-loaded and pooled)
+$redis = redis()->connection('default');
+$redis = redis()->connection('cache');
+
+// Check availability
+if (redis()->isAvailable()) { ... }
 ```
 
 ## Admin Backend

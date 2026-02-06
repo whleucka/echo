@@ -6,6 +6,16 @@ This is the central navigation hub for the Echo PHP framework documentation.
 
 Echo is a custom PHP 8.2+ MVC framework built for speed and simplicity. It uses PHP 8 attributes for routing, PHP-DI for dependency injection, and Twig for templating.
 
+### Key Features
+
+- **Attribute-based Routing** - PHP 8 attributes for clean route definitions
+- **Dependency Injection** - PHP-DI container
+- **Twig Templating** - Modern template engine with caching
+- **Custom ORM** - Query builder and model relationships
+- **Redis Integration** - Caching, sessions, and rate limiting
+- **Admin Panel** - Full-featured CRUD admin system
+- **Debug Profiler** - Query profiling and performance monitoring
+
 ## Architecture Summary
 
 ### Directory Structure
