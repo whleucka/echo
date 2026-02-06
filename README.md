@@ -4,6 +4,10 @@
 
 Echo is a modern PHP 8.2+ MVC framework built for speed, simplicity, and flexibility. It leverages PHP 8 attributes for routing, PHP-DI for dependency injection, and Twig for templating.
 
+## Development Status
+
+**Work in Progress:** Echo is an actively developed personal PHP framework intended to serve as the backend for my website. APIs and internals may change at any time. Use at your own risk. Contributions and feedback are encouraged.
+
 ## Features
 
 - **Attribute-based Routing** - Clean, declarative routing using PHP 8 attributes
@@ -671,10 +675,6 @@ For detailed documentation, see the `docs/` directory:
 - [Testing](docs/TESTING.md) - Testing guidelines
 - [Deployment](docs/DEPLOYMENT.md) - Docker environment and deployment
 - [Troubleshooting](docs/troubleshooting/) - Common issues and solutions
-
-## Development Status
-
-**WIP:** This project is a personal endeavor that will eventually serve as the backend for my website. Contributions and feedback are welcome!
 
 ## License
 
