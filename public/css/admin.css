@@ -257,6 +257,13 @@ nav#nav-sidebar header h4 {
   display: flex;
   justify-content: center;
 }
+#dashboard #widget-activity-heatmap .table {
+  max-width: 580px;
+}
+#dashboard #widget-activity-heatmap td.cell {
+  height: 28px;
+  width: 28px;
+}
 #dashboard .chart-container {
   position: relative;
   height: 300px;
@@ -339,9 +346,23 @@ nav#nav-sidebar header h4 {
 }
 
 @media (min-width: 992px) {
+  #dashboard #widget-activity-heatmap .table {
+    max-width: 800px;
+  }
+  #dashboard #widget-activity-heatmap td.cell {
+    width: 32px;
+    height: 32px;
+  }
 }
 
 @media (min-width: 1200px) {
+  #dashboard #widget-activity-heatmap .table {
+    max-width: 1000px;
+  }
+  #dashboard #widget-activity-heatmap td.cell {
+    width: 42px;
+    height: 42px;
+  }
 }
 
 @media (min-width: 1400px) {

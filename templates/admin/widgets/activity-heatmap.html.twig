@@ -19,9 +19,9 @@
         <table class="table table-sm mb-0" style="font-size: 0.75rem;">
           <thead>
             <tr>
-              <th style="width: 30px;"></th>
+              <th class="fw-bold text-end"></th>
               {% for hour in data.hours %}
-              <th class="text-center p-0">{{ hour }}</th>
+              <th class="p-0 cell">{{ hour }}</th>
               {% endfor %}
             </tr>
           </thead>
@@ -29,7 +29,7 @@
             {% set day_letters = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] %}
             {% for dow in 1..7 %}
             <tr>
-              <td class="fw-bold p-1 text-center" style="width: 30px;">{{ day_letters[dow - 1] }}</td>
+              <td class="fw-bold text-end p-1">{{ day_letters[dow - 1] }}</td>
               {% for hour in data.hours %}
                 {% set count = data.matrix[dow][hour] %}
                 {% set intensity = data.max > 0 ? (count / data.max) : 0 %}
@@ -44,21 +44,23 @@
                 {% else %}
                   {% set bg = 'bg-success' %}
                 {% endif %}
-                <td class="{{ bg }}" style="padding: 0; width: 16px; height: 16px;" title="{{ data.days[dow - 1] }} {{ hour }}:00 - {{ count }} requests"></td>
+                <td class="{{ bg }} cell" title="{{ data.days[dow - 1] }} {{ hour }}:00 - {{ count }} requests"></td>
               {% endfor %}
             </tr>
             {% endfor %}
           </tbody>
+          <caption>
+            <div class="d-flex justify-content-end mt-2 small text-muted">
+              <span class="me-2">Less</span>
+              <span class="d-inline-block bg-light border" style="width: 14px; height: 14px;"></span>
+              <span class="d-inline-block bg-success bg-opacity-25 border" style="width: 14px; height: 14px;"></span>
+              <span class="d-inline-block bg-success bg-opacity-50 border" style="width: 14px; height: 14px;"></span>
+              <span class="d-inline-block bg-success bg-opacity-75 border" style="width: 14px; height: 14px;"></span>
+              <span class="d-inline-block bg-success border" style="width: 14px; height: 14px;"></span>
+              <span class="ms-2">More</span>
+            </div>
+          </caption>
         </table>
-      </div>
-      <div class="d-flex justify-content-end mt-2 small text-muted">
-        <span class="me-2">Less</span>
-        <span class="d-inline-block bg-light border" style="width: 14px; height: 14px;"></span>
-        <span class="d-inline-block bg-success bg-opacity-25 border" style="width: 14px; height: 14px;"></span>
-        <span class="d-inline-block bg-success bg-opacity-50 border" style="width: 14px; height: 14px;"></span>
-        <span class="d-inline-block bg-success bg-opacity-75 border" style="width: 14px; height: 14px;"></span>
-        <span class="d-inline-block bg-success border" style="width: 14px; height: 14px;"></span>
-        <span class="ms-2">More</span>
       </div>
     </div>
   </div>
