@@ -38,7 +38,11 @@ class UserPermissionsController extends AdminController
 
         $this->filter_dropdowns = [
             "modules.title" => "SELECT title as value, title as label FROM modules WHERE parent_id IS NOT NULL AND enabled = 1 ORDER BY label",
-            "user_id" => "SELECT id as value, CONCAT(first_name, ' ', surname) as label FROM users WHERE role != 'admin' ORDER BY label",
+            [
+                "column" => "user_permissions.user_id",
+                "label" => "User",
+                "options" => "SELECT id as value, CONCAT(first_name, ' ', surname) as label FROM users WHERE role != 'admin' ORDER BY label",
+            ],
         ];
 
         $this->form_columns = [
@@ -80,7 +84,7 @@ class UserPermissionsController extends AdminController
     {
         $request = parent::validate($ruleset, $id);
         // Parent validation succeeds
-        if ($request) {
+        if ($request && isset($request->module_id) && isset($request->user_id)) {
             $module_id = $request->module_id;
             $user_id = $request->user_id;
             $user = $user_id ? User::find($user_id) : null;

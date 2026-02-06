@@ -797,9 +797,11 @@ abstract class AdminController extends Controller
 
         // Dropdown filters
         $i = 0;
-        foreach ($this->filter_dropdowns as $column => $query) {
+        foreach ($this->filter_dropdowns as $key => $value) {
             $selected = $this->getFilter("dropdowns_" . $i++);
             if ($selected) {
+                // New explicit format: ['column' => '...', 'label' => '...', 'options' => ...]
+                $column = (is_array($value) && isset($value['column'])) ? $value['column'] : $key;
                 $this->query_where[] = "$column = ?";
                 $this->query_params[] = $selected;
             }
@@ -904,15 +906,29 @@ abstract class AdminController extends Controller
     {
         $filters = [];
         $i = 0;
-        foreach ($this->filter_dropdowns as $column => $query) {
+        foreach ($this->filter_dropdowns as $key => $value) {
             $selected = $this->getFilter("dropdowns_" . $i++);
-            $sql = $this->filter_dropdowns[$column];
+
+            // New explicit format: ['column' => '...', 'label' => '...', 'options' => ...]
+            if (is_array($value) && isset($value['column'])) {
+                $column = $value['column'];
+                $label = $value['label'] ?? $this->getTableTitle($column);
+                $options = $value['options'] ?? [];
+                if (is_string($options)) {
+                    $options = db()->fetchAll($options);
+                }
+            } else {
+                // Legacy format: 'column' => 'SQL' or 'column' => [options array]
+                $column = $key;
+                $label = $this->getTableTitle($column);
+                $options = is_string($value) ? db()->fetchAll($value) : $value;
+            }
+
             $filters[] = [
-                "label" => $this->getTableTitle($column),
+                "column" => $column,
+                "label" => $label,
                 "selected" => $selected,
-                "options" => key_exists($column, $this->filter_dropdowns) && is_string($this->filter_dropdowns[$column])
-                    ? db()->fetchAll($this->filter_dropdowns[$column])
-                    : $this->filter_dropdowns[$column] ?? [],
+                "options" => $options,
             ];
         }
         return $filters;

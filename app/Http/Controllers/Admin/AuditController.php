@@ -43,7 +43,11 @@ class AuditController extends AdminController
                 ["value" => "updated", "label" => "Updated"],
                 ["value" => "deleted", "label" => "Deleted"],
             ],
-            "users.id" => "SELECT id as value, CONCAT(first_name, ' ', surname) as label FROM users ORDER BY label",
+            [
+                "column" => "audits.user_id",
+                "label" => "User",
+                "options" => "SELECT id as value, CONCAT(first_name, ' ', surname) as label FROM users ORDER BY label",
+            ],
         ];
 
         $this->filter_links = [
