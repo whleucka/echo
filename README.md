@@ -58,7 +58,7 @@ docker-compose exec -it php composer install
 ### 5. Run Migrations
 
 ```bash
-docker-compose exec -it php php bin/console migrate
+docker-compose exec -it php ./bin/console migrate:run
 ```
 
 ### 6. Access the Application
@@ -90,7 +90,7 @@ docker-compose exec -it php composer update
 docker-compose exec -it php ./vendor/phpunit/phpunit/phpunit tests
 
 # Run migrations
-docker-compose exec -it php php bin/console migrate
+docker-compose exec -it php ./bin/console migrate:run
 
 # Clear template cache
 docker-compose exec -it php composer clear-cache

@@ -1,0 +1,45 @@
+<?php
+
+namespace Echo\Framework\Console\Commands;
+
+use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+
+#[AsCommand(name: 'admin:new', description: 'Create a new admin user')]
+class AdminNewCommand extends Command
+{
+    protected function configure(): void
+    {
+        $this
+            ->addArgument('email', InputArgument::REQUIRED, 'Admin email address')
+            ->addArgument('password', InputArgument::REQUIRED, 'Admin password');
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $email = $input->getArgument('email');
+        $password = $input->getArgument('password');
+
+        // Check for existing user
+        $user = db()->fetch("SELECT * FROM users WHERE email = ?", [$email]);
+        
+        if ($user) {
+            $output->writeln('<error>This admin user already exists</error>');
+            return Command::FAILURE;
+        }
+
+        $hashed = password_hash($password, PASSWORD_ARGON2I);
+
+        db()->execute("INSERT INTO users SET first_name='Administrator', 
+            surname = '', role='admin', email=?, password=?", [
+            $email,
+            $hashed
+        ]);
+
+        $output->writeln("<info>✓ Successfully created admin user: $email</info>");
+        return Command::SUCCESS;
+    }
+}

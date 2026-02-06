@@ -1219,22 +1219,40 @@ function route(string $name, array $params = []): string
 ## Quick Reference: Console Commands
 
 ```bash
-# Existing
-php bin/console route cache|clear|list
-php bin/console migrate [up|down|status]
-php bin/console serve
-php bin/console audit list|stats|purge
+# Run ./bin/console to see all available commands
 
-# Planned in Stability Phase
-php bin/console session:cleanup --days=30    # Phase 2.6
+# Route commands
+./bin/console route:cache
+./bin/console route:clear
+./bin/console route:list
 
-# Deferred (Phase 5 - On Hold)
-# php bin/console cache:clear
-# php bin/console queue:work
-# php bin/console make:model
-# php bin/console make:controller
-# php bin/console make:migration
-# php bin/console make:middleware
+# Migration commands
+./bin/console migrate:run
+./bin/console migrate:status
+./bin/console migrate:fresh
+./bin/console migrate:rollback
+./bin/console migrate:create <table>
+
+# Database commands
+./bin/console db:backup
+./bin/console db:restore <file>
+./bin/console db:list
+./bin/console db:cleanup <keep>
+
+# Session commands
+./bin/console session:cleanup --days=30
+./bin/console session:stats
+
+# Audit commands
+./bin/console audit:list
+./bin/console audit:stats
+./bin/console audit:purge --days=90
+
+# Other commands
+./bin/console admin:new <email> <password>
+./bin/console storage:fix
+./bin/console server
+./bin/console version
 ```
 
 ---

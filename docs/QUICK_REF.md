@@ -21,8 +21,8 @@ docker ps
 docker-compose exec -it php composer install
 docker-compose exec -it php ./vendor/phpunit/phpunit/phpunit tests
 docker-compose exec -it php composer clear-cache
-docker-compose exec -it php php bin/console migrate
-docker-compose exec -it php php bin/console server
+docker-compose exec -it php ./bin/console migrate:run
+docker-compose exec -it php ./bin/console route:cache
 ```
 
 ## Helper Functions

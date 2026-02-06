@@ -8,17 +8,15 @@ Echo is a custom PHP 8.2+ MVC framework built for speed and simplicity. It lever
 
 ## Console Commands
 
-Console commands use space-separated syntax, **not** Laravel-style colons:
+Console commands use colon-separated syntax (Symfony Console standard):
 
 ```bash
-# Correct
-./bin/console migrate fresh
-./bin/console route cache
-
-# Incorrect (Laravel-style)
-php echo migrate:fresh
-php artisan route:cache
+./bin/console migrate:fresh
+./bin/console route:cache
+./bin/console db:backup
 ```
+
+Run `./bin/console` to see all available commands with descriptions.
 
 ## Dashboard Widgets
 
