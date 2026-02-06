@@ -58,7 +58,8 @@ class RedisManager
         $redis = new Redis();
 
         try {
-            $connected = $redis->connect($host, $port, 2.0); // 2 second timeout
+            // Suppress PHP warning on connection failure (we handle it via exception)
+            $connected = @$redis->connect($host, $port, 2.0); // 2 second timeout
             if (!$connected) {
                 throw new RuntimeException("Failed to connect to Redis at {$host}:{$port}");
             }
