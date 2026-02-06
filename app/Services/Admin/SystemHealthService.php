@@ -17,6 +17,7 @@ class SystemHealthService
     private function registerDefaultChecks(): void
     {
         $this->registerCheck('database', fn() => $this->checkDatabase());
+        $this->registerCheck('redis', fn() => $this->checkRedis());
         $this->registerCheck('php_version', fn() => $this->checkPhpVersion());
         $this->registerCheck('memory', fn() => $this->checkMemory());
         $this->registerCheck('disk', fn() => $this->checkDisk());
@@ -128,6 +129,58 @@ class SystemHealthService
                 'message' => 'Database connection failed: ' . $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Redis connectivity check
+     */
+    private function checkRedis(): array
+    {
+        try {
+            $redis = \Echo\Framework\Redis\RedisManager::getInstance();
+
+            if (!$redis->isAvailable()) {
+                return [
+                    'status' => 'warning',
+                    'message' => 'Redis is not available',
+                ];
+            }
+
+            $connection = $redis->connection('default');
+            $info = $connection->info();
+            $version = $info['redis_version'] ?? 'unknown';
+            $uptime = (int)($info['uptime_in_seconds'] ?? 0);
+            $uptimeStr = $this->formatUptime($uptime);
+
+            return [
+                'status' => 'ok',
+                'message' => "Connected (v$version, up $uptimeStr)",
+                'version' => $version,
+                'uptime' => $uptime,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'status' => 'warning',
+                'message' => 'Redis connection failed: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Format uptime seconds to human readable
+     */
+    private function formatUptime(int $seconds): string
+    {
+        if ($seconds < 60) {
+            return $seconds . 's';
+        }
+        if ($seconds < 3600) {
+            return floor($seconds / 60) . 'm';
+        }
+        if ($seconds < 86400) {
+            return floor($seconds / 3600) . 'h ' . floor(($seconds % 3600) / 60) . 'm';
+        }
+        return floor($seconds / 86400) . 'd ' . floor(($seconds % 86400) / 3600) . 'h';
     }
 
     /**

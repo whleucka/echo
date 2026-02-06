@@ -1,4 +1,4 @@
-<div class="col-{{ widget.width }} mb-4" id="widget-{{ widget.id }}"
+<div class="col-12 col-lg-{{ widget.width }} mb-4" id="widget-{{ widget.id }}"
   {% if widget.refresh_interval > 0 %}
   hx-get="/admin/dashboard/widgets/{{ widget.id }}"
   hx-trigger="every {{ widget.refresh_interval }}s"
@@ -10,7 +10,7 @@
       <button class="btn btn-sm btn-outline-secondary"
         hx-get="/admin/dashboard/widgets/{{ widget.id }}"
         hx-swap="outerHTML"
-        hx-target="closest .col-{{ widget.width }}">
+        hx-target="#widget-{{ widget.id }}">
         <i class="bi bi-arrow-clockwise"></i>
       </button>
     </div>

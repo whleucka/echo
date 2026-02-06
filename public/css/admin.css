@@ -234,6 +234,29 @@ nav#nav-sidebar header h4 {
   background-color: #fff;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
+#dashboard #widgets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+#dashboard #widgets > div {
+  margin-bottom: 0 !important; /* Override mb-4 since gap handles spacing */
+}
+#dashboard #widgets > div.col-lg-6 {
+  flex: 1 1 calc(50% - 0.5rem);
+  min-width: 300px;
+}
+#dashboard #widgets > div.col-lg-12,
+#dashboard #widgets > div.col-12:not(.col-lg-6) {
+  flex: 1 1 100%;
+}
+#dashboard #charts {
+  margin-top: 1rem;
+}
+#dashboard #widget-activity-heatmap .table-responsive {
+  display: flex;
+  justify-content: center;
+}
 #dashboard .chart-container {
   position: relative;
   height: 300px;

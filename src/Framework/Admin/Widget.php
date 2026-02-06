@@ -11,6 +11,7 @@ abstract class Widget
     protected int $width = 6;
     protected int $refreshInterval = 0;
     protected int $cacheTtl = 0;
+    protected int $priority = 100; // Lower = higher priority (displayed first)
 
     /**
      * Get the widget data
@@ -88,6 +89,14 @@ abstract class Widget
     public function getRefreshInterval(): int
     {
         return $this->refreshInterval;
+    }
+
+    /**
+     * Get widget priority (lower = displayed first)
+     */
+    public function getPriority(): int
+    {
+        return $this->priority;
     }
 
     /**

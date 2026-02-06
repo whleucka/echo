@@ -42,7 +42,7 @@ class WidgetRegistry
     }
 
     /**
-     * Get all registered widgets (lazy instantiation)
+     * Get all registered widgets sorted by priority (lazy instantiation)
      */
     public static function all(): array
     {
@@ -50,6 +50,10 @@ class WidgetRegistry
         foreach (self::$widgets as $id => $class) {
             $widgets[$id] = self::get($id);
         }
+
+        // Sort by priority (lower = first)
+        uasort($widgets, fn(Widget $a, Widget $b) => $a->getPriority() <=> $b->getPriority());
+
         return $widgets;
     }
 

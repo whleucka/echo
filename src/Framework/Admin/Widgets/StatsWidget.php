@@ -12,6 +12,7 @@ class StatsWidget extends Widget
     protected string $template = 'admin/widgets/stats.html.twig';
     protected int $width = 12;
     protected int $refreshInterval = 60;
+    protected int $priority = 5;
 
     public function getData(): array
     {

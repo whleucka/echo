@@ -1,21 +1,7 @@
 <div id="dashboard">
   {% include "components/flash.html.twig" %}
 
-  <div id="widgets" class="row" hx-get="/admin/dashboard/widgets" hx-trigger="load">
-  </div>
-
-  <div id="system" class="row">
-    <div class="col-lg-6 mb-4" hx-get="/admin/dashboard/health" hx-trigger="load">
-    </div>
-    <div class="col-lg-6 mb-4" hx-get="/admin/dashboard/database" hx-trigger="load">
-    </div>
-  </div>
-
-  <div id="insights" class="row">
-    <div class="col-lg-6 mb-4" hx-get="/admin/dashboard/activity-heatmap" hx-trigger="load">
-    </div>
-    <div class="col-lg-6 mb-4" hx-get="/admin/dashboard/audit-summary" hx-trigger="load">
-    </div>
+  <div id="widgets" hx-get="/admin/dashboard/widgets" hx-trigger="load">
   </div>
 
   <div id="charts">
@@ -24,9 +10,9 @@
       </div>
     </div>
     <div class="row">
-      <div class="col-lg-6 mb-4" hx-get="/admin/dashboard/requests/chart/week" hx-trigger="load">
+      <div class="col-12 col-lg-6 mb-4" hx-get="/admin/dashboard/requests/chart/week" hx-trigger="load">
       </div>
-      <div class="col-lg-6 mb-4" hx-get="/admin/dashboard/requests/chart/month" hx-trigger="load">
+      <div class="col-12 col-lg-6 mb-4" hx-get="/admin/dashboard/requests/chart/month" hx-trigger="load">
       </div>
     </div>
     <div class="row">

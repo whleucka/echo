@@ -3,7 +3,12 @@
 namespace App\Providers;
 
 use Echo\Framework\Admin\WidgetRegistry;
+use Echo\Framework\Admin\Widgets\ActivityHeatmapWidget;
+use Echo\Framework\Admin\Widgets\AuditSummaryWidget;
+use Echo\Framework\Admin\Widgets\DatabaseWidget;
+use Echo\Framework\Admin\Widgets\RedisWidget;
 use Echo\Framework\Admin\Widgets\StatsWidget;
+use Echo\Framework\Admin\Widgets\SystemHealthWidget;
 use Echo\Framework\Support\ServiceProvider;
 
 /**
@@ -18,8 +23,13 @@ class WidgetServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Register default widgets
+        // Register dashboard widgets (ordered by priority in each widget class)
+        WidgetRegistry::register('activity-heatmap', ActivityHeatmapWidget::class);
         WidgetRegistry::register('stats', StatsWidget::class);
+        WidgetRegistry::register('system-health', SystemHealthWidget::class);
+        WidgetRegistry::register('redis', RedisWidget::class);
+        WidgetRegistry::register('database', DatabaseWidget::class);
+        WidgetRegistry::register('audit-summary', AuditSummaryWidget::class);
     }
 
     /**

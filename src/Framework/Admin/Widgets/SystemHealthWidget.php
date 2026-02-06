@@ -3,6 +3,7 @@
 namespace Echo\Framework\Admin\Widgets;
 
 use Echo\Framework\Admin\Widget;
+use Echo\Framework\Redis\RedisManager;
 
 class SystemHealthWidget extends Widget
 {
@@ -13,6 +14,7 @@ class SystemHealthWidget extends Widget
     protected int $width = 6;
     protected int $refreshInterval = 120;
     protected int $cacheTtl = 60;
+    protected int $priority = 30;
 
     public function getData(): array
     {
@@ -60,6 +62,30 @@ class SystemHealthWidget extends Widget
                 'label' => 'Database',
                 'value' => 'Error',
                 'status' => 'error',
+            ];
+        }
+
+        // Redis check
+        try {
+            $redis = RedisManager::getInstance();
+            if ($redis->isAvailable()) {
+                $checks['redis'] = [
+                    'label' => 'Redis',
+                    'value' => 'Connected',
+                    'status' => 'ok',
+                ];
+            } else {
+                $checks['redis'] = [
+                    'label' => 'Redis',
+                    'value' => 'Unavailable',
+                    'status' => 'warning',
+                ];
+            }
+        } catch (\Throwable $e) {
+            $checks['redis'] = [
+                'label' => 'Redis',
+                'value' => 'Error',
+                'status' => 'warning',
             ];
         }
 
