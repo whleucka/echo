@@ -16,61 +16,6 @@ class DashboardController extends AdminController
         parent::__construct();
     }
 
-    #[Get("/sales/total", "sales.total")]
-    public function sales(): string
-    {
-        return $this->service->getTotalSales();
-    }
-
-    #[Get("/sales/today", "sales.today")]
-    public function sales_today(): string
-    {
-        return $this->service->getTodaySales();
-    }
-
-    #[Get("/users/count", "users.count")]
-    public function users_count(): int
-    {
-        return $this->service->getUsersCount();
-    }
-
-    #[Get("/users/active", "users.active")]
-    public function users_active(): int
-    {
-        return $this->service->getActiveUsersCount();
-    }
-
-
-    #[Get("/customers/count", "customers.count")]
-    public function customers_count(): int
-    {
-        return $this->service->getCustomersCount();
-    }
-
-    #[Get("/customers/new", "customers.new")]
-    public function customers_new(): int
-    {
-        return $this->service->getNewCustomersCount();
-    }
-
-    #[Get("/modules/count", "modules.count")]
-    public function modules_count(): int
-    {
-        return $this->service->getModulesCount();
-    }
-
-    #[Get("/requests/count/total", "requests.total")]
-    public function requests_total(): int
-    {
-        return $this->service->getTotalRequests();
-    }
-
-    #[Get("/requests/count/today", "requests.today")]
-    public function requests_today(): int
-    {
-        return $this->service->getTodayRequests();
-    }
-
     #[Get("/requests/chart/today", "requests.today.chart", ["max_requests" => 0])]
     public function requests_today_chart()
     {

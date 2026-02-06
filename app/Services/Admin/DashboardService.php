@@ -20,16 +20,6 @@ class DashboardService
         return new \DateTimeImmutable('now', $this->appTimezone);
     }
 
-    public function getTotalSales(): string
-    {
-        return '$' . number_format(0, 2);
-    }
-
-    public function getTodaySales(): string
-    {
-        return '$' . number_format(0, 2);
-    }
-
     public function getUsersCount(): int
     {
         return db()->execute(
@@ -47,16 +37,6 @@ class DashboardService
             WHERE created_at >= ?",
             [$threshold]
         )->fetchColumn();
-    }
-
-    public function getCustomersCount(): int
-    {
-        return 0;
-    }
-
-    public function getNewCustomersCount(): int
-    {
-        return 0;
     }
 
     public function getModulesCount(): int
@@ -82,11 +62,6 @@ class DashboardService
             "SELECT count(*) FROM activity WHERE created_at BETWEEN ? AND ?",
             [$todayStart, $todayEnd]
         )->fetchColumn();
-    }
-
-    public function getTotalRequestsChart(): array
-    {
-        return [];
     }
 
     public function getTodayRequestsChart(): array
