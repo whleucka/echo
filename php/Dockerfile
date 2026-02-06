@@ -32,5 +32,8 @@ RUN pecl install pcov && docker-php-ext-enable pcov
 # Install Redis extension
 RUN pecl install redis && docker-php-ext-enable redis
 
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
 # Copy any custom PHP ini
 COPY ./local.ini /usr/local/etc/php/conf.d/local.ini
