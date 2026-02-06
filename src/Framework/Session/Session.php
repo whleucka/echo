@@ -4,34 +4,107 @@ namespace Echo\Framework\Session;
 
 use Echo\Traits\Creational\Singleton;
 
-ini_set('session.gc_maxlifetime', config("session.gc_maxlifetime"));
-ini_set('session.gc_probability', config("session.gc_probability"));
-ini_set('session.gc_divisor', config("session.gc_divisor"));
-
-// Security settings for session cookies
-ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_secure', isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 1 : 0);
-ini_set('session.cookie_samesite', 'Strict');
-ini_set('session.use_strict_mode', 1);
-ini_set('session.use_only_cookies', 1);
-$session_path = config("paths.session");
-if (!is_dir($session_path)) {
-    mkdir($session_path, 01733, true);
-    chown($session_path, 'www-data');
-    chgrp($session_path, 'www-data');
-}
-session_save_path($session_path);
-
 class Session
 {
     use Singleton;
 
     private bool $started = false;
     private array $data = [];
+    private static bool $configured = false;
 
     public function __construct()
     {
-        // Don't start session in constructor - lazy start on first access
+        // Configure session settings once
+        if (!self::$configured) {
+            $this->configure();
+            self::$configured = true;
+        }
+    }
+
+    /**
+     * Configure session settings
+     */
+    private function configure(): void
+    {
+        // Don't configure if session already started
+        if (session_status() !== PHP_SESSION_NONE) {
+            return;
+        }
+
+        // Basic settings
+        ini_set('session.gc_maxlifetime', config("session.gc_maxlifetime"));
+        ini_set('session.gc_probability', config("session.gc_probability"));
+        ini_set('session.gc_divisor', config("session.gc_divisor"));
+
+        // Security settings for session cookies
+        ini_set('session.cookie_httponly', 1);
+        ini_set('session.cookie_secure', isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 1 : 0);
+        ini_set('session.cookie_samesite', 'Strict');
+        ini_set('session.use_strict_mode', 1);
+        ini_set('session.use_only_cookies', 1);
+
+        // Configure session driver
+        $driver = config("session.driver") ?? "file";
+
+        if ($driver === "redis" && $this->isRedisAvailable()) {
+            $this->configureRedis();
+        } else {
+            $this->configureFile();
+        }
+    }
+
+    /**
+     * Configure Redis session handler
+     */
+    private function configureRedis(): void
+    {
+        $host = config('redis.default.host') ?? 'redis';
+        $port = config('redis.default.port') ?? 6379;
+        $database = config('redis.session.database') ?? 2;
+        $password = config('redis.default.password');
+        $prefix = config('redis.default.prefix') ?? 'echo:';
+
+        // Build Redis save path
+        $savePath = "tcp://{$host}:{$port}?database={$database}&prefix={$prefix}session:";
+
+        if (!empty($password)) {
+            $savePath .= "&auth={$password}";
+        }
+
+        ini_set('session.save_handler', 'redis');
+        ini_set('session.save_path', $savePath);
+    }
+
+    /**
+     * Configure file-based session handler
+     */
+    private function configureFile(): void
+    {
+        $session_path = config("paths.session");
+        if (!is_dir($session_path)) {
+            mkdir($session_path, 01733, true);
+            @chown($session_path, 'www-data');
+            @chgrp($session_path, 'www-data');
+        }
+        session_save_path($session_path);
+    }
+
+    /**
+     * Check if Redis is available for sessions
+     */
+    private function isRedisAvailable(): bool
+    {
+        // Check if Redis extension is loaded
+        if (!extension_loaded('redis')) {
+            return false;
+        }
+
+        // Try to connect
+        try {
+            return redis()->isAvailable();
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /**
@@ -111,6 +184,14 @@ class Session
     {
         $this->ensureStarted();
         return session_regenerate_id($deleteOldSession);
+    }
+
+    /**
+     * Get the current session driver
+     */
+    public function getDriver(): string
+    {
+        return ini_get('session.save_handler') ?: 'files';
     }
 
     /**

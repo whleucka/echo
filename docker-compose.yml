@@ -36,8 +36,25 @@ services:
     networks:
       - net
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: no
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   net:
 
 volumes:
   db_data:
+  redis_data:

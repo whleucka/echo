@@ -169,6 +169,42 @@ function profiler(): ?\Echo\Framework\Debug\Profiler
 }
 
 /**
+ * Get Redis manager instance
+ */
+function redis(): \Echo\Framework\Redis\RedisManager
+{
+    return \Echo\Framework\Redis\RedisManager::getInstance();
+}
+
+/**
+ * Get cache instance
+ */
+function cache(): \Echo\Framework\Cache\CacheInterface
+{
+    static $cache = null;
+
+    if ($cache === null) {
+        $driver = config('cache.driver') ?? 'file';
+
+        if ($driver === 'redis') {
+            try {
+                if (redis()->isAvailable()) {
+                    $cache = new \Echo\Framework\Cache\RedisCache();
+                } else {
+                    $cache = new \Echo\Framework\Cache\FileCache();
+                }
+            } catch (\Throwable) {
+                $cache = new \Echo\Framework\Cache\FileCache();
+            }
+        } else {
+            $cache = new \Echo\Framework\Cache\FileCache();
+        }
+    }
+
+    return $cache;
+}
+
+/**
  * Get application config
  */
 function config(string $name): mixed

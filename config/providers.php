@@ -10,5 +10,6 @@
 return [
     App\Providers\AppServiceProvider::class,
     App\Providers\DatabaseServiceProvider::class,
+    App\Providers\RedisServiceProvider::class,
     App\Providers\WidgetServiceProvider::class,
 ];

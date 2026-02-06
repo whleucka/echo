@@ -28,5 +28,8 @@ RUN apt-get update && apt-get install -y \
 # Install PCOV for code coverage
 RUN pecl install pcov && docker-php-ext-enable pcov
 
+# Install Redis extension
+RUN pecl install redis && docker-php-ext-enable redis
+
 # Copy any custom PHP ini
 COPY ./local.ini /usr/local/etc/php/conf.d/local.ini

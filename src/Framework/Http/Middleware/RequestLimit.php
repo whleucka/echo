@@ -5,13 +5,20 @@ namespace Echo\Framework\Http\Middleware;
 use Closure;
 use Echo\Framework\Http\JsonResponse;
 use Echo\Framework\Http\Response as HttpResponse;
+use Echo\Framework\RateLimit\RateLimiter;
+use Echo\Framework\RateLimit\RedisRateLimiter;
+use Echo\Framework\RateLimit\SessionRateLimiter;
 use Echo\Interface\Http\{Request, Middleware, Response};
 
 /**
- * Request limit
+ * Request Limit Middleware
+ *
+ * Rate limits requests using Redis (preferred) or sessions (fallback).
  */
 class RequestLimit implements Middleware
 {
+    private ?RateLimiter $limiter = null;
+
     public function handle(Request $request, Closure $next): Response
     {
         $route = $request->getAttribute("route");
@@ -38,32 +45,17 @@ class RequestLimit implements Middleware
             $decay_seconds = $middleware["decay_seconds"] ?? config("security.decay_seconds");
         }
 
-        // Create a cache key
-        $hash = md5($request->getClientIp());
-        $key = "request_limit_" . $hash;
+        // Get rate limiter
+        $limiter = $this->getLimiter();
 
-        // Set the session
-        if (!session()->has($key)) {
-            session()->set($key, [
-                "count" => 0,
-                "timestamp" => time(),
-            ]);
-        }
+        // Create a rate limit key based on IP
+        $key = "request_limit:" . md5($request->getClientIp());
 
-        $limit = session()->get($key);
+        // Attempt the request
+        if (!$limiter->attempt($key, $max_requests, $decay_seconds)) {
+            $retryAfter = $limiter->retryAfter($key);
+            $message = "Too many requests. Try again in {$retryAfter} seconds.";
 
-        // Reset the count when expired
-        if (time() - $limit["timestamp"] > $decay_seconds) {
-            $limit["count"] = 0;
-            $limit["timestamp"] = time();
-        }
-
-        // Increment request count
-        $limit["count"]++;
-
-        // Too many requests
-        if ($limit["count"] > $max_requests) {
-            $message = "Too many requests. Try again later.";
             return in_array("api", $middleware)
                 ? new JsonResponse([
                     "id" => $request->getAttribute("request_id"),
@@ -72,14 +64,32 @@ class RequestLimit implements Middleware
                     "error" => [
                         "code" => "RATE_LIMIT_EXCEEDED",
                         "message" => $message,
+                        "retry_after" => $retryAfter,
                     ],
                     "ts" => date(DATE_ATOM)], 429)
                 : new HttpResponse($message, 429);
         }
 
-        // Set the request session
-        session()->set($key, $limit);
-
         return $next($request);
+    }
+
+    /**
+     * Get the rate limiter instance
+     */
+    private function getLimiter(): RateLimiter
+    {
+        if ($this->limiter === null) {
+            // Try Redis first, fall back to session
+            try {
+                if (redis()->isAvailable()) {
+                    $this->limiter = new RedisRateLimiter();
+                } else {
+                    $this->limiter = new SessionRateLimiter();
+                }
+            } catch (\Throwable) {
+                $this->limiter = new SessionRateLimiter();
+            }
+        }
+        return $this->limiter;
     }
 }
