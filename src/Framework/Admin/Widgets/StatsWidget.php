@@ -2,6 +2,7 @@
 
 namespace Echo\Framework\Admin\Widgets;
 
+use App\Services\Admin\DashboardService;
 use Echo\Framework\Admin\Widget;
 
 class StatsWidget extends Widget
@@ -14,32 +15,26 @@ class StatsWidget extends Widget
     protected int $refreshInterval = 60;
     protected int $priority = 5;
 
+    public function __construct(private DashboardService $dashboardService)
+    {
+    }
+
     public function getData(): array
     {
         $usersCount = db()->execute(
             "SELECT COUNT(*) FROM users"
         )->fetchColumn();
 
-        $activeUsers = db()->execute(
-            "SELECT COUNT(DISTINCT user_id) FROM sessions
-            WHERE created_at >= NOW() - INTERVAL 30 MINUTE"
-        )->fetchColumn();
+        $activeUsers = $this->dashboardService->getActiveUsersCount();
 
-        $todayRequests = db()->execute(
-            "SELECT COUNT(*) FROM sessions WHERE DATE(created_at) = CURDATE()"
-        )->fetchColumn();
+        $todayRequests = $this->dashboardService->getTodayRequests();
 
-        $totalRequests = db()->execute(
-            "SELECT COUNT(*) FROM sessions"
-        )->fetchColumn();
+        $totalRequests = $this->dashboardService->getTotalRequests();
 
-        $modulesCount = db()->execute(
-            "SELECT COUNT(*) FROM modules WHERE parent_id IS NOT NULL"
-        )->fetchColumn();
+        $modulesCount = $this->dashboardService->getModulesCount();
 
-        $auditCount = db()->execute(
-            "SELECT COUNT(*) FROM audits WHERE DATE(created_at) = CURDATE()"
-        )->fetchColumn();
+        $auditData = $this->dashboardService->getAuditSummary();
+        $auditCount = $auditData['today'];
 
         return [
             'stats' => [

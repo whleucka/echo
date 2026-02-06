@@ -39,10 +39,13 @@ class DashboardService
 
     public function getActiveUsersCount(): int
     {
+        $now = $this->now()->format('Y-m-d H:i:s');
+        $threshold = date('Y-m-d H:i:s', strtotime('-30 minutes', strtotime($now)));
         return db()->execute(
             "SELECT COUNT(DISTINCT user_id) AS active_users
             FROM sessions
-            WHERE created_at >= NOW() - INTERVAL 30 MINUTE"
+            WHERE created_at >= ?",
+            [$threshold]
         )->fetchColumn();
     }
 
@@ -72,8 +75,12 @@ class DashboardService
 
     public function getTodayRequests(): int
     {
+        $now = $this->now();
+        $todayStart = $now->setTime(0, 0, 0)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $todayEnd = $now->setTime(23, 59, 59)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
         return db()->execute(
-            "SELECT count(*) FROM sessions WHERE DATE(created_at) = CURDATE()"
+            "SELECT count(*) FROM sessions WHERE created_at BETWEEN ? AND ?",
+            [$todayStart, $todayEnd]
         )->fetchColumn();
     }
 
@@ -458,24 +465,30 @@ class DashboardService
      */
     public function getAuditSummary(): array
     {
+        $today = $this->now()->format('Y-m-d');
+        $sevenDaysAgo = $this->now()->modify('-7 days')->format('Y-m-d H:i:s');
+
         $todayCount = db()->execute(
-            "SELECT COUNT(*) FROM audits WHERE DATE(created_at) = CURDATE()"
+            "SELECT COUNT(*) FROM audits WHERE DATE(created_at) = ?",
+            [$today]
         )->fetchColumn();
 
         $byEvent = db()->fetchAll(
             "SELECT event, COUNT(*) as count
             FROM audits
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-            GROUP BY event"
+            WHERE created_at >= ?
+            GROUP BY event",
+            [$sevenDaysAgo]
         );
 
         $byModel = db()->fetchAll(
             "SELECT auditable_type, COUNT(*) as count
             FROM audits
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            WHERE created_at >= ?
             GROUP BY auditable_type
-            ORDER BY count DESC 
-            LIMIT 5"
+            ORDER BY count DESC
+            LIMIT 5",
+            [$sevenDaysAgo]
         );
 
         $eventCounts = ['created' => 0, 'updated' => 0, 'deleted' => 0];

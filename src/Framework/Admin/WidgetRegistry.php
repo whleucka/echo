@@ -35,7 +35,7 @@ class WidgetRegistry
         // Lazy instantiation - only create when first requested
         if (!isset(self::$instances[$id])) {
             $class = self::$widgets[$id];
-            self::$instances[$id] = new $class();
+            self::$instances[$id] = container()->get($class);
         }
 
         return self::$instances[$id];

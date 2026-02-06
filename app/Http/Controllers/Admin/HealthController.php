@@ -10,7 +10,7 @@ use Echo\Framework\Routing\Route\Get;
 #[Group(path_prefix: "/health", name_prefix: "health")]
 class HealthController extends AdminController
 {
-    public function __construct(private SystemHealthService $healthService)
+    public function __construct(private SystemHealthService $service)
     {
         parent::__construct();
     }
@@ -20,8 +20,8 @@ class HealthController extends AdminController
      */
     protected function renderTable(): string
     {
-        $checks = $this->healthService->runAllChecks();
-        $overallStatus = $this->healthService->getOverallStatus();
+        $checks = $this->service->runAllChecks();
+        $overallStatus = $this->service->getOverallStatus();
 
         return $this->render("admin/health/index.html.twig", [
             ...$this->getCommonData(),
@@ -36,7 +36,7 @@ class HealthController extends AdminController
     #[Get("/check/{name}", "check", ["max_requests" => 0])]
     public function check(string $name): string
     {
-        $result = $this->healthService->getCheck($name);
+        $result = $this->service->getCheck($name);
 
         if ($result === null) {
             return $this->render("admin/health/check.html.twig", [
@@ -60,7 +60,7 @@ class HealthController extends AdminController
     #[Get("/api", "api", ["max_requests" => 0])]
     public function api(): string
     {
-        $data = $this->healthService->getStatusJson();
+        $data = $this->service->getStatusJson();
 
         header('Content-Type: application/json');
         return json_encode($data, JSON_PRETTY_PRINT);
@@ -72,8 +72,8 @@ class HealthController extends AdminController
     #[Get("/refresh", "refresh", ["max_requests" => 0])]
     public function refresh(): string
     {
-        $checks = $this->healthService->runAllChecks();
-        $overallStatus = $this->healthService->getOverallStatus();
+        $checks = $this->service->runAllChecks();
+        $overallStatus = $this->service->getOverallStatus();
 
         return $this->render("admin/health/checks-list.html.twig", [
             'checks' => $checks,
