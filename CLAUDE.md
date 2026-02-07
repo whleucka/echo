@@ -1,47 +1,109 @@
 # CLAUDE.md
 
-This file serves as a high-level overview and primary entry point for agents like Claude Code (claude.ai/code) when working with the Echo PHP framework. Its purpose is to quickly orient the agent to the project's core concepts and direct them to more detailed documentation.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
-Echo is a custom PHP 8.2+ MVC framework built for speed and simplicity. It leverages PHP 8 attributes for routing, PHP-DI for dependency injection, and Twig for templating. The project runs in a Dockerized environment.
+Echo is a custom PHP 8.2+ MVC framework using attribute-based routing, PHP-DI for dependency injection, and Twig for templating. It runs in Docker (PHP 8.3-FPM, Nginx, MariaDB 11, Redis 7).
 
-## Console Commands
+## Commands
 
-Console commands use colon-separated syntax (Symfony Console standard):
+All PHP commands run inside the Docker container. Bin helpers wrap `docker-compose exec`:
 
 ```bash
-./bin/console migrate:fresh
-./bin/console route:cache
-./bin/console db:backup
+# Tests
+./bin/phpunit                              # run all tests
+./bin/phpunit tests/Http/KernelTest.php    # run a single test file
+./bin/phpunit --filter testMethodName      # run a single test method
+composer test                              # alternative (inside container)
+
+# Development
+docker-compose up -d                       # start containers
+./bin/php composer install                 # install dependencies
+./bin/console migrate:run                  # run database migrations
+composer clear-cache                       # clear Twig template cache
 ```
 
-Run `./bin/console` to see all available commands with descriptions.
+## Architecture
 
-## Dashboard Widgets
+### Namespaces & Directories
 
-Dashboard widgets are **not** defined inline. They are registered in the `WidgetServiceProvider`. To add or modify widgets, update `app/Providers/WidgetServiceProvider.php`.
+- `Echo\` → `src/Framework/` — framework internals (routing, ORM, middleware, admin base)
+- `App\` → `app/` — application code (controllers, models, services, providers)
+- `Tests\` → `tests/` — PHPUnit tests
 
-## Comprehensive Documentation
+### Request Lifecycle
 
-For detailed information on various aspects of the Echo PHP framework, please refer to the following documents in the `docs/` directory:
+`public/index.php` → `app()` → `Application` boots providers → `HttpKernel` runs middleware stack → `Router` dispatches to controller → response
 
-*   **[Documentation Index](docs/INDEX.md)**: A central hub for navigating all project documentation, including a project overview and architecture summary.
-*   **[Quick Reference](docs/QUICK_REF.md)**: Provides a quick glance at common tasks, essential Docker commands, helper functions, and project conventions.
-*   **[API Documentation](docs/API.md)**: Detailed information regarding the framework's routing system and middleware stack.
-*   **[Database Documentation](docs/DATABASE.md)**: Covers database interactions, ORM usage, migrations, and database-related validation.
-*   **[Testing](docs/TESTING.md)**: Guidelines and instructions for running tests within the framework.
-*   **[Deployment](docs/DEPLOYMENT.md)**: Outlines the deployment process, Docker environment setup, and container management.
-*   **[Troubleshooting](docs/troubleshooting/)**:
-    *   **[Database Troubleshooting](docs/troubleshooting/database.md)**
-    *   **[Performance Troubleshooting](docs/troubleshooting/performance.md)**
-    *   **[Common Errors Troubleshooting](docs/troubleshooting/common-errors.md)**
+### Routing
 
-Please use these linked documents for in-depth understanding before attempting modifications or implementing new features.
+Routes are declared via PHP 8 attributes on controller methods:
 
-## Task Completion
+```php
+use Echo\Framework\Routing\Route\{Get, Post, Put, Delete};
+use Echo\Framework\Routing\Group;
 
-Make sure you update ROADMAP.md when a task is completed (if it exists)
+#[Group(path_prefix: "/admin", middleware: ["auth"])]
+class MyController extends Controller
+{
+    #[Get("/items", "items.index")]
+    public function index() { ... }
 
-If something in the docs needs to be updated or added, then go
-ahead and do so. Keeping the agent docs up to date is important.
+    #[Post("/items", "items.store")]
+    public function store() { ... }
+}
+```
+
+Route attributes: `Get`, `Post`, `Put`, `Patch`, `Delete`, `Head`. Controllers in `app/Http/Controllers/` are auto-discovered. Routes are cached via `RouteCache`.
+
+### Admin Module System
+
+Admin CRUD modules extend `ModuleController` (at `src/Framework/Http/ModuleController.php`), which provides full CRUD with HTMX-driven tables, modals, sorting, filtering, pagination, and CSV export.
+
+Each module defines its schema declaratively via two builder methods:
+
+```php
+#[Group(path_prefix: "/users", name_prefix: "users")]
+class UsersController extends ModuleController
+{
+    protected function defineTable(TableSchemaBuilder $builder): void { ... }
+    protected function defineForm(FormSchemaBuilder $builder): void { ... }
+
+    public function __construct()
+    {
+        parent::__construct("users");  // table name
+    }
+}
+```
+
+Schema builders (`TableSchemaBuilder`, `FormSchemaBuilder`) produce immutable value objects (`TableSchema`, `FormSchema`). Key components live in `src/Framework/Admin/Schema/`.
+
+Admin modules: `app/Http/Controllers/Admin/` — Users, Audit, Activity, Health, Modules, UserPermissions.
+
+### Database
+
+- **Model** (`src/Framework/Database/Model.php`): Active Record with `find()`, `where()`, `get()`, `first()`, `create()`, `update()`, `delete()`
+- **QueryBuilder** (`src/Framework/Database/QueryBuilder.php`): Fluent SQL builder for raw queries with parameter binding
+- **Helpers**: `qb()` returns new QueryBuilder, `db()` returns PDO Connection
+- Admin table queries use QueryBuilder directly (supports JOINs, expressions, aliases); the ORM is for simpler model operations
+
+### Middleware
+
+Defined in `app/Http/Kernel.php` as `$middleware_layers`. Applied per-route via the `middleware` parameter on route attributes/groups (e.g., `middleware: ["auth"]`).
+
+### Helper Functions
+
+Global helpers in `app/Helpers/Functions.php`: `app()`, `console()`, `container()`, `qb()`, `db()`, `twig()`, `uri()`, `session()`, `user()`, `config()`, `render()`.
+
+### Configuration
+
+All config lives in `config/` as PHP files returning arrays. Accessed via `config("file.key")` (e.g., `config("db.host")`). Environment variables loaded from `.env` via Dotenv.
+
+### Templates
+
+Twig templates in `templates/`. Cache in `templates/.cache/`. Auto-reload when `APP_DEBUG=true`.
+
+## Testing
+
+PHPUnit 12, bootstrap in `tests/bootstrap.php` (sets `APP_ENV=testing`). Base class: `Tests\TestCase`. Tests organized by domain: `Database/`, `Http/`, `Session/`, `Routing/`, `Audit/`, `Admin/`.
