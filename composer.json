@@ -36,7 +36,8 @@
         "peppeocchi/php-cron-scheduler": "dev-master",
         "chillerlan/php-qrcode": "dev-main",
         "symfony/console": "^7.0",
-        "symfony/string": "^7.0"
+        "symfony/string": "^7.0",
+        "phpmailer/phpmailer": "dev-master"
     },
     "require-dev": {
         "phpunit/phpunit": "^12.0@dev"

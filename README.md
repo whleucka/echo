@@ -15,6 +15,7 @@ Echo is a modern PHP 8.2+ MVC framework built for speed, simplicity, and flexibi
 - **Twig Templating** - Modern template engine with caching
 - **Custom ORM** - Intuitive query builder and model system
 - **Middleware Stack** - Comprehensive middleware for auth, CSRF, rate limiting, and more
+- **Email System** - SMTP mail with queue, retries, Twig templates, and attachments
 - **Redis Integration** - Optional Redis for caching, sessions, and rate limiting
 - **Docker-Ready** - Fully containerized development environment
 - **Testing** - Built-in PHPUnit integration
@@ -248,6 +249,112 @@ $data = $this->validate([
 ]);
 ```
 
+## Email System
+
+Echo includes a full email system with SMTP sending, a persistent job queue with retries, Twig template support, and audit logging.
+
+### Configuration
+
+Add SMTP credentials to your `.env` file:
+
+```env
+MAIL_HOST=smtp.example.com
+MAIL_PORT=587
+MAIL_USERNAME=your@email.com
+MAIL_PASSWORD=secret
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@example.com
+MAIL_FROM_NAME=Echo
+```
+
+Additional settings in `config/mail.php`: `max_retries`, `retry_delay_minutes`, `batch_size`.
+
+### Sending Email
+
+Use the fluent `Mailable` builder with the `mailer()` helper:
+
+```php
+use Echo\Framework\Mail\Mailable;
+
+// Send immediately — plain text
+mailer()->send(
+    Mailable::create()
+        ->to('user@example.com')
+        ->subject('Hello')
+        ->text('Plain text body')
+);
+
+// Send immediately — HTML with Twig template
+mailer()->send(
+    Mailable::create()
+        ->to('user@example.com', 'Will')
+        ->subject('Welcome!')
+        ->template('emails/welcome.html.twig', ['name' => 'Will'])
+);
+
+// Send with attachments
+mailer()->send(
+    Mailable::create()
+        ->to('user@example.com')
+        ->subject('Your Report')
+        ->html('<h1>Report attached</h1>')
+        ->attach('/path/to/report.pdf')
+        ->attachData($csvContent, 'data.csv', 'text/csv')
+);
+
+// Queue for background delivery
+mailer()->queue(
+    Mailable::create()
+        ->to('user@example.com')
+        ->subject('Newsletter')
+        ->template('emails/newsletter.html.twig', $data)
+);
+
+// Schedule for future delivery
+mailer()->send(
+    Mailable::create()
+        ->to('user@example.com')
+        ->subject('Reminder')
+        ->text('Your trial expires tomorrow.')
+        ->delay('2026-03-01 09:00:00')
+);
+```
+
+### Email Queue
+
+Queued and scheduled emails are stored in the `email_jobs` table and processed by a background worker. The queue supports automatic retries with configurable delay and max attempts.
+
+```bash
+# Process the queue manually
+./bin/console mail:queue
+
+# View queue status
+./bin/console mail:status
+
+# Purge old sent/exhausted jobs
+./bin/console mail:purge --days=30
+```
+
+The scheduler (`scheduler.php`) runs the mail worker every minute automatically when cron is configured.
+
+### Email Templates
+
+Email templates live in `templates/emails/` and extend the base layout:
+
+```twig
+{% extends "emails/base.html.twig" %}
+
+{% block header %}<h1>Welcome, {{ name }}!</h1>{% endblock %}
+
+{% block body %}
+    <p>Thanks for signing up.</p>
+{% endblock %}
+```
+
+### Logging
+
+All email activity is logged to `storage/logs/mail-YYYY-MM-DD.log` via a dedicated `mail` channel. Sent emails and final failures are also recorded in the audit log.
+
 ## Redis Integration
 
 Echo includes optional Redis support for caching, sessions, and rate limiting. All features gracefully fall back to file-based alternatives if Redis is unavailable.
@@ -471,8 +578,9 @@ echo/
 │   └── Helpers/            # Helper functions
 ├── src/                    # Framework code (Echo namespace)
 │   ├── Framework/          # Core framework classes
-│   │   └── Admin/          # Admin system components
-│   │       └── Widgets/    # Dashboard widgets
+│   │   ├── Admin/          # Admin system components
+│   │   │   └── Widgets/    # Dashboard widgets
+│   │   └── Mail/           # Email system (Mailer, Mailable, EmailQueue)
 │   └── Interface/          # Contracts/interfaces
 ├── config/                 # Configuration files
 ├── migrations/             # Database migrations
@@ -480,8 +588,10 @@ echo/
 │   └── admin/              # Admin panel templates
 ├── public/                 # Web root
 │   └── index.php           # Application entry point
+├── jobs/                   # Scheduled job scripts
 ├── bin/
-│   └── console             # CLI entry point
+│   ├── console             # CLI entry point
+│   └── release             # Version tagging script
 └── tests/                  # PHPUnit tests
 ```
 

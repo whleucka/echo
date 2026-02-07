@@ -205,6 +205,14 @@ function cache(): \Echo\Framework\Cache\CacheInterface
 }
 
 /**
+ * Get mailer instance
+ */
+function mailer(): \Echo\Framework\Mail\Mailer
+{
+    return container()->get(\Echo\Framework\Mail\Mailer::class);
+}
+
+/**
  * Get application config
  */
 function config(string $name): mixed

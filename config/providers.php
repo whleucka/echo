@@ -12,4 +12,5 @@ return [
     App\Providers\DatabaseServiceProvider::class,
     App\Providers\RedisServiceProvider::class,
     App\Providers\WidgetServiceProvider::class,
+    App\Providers\MailServiceProvider::class,
 ];

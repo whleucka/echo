@@ -46,5 +46,10 @@ class Kernel extends ConsoleKernel
         Commands\DbRestoreCommand::class,
         Commands\DbListCommand::class,
         Commands\DbCleanupCommand::class,
+
+        // Mail
+        Commands\MailQueueCommand::class,
+        Commands\MailStatusCommand::class,
+        Commands\MailPurgeCommand::class,
     ];
 }
