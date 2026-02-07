@@ -10,7 +10,7 @@ class TwigExtension extends AbstractExtension
     public function getFunctions()
     {
         return [
-            new TwigFunction("csrf", [$this, "csrf"]),
+            new TwigFunction("csrf", [$this, "csrf"], ["is_safe" => ["html"]]),
             new TwigFunction("uri", [$this, "uri"]),
             new TwigFunction("old", [$this, "old"]),
             new TwigFunction("php_ini", [$this, "phpIni"]),
