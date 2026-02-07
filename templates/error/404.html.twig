@@ -4,13 +4,36 @@
 
 {% block content %}
     <style>
+        .error-template {
+            padding: 40px 15px;
+            text-align: center;
+        }
+        .error-actions {
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        .error-actions .btn {
+            margin-right: 10px;
+        }
     </style>
-    <div id="error404" class="p-4 container">
-        <h1>404 Not Found</h1>
-        <p class="lead">The file or resource you requested could not be located.</p>
-        <img style="max-width: 100%;" class="w-100" src="https://media2.giphy.com/media/g01ZnwAUvutuK8GIQn/giphy.gif?cid=5a38a5a2npx88b1l9o3jz4zgahszlhj8flen63uzyj12m1zx&ep=v1_gifs_search&rid=giphy.gif&ct=g" alt="Confused Travolta" />
-        <div class="mt-2">
-            <button class="btn btn-secondary mt-3" onClick="history.back()">Go back</button>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="error-template">
+                    <h1>
+                        Oops!</h1>
+                    <h2>
+                        404 Not Found</h2>
+                    <div class="error-details">
+                        Sorry, an error has occurred, Requested page not found!
+                    </div>
+                    <div class="error-actions">
+                        <a href="/" class="btn btn-primary btn-lg"><span class="bi bi-house"></span>
+                            Take Me Home </a>
+                        <button class="btn btn-secondary btn-lg" onClick="history.back()"><span class="bi bi-arrow-left"></span> Go Back </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}

@@ -37,7 +37,7 @@
             <button class="btn btn-primary" onClick="location.reload()">Refresh</button>
             {% if is_logged %}
             <form method="POST" action="/admin/sign-out" class="d-inline">
-                {{ csrf() }}
+                {{ csrf()|raw }}
                 <button type="submit" class="btn btn-primary">Sign out</button>
             </form>
             {% endif %}

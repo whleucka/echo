@@ -21,7 +21,7 @@
         <li class="ps-2 d-block d-md-none text-secondary">Session</li>
         <li>
           <form method="POST" action="/admin/sign-out" hx-boost="false">
-            {{ csrf() }}
+            {{ csrf()|raw }}
             <button type="submit" class="dropdown-item">
               <span class="bi bi-door-closed"></span> <span class="ps-2">Sign Out</span>
             </button>
