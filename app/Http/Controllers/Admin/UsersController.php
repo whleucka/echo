@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Echo\Framework\Admin\Schema\TableSchemaBuilder;
+use Echo\Framework\Admin\Schema\{FormSchemaBuilder, TableSchemaBuilder};
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 
@@ -33,45 +33,42 @@ class UsersController extends ModuleController
                 ]);
     }
 
+    protected function defineForm(FormSchemaBuilder $builder): void
+    {
+        $builder->field('avatar', 'Avatar')
+                ->image()
+                ->accept('image/*');
+
+        $builder->field('role', 'Role')
+                ->dropdown()
+                ->options([
+                    ['value' => 'standard', 'label' => 'Standard'],
+                    ['value' => 'admin', 'label' => 'Admin'],
+                ])
+                ->rules(['required']);
+
+        $builder->field('first_name', 'First Name')
+                ->input()
+                ->rules(['required']);
+
+        $builder->field('surname', 'Surname')
+                ->input();
+
+        $builder->field('email', 'Email')
+                ->email()
+                ->rules(['required', 'email', 'unique:users']);
+
+        $builder->field('password', 'Password', "'' as password")
+                ->password()
+                ->rules(['required', 'min_length:10', 'regex:^(?=.*[A-Z])(?=.*\W)(?=.*\d).+$']);
+
+        $builder->field('password_match', 'Password (again)', "'' as password_match")
+                ->password()
+                ->rules(['required', 'match:password']);
+    }
+
     public function __construct()
     {
-        $this->form_columns = [
-            "Avatar" => "avatar",
-            "Role" => "role",
-            "First Name" => "first_name",
-            "Surname" => "surname",
-            "Email" => "email",
-            "Password" => "'' as password",
-            "Password (again)" => "'' as password_match",
-        ];
-
-        $this->form_controls = [
-            "avatar" => "image",
-            "role" => "dropdown",
-            "first_name" => "input",
-            "surname" => "input",
-            "email" => "email",
-            "password" => "password",
-            "password_match" => "password",
-        ];
-
-        $this->form_dropdowns = [
-            "role" => [
-                ["value" => "standard", "label" => "Standard"],
-                ["value" => "admin", "label" => "Admin"],
-            ]
-        ];
-
-        $this->validation_rules = [
-            "avatar" => [],
-            "role" => ["required"],
-            "first_name" => ["required"],
-            "surname" => [],
-            "email" => ["required", "email", "unique:users"],
-            "password" => ["required", "min_length:10", "regex:^(?=.*[A-Z])(?=.*\W)(?=.*\d).+$"],
-            "password_match" => ["required", "match:password"],
-        ];
-
         parent::__construct("users");
     }
 

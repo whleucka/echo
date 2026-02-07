@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Echo\Framework\Admin\Schema\TableSchemaBuilder;
+use Echo\Framework\Admin\Schema\{FormSchemaBuilder, TableSchemaBuilder};
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 
@@ -25,49 +25,40 @@ class ModulesController extends ModuleController
         $builder->filterLink('Children', 'parent_id IS NOT NULL');
     }
 
+    protected function defineForm(FormSchemaBuilder $builder): void
+    {
+        $builder->field('enabled', 'Enabled')->checkbox();
+
+        $builder->field('parent_id', 'Parent')
+                ->dropdown()
+                ->optionsFrom("SELECT id as value, if(parent_id IS NULL, concat(title, ' (root)'), title) as label
+                FROM modules
+                ORDER BY parent_id IS NULL DESC, title");
+
+        $builder->field('link', 'Link')->input();
+
+        $builder->field('title', 'Title')
+                ->input()
+                ->rules(['required']);
+
+        $builder->field('icon', 'Icon')
+                ->input()
+                ->datalist($this->getIconList());
+
+        $builder->field('item_order', 'Order')->number();
+    }
+
     public function __construct()
+    {
+        parent::__construct("modules");
+    }
+
+    private function getIconList(): array
     {
         $url = config("paths.js") . '/bootstrap-icons.json';
         $json = file_get_contents($url);
         $data = json_decode($json, true);
-
-        $this->form_datalist = [
-            "icon" => array_keys($data),
-        ];
-
-        $this->form_columns = [
-            "Enabled" => "enabled",
-            "Parent" => "parent_id",
-            "Link" => "link",
-            "Title" => "title",
-            "Icon" => "icon",
-            "Order" => "item_order",
-        ];
-
-        $this->form_controls = [
-            "enabled" => "checkbox",
-            "parent_id" => "dropdown",
-            "link" => "input",
-            "title" => "input",
-            "icon" => "input",
-            "item_order" => "number",
-        ];
-
-        $this->form_dropdowns = [
-            "parent_id" => "SELECT id as value, if(parent_id IS NULL, concat(title, ' (root)'), title) as label
-                FROM modules
-                ORDER BY parent_id IS NULL DESC, title",
-        ];
-
-        $this->validation_rules = [
-            "enabled" => [],
-            "parent_id" => [],
-            "link" => [],
-            "title" => ["required"],
-            "icon" => [],
-        ];
-
-        parent::__construct("modules");
+        return array_keys($data);
     }
 
     protected function handleUpdate(int $id, array $request): bool

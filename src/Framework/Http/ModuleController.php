@@ -5,7 +5,7 @@ namespace Echo\Framework\Http;
 use App\Models\FileInfo;
 use App\Services\Admin\SidebarService;
 use Echo\Framework\Admin\{ModuleState, QueryBuilderDataSource, TableDataSource, TableResult};
-use Echo\Framework\Admin\Schema\{ColumnDefinition, TableSchema, TableSchemaBuilder};
+use Echo\Framework\Admin\Schema\{ColumnDefinition, FieldDefinition, FormSchema, FormSchemaBuilder, TableSchema, TableSchemaBuilder};
 use Echo\Framework\Audit\AuditLogger;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
@@ -20,6 +20,7 @@ abstract class ModuleController extends Controller
 {
     // --- Schema-driven components ---
     protected TableSchema $tableSchema;
+    protected FormSchema $formSchema;
     protected ModuleState $state;
     protected TableDataSource $dataSource;
 
@@ -35,28 +36,28 @@ abstract class ModuleController extends Controller
     protected bool $has_export = true;
     protected bool $has_show = true;
 
-    // --- Form config (kept as arrays until FormSchema phase) ---
-    protected array $form_columns = [];
-    protected array $form_controls = [];
-    protected array $form_dropdowns = [];
-    protected array $form_datalist = [];
-    protected array $form_readonly = [];
-    protected array $form_disabled = [];
-    protected array $form_defaults = [];
-    protected array $file_accept = [];
-    protected array $validation_rules = [];
-
     /**
      * Subclasses define their table schema here.
      */
     abstract protected function defineTable(TableSchemaBuilder $builder): void;
 
+    /**
+     * Subclasses define their form schema here.
+     * Optional — modules without forms don't need to override this.
+     */
+    protected function defineForm(FormSchemaBuilder $builder): void {}
+
     public function __construct(private ?string $table_name = null)
     {
-        // Build schema
-        $builder = new TableSchemaBuilder($table_name);
-        $this->defineTable($builder);
-        $this->tableSchema = $builder->build();
+        // Build table schema
+        $tableBuilder = new TableSchemaBuilder($table_name);
+        $this->defineTable($tableBuilder);
+        $this->tableSchema = $tableBuilder->build();
+
+        // Build form schema
+        $formBuilder = new FormSchemaBuilder();
+        $this->defineForm($formBuilder);
+        $this->formSchema = $formBuilder->build();
 
         // Initialize components
         $this->dataSource = new QueryBuilderDataSource();
@@ -243,7 +244,7 @@ abstract class ModuleController extends Controller
         if (!$this->hasCreate()) {
             return $this->permissionDenied();
         }
-        $valid = $this->validate($this->validation_rules);
+        $valid = $this->validate($this->formSchema->getValidationRules());
         if ($valid) {
             $request = $this->massageRequest(null, (array) $valid);
             $id = $this->handleStore($request);
@@ -268,7 +269,7 @@ abstract class ModuleController extends Controller
         if (!$this->hasEdit($id)) {
             return $this->permissionDenied();
         }
-        $valid = $this->validate($this->validation_rules, $id);
+        $valid = $this->validate($this->formSchema->getValidationRules(), $id);
         if ($valid) {
             $request = $this->massageRequest($id, (array) $valid);
             $result = $this->handleUpdate($id, $request);
@@ -562,16 +563,17 @@ abstract class ModuleController extends Controller
     }
 
     // =========================================================================
-    // Form rendering (kept as-is from AdminController)
+    // Form rendering (schema-driven)
     // =========================================================================
 
     protected function renderForm(?int $id, string $type): string
     {
-        if (empty($this->form_columns) || !$this->table_name) {
+        if (empty($this->formSchema->fields) || !$this->table_name) {
             return '';
         }
 
         $data = $this->runFormQuery($id);
+        $readonly = false;
 
         if ($type === "edit") {
             $data = $data->fetch();
@@ -582,17 +584,13 @@ abstract class ModuleController extends Controller
             $submit = false;
             $data = $data->fetch();
             $title = "View $id";
-            foreach ($data as $column => $value) {
-                if (!in_array($column, $this->form_readonly)) {
-                    $this->form_readonly[] = $column;
-                }
-            }
+            $readonly = true;
         } elseif ($type === "create") {
             $title = "Create";
             $submit = "Create";
         }
 
-        $this->registerFunctions();
+        $this->registerFunctions($readonly);
 
         return $this->render("admin/form-modal.html.twig", [
             ...$this->getCommonData(),
@@ -603,7 +601,8 @@ abstract class ModuleController extends Controller
                 ? "/admin/{$this->module_link}/$id/update"
                 : "/admin/{$this->module_link}",
             "submit" => $submit,
-            "labels" => array_keys($this->form_columns),
+            "readonly" => $readonly,
+            "labels" => $this->formSchema->getLabels(),
             "data" => $data,
         ]);
     }
@@ -611,15 +610,10 @@ abstract class ModuleController extends Controller
     private function runFormQuery(?int $id): array|bool|PDOStatement
     {
         if (is_null($id)) {
-            $data = [];
-            foreach ($this->form_columns as $value) {
-                $column = $this->getAlias($value);
-                $data[$column] = $this->form_defaults[$column] ?? null;
-            }
-            return $data;
+            return $this->formSchema->getDefaults();
         }
         $pk = $this->tableSchema->primaryKey;
-        return qb()->select(array_values($this->form_columns))
+        return qb()->select($this->formSchema->getSelectExpressions())
             ->from($this->table_name)
             ->where(["$pk = ?"], $id)
             ->execute();
@@ -634,7 +628,7 @@ abstract class ModuleController extends Controller
     // Twig function registration
     // =========================================================================
 
-    private function registerFunctions(): void
+    private function registerFunctions(bool $forceReadonly = false): void
     {
         $twig = twig();
         $twig->addFunction(new TwigFunction("has_export", fn() => $this->hasExport()));
@@ -643,79 +637,83 @@ abstract class ModuleController extends Controller
         $twig->addFunction(new TwigFunction("has_show", fn(int $id) => $this->hasShow($id)));
         $twig->addFunction(new TwigFunction("has_delete", fn(int $id) => $this->hasDelete($id)));
         $twig->addFunction(new TwigFunction("has_row_actions", fn() => $this->has_show || $this->has_edit || $this->has_delete));
-        $twig->addFunction(new TwigFunction("control", fn(string $column, ?string $value) => $this->control($column, $value)));
+        $twig->addFunction(new TwigFunction("control", fn(string $column, ?string $value) => $this->control($column, $value, $forceReadonly)));
         $twig->addFunction(new TwigFunction("format", fn(string $column, ?string $value) => $this->formatValue($column, $value)));
     }
 
     // =========================================================================
-    // Form controls (kept as-is from AdminController)
+    // Form controls (schema-driven)
     // =========================================================================
 
-    private function control(string $column, ?string $value)
+    private function control(string $column, ?string $value, bool $forceReadonly = false)
     {
-        if (isset($this->form_controls[$column])) {
-            $control = $this->form_controls[$column];
-            if (in_array($control, ["file", "image"])) {
-                $fi = new FileInfo($value);
-            }
-            return match ($control) {
-                "input" => $this->renderControl("input", $column, $value),
-                "number" => $this->renderControl("input", $column, $value, [
-                    "type" => "number",
-                ]),
-                "checkbox" => $this->renderControl("input", $column, $value, [
-                    "value" => 1,
-                    "type" => "checkbox",
-                    "class" => "form-check-input ms-1",
-                    "checked" => $value != false,
-                ]),
-                "email" => $this->renderControl("input", $column, $value, [
-                    "type" => "email",
-                    "autocomplete" => "email",
-                ]),
-                "password" => $this->renderControl("input", $column, $value, [
-                    "type" => "password",
-                    "autocomplete" => "current-password",
-                ]),
-                "dropdown" => $this->renderControl("dropdown", $column, $value, [
-                    "class" => "form-select",
-                    "options" => key_exists($column, $this->form_dropdowns) && is_string($this->form_dropdowns[$column])
-                        ? db()->fetchAll($this->form_dropdowns[$column])
-                        : $this->form_dropdowns[$column] ?? '',
-                ]),
-                "image" => $this->renderControl("image", $column, $value, [
-                    "type" => "file",
-                    "file" => $fi ? $fi->getAttributes() : false,
-                    "stored_name" => $fi ? $fi->stored_name : false,
-                    "accept" => $this->file_accept[$column] ?? "image/*",
-                ]),
-                "file" => $this->renderControl("file", $column, $value, [
-                    "type" => "file",
-                    "file" => $fi ? $fi->getAttributes() : false,
-                    "accept" => $this->file_accept[$column] ?? '',
-                ]),
-                default => is_callable($control) ? $control($column, $value) : $value,
-            };
+        $field = $this->formSchema->getField($column);
+        if (!$field) {
+            return $value;
         }
-        return $value;
+
+        // Custom renderer takes priority
+        if ($field->controlRenderer) {
+            return ($field->controlRenderer)($column, $value);
+        }
+
+        $control = $field->control;
+        if (in_array($control, ["file", "image"])) {
+            $fi = new FileInfo($value);
+        }
+
+        return match ($control) {
+            "input" => $this->renderControl("input", $field, $value, forceReadonly: $forceReadonly),
+            "number" => $this->renderControl("input", $field, $value, [
+                "type" => "number",
+            ], $forceReadonly),
+            "checkbox" => $this->renderControl("input", $field, $value, [
+                "value" => 1,
+                "type" => "checkbox",
+                "class" => "form-check-input ms-1",
+                "checked" => $value != false,
+            ], $forceReadonly),
+            "email" => $this->renderControl("input", $field, $value, [
+                "type" => "email",
+                "autocomplete" => "email",
+            ], $forceReadonly),
+            "password" => $this->renderControl("input", $field, $value, [
+                "type" => "password",
+                "autocomplete" => "current-password",
+            ], $forceReadonly),
+            "dropdown" => $this->renderControl("dropdown", $field, $value, [
+                "class" => "form-select",
+                "options" => $field->resolveOptions(),
+            ], $forceReadonly),
+            "image" => $this->renderControl("image", $field, $value, [
+                "type" => "file",
+                "file" => $fi ? $fi->getAttributes() : false,
+                "stored_name" => $fi ? $fi->stored_name : false,
+                "accept" => $field->accept ?? "image/*",
+            ], $forceReadonly),
+            "file" => $this->renderControl("file", $field, $value, [
+                "type" => "file",
+                "file" => $fi ? $fi->getAttributes() : false,
+                "accept" => $field->accept ?? '',
+            ], $forceReadonly),
+            default => $value,
+        };
     }
 
-    private function renderControl(string $type, string $column, ?string $value, array $data = [])
+    private function renderControl(string $type, FieldDefinition $field, ?string $value, array $data = [], bool $forceReadonly = false)
     {
-        $required = false;
-        if (isset($this->validation_rules[$column])) {
-            $required = in_array("required", $this->validation_rules[$column]);
-        }
+        $required = $field->isRequired();
+        $column = $field->name;
         $default = [
             "type" => "input",
             "class" => "form-control",
             "v_class" => $this->getValidationClass($column, $required),
             "id" => $column,
             "name" => $column,
-            "title" => array_search($column, $this->form_columns),
+            "title" => $field->label,
             "value" => $value,
             "placeholder" => "",
-            "datalist" => $this->form_datalist[$column] ?? [],
+            "datalist" => $field->datalist,
             "alt" => null,
             "minlength" => null,
             "maxlength" => null,
@@ -734,8 +732,8 @@ abstract class ModuleController extends Controller
             "checked" => null,
             "autofocus" => null,
             "required" => $required,
-            "readonly" => in_array($column, $this->form_readonly),
-            "disabled" => in_array($column, $this->form_disabled),
+            "readonly" => $forceReadonly || $field->readonly,
+            "disabled" => $forceReadonly || $field->disabled,
         ];
         $template_data = array_merge($default, $data);
         return $this->render("admin/controls/$type.html.twig", $template_data);
@@ -760,7 +758,9 @@ abstract class ModuleController extends Controller
 
     private function massageRequest(?int $id, array $request): array
     {
-        foreach ($this->form_controls as $column => $control) {
+        foreach ($this->formSchema->fields as $field) {
+            $column = $field->name;
+            $control = $field->control;
             $value = $request[$column] ?? null;
             if ($value === "NULL") {
                 $request[$column] = null;
@@ -1046,17 +1046,17 @@ abstract class ModuleController extends Controller
 
     protected function hasCreate(): bool
     {
-        return $this->checkPermission('has_create') && $this->has_create && !empty($this->form_columns);
+        return $this->checkPermission('has_create') && $this->has_create && !empty($this->formSchema->fields);
     }
 
     protected function hasShow(int $id): bool
     {
-        return $this->has_show && !empty($this->form_columns);
+        return $this->has_show && !empty($this->formSchema->fields);
     }
 
     protected function hasEdit(int $id): bool
     {
-        return $this->checkPermission('has_edit') && $this->has_edit && !empty($this->form_columns);
+        return $this->checkPermission('has_edit') && $this->has_edit && !empty($this->formSchema->fields);
     }
 
     protected function hasDelete(int $id): bool
@@ -1172,13 +1172,4 @@ abstract class ModuleController extends Controller
         ];
     }
 
-    // =========================================================================
-    // Utility
-    // =========================================================================
-
-    private function getAlias(string $str): string
-    {
-        $str = explode(" as ", $str);
-        return end($str);
-    }
 }

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Models\User;
 use App\Models\UserPermission;
-use Echo\Framework\Admin\Schema\TableSchemaBuilder;
+use Echo\Framework\Admin\Schema\{FormSchemaBuilder, TableSchemaBuilder};
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 
@@ -36,40 +36,26 @@ class UserPermissionsController extends ModuleController
                 ->optionsFrom("SELECT id as value, CONCAT(first_name, ' ', surname) as label FROM users WHERE role != 'admin' ORDER BY label");
     }
 
+    protected function defineForm(FormSchemaBuilder $builder): void
+    {
+        $builder->field('module_id', 'Module')
+                ->dropdown()
+                ->optionsFrom("SELECT id as value, title as label FROM modules WHERE parent_id IS NOT NULL AND enabled = 1 ORDER BY title")
+                ->rules(['required']);
+
+        $builder->field('user_id', 'User')
+                ->dropdown()
+                ->optionsFrom("SELECT id as value, CONCAT(first_name, ' ', surname) as label FROM users WHERE role != 'admin' ORDER BY label")
+                ->rules(['required']);
+
+        $builder->field('has_create', 'Create')->checkbox();
+        $builder->field('has_edit', 'Edit')->checkbox();
+        $builder->field('has_delete', 'Delete')->checkbox();
+        $builder->field('has_export', 'Export CSV')->checkbox();
+    }
+
     public function __construct()
     {
-        $this->form_columns = [
-            "Module" => "module_id",
-            "User" => "user_id",
-            "Create" => "has_create",
-            "Edit" => "has_edit",
-            "Delete" => "has_delete",
-            "Export CSV" => "has_export",
-        ];
-
-        $this->form_controls = [
-            "module_id" => "dropdown",
-            "user_id" => "dropdown",
-            "has_create" => "checkbox",
-            "has_edit" => "checkbox",
-            "has_delete" => "checkbox",
-            "has_export" => "checkbox",
-        ];
-
-        $this->form_dropdowns = [
-            "module_id" => "SELECT id as value, title as label FROM modules WHERE parent_id IS NOT NULL AND enabled = 1 ORDER BY title",
-            "user_id" => "SELECT id as value, CONCAT(first_name, ' ', surname) as label FROM users WHERE role != 'admin' ORDER BY label",
-        ];
-
-        $this->validation_rules = [
-            "module_id" => ["required"],
-            "user_id" => ["required"],
-            "has_create" => [],
-            "has_edit" => [],
-            "has_delete" => [],
-            "has_export" => [],
-        ];
-
         parent::__construct("user_permissions");
     }
 
