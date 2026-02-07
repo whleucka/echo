@@ -1,5 +1,5 @@
 <?php
 
 return [
-    "version" => "v0.2.0"
+    "version" => trim(file_get_contents(__DIR__ . '/../src/Framework/VERSION')),
 ];

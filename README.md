@@ -379,70 +379,70 @@ The framework comes with several pre-built admin modules accessible at `/admin`:
 
 ### Creating Custom Admin Modules
 
-Extend the `AdminController` base class to quickly create CRUD interfaces:
+Extend the `ModuleController` base class to quickly create CRUD interfaces. Define your table and form schemas declaratively using the builder methods:
 
 ```php
 <?php
 
 namespace App\Http\Controllers\Admin;
 
-use Echo\Framework\Http\AdminController;
+use Echo\Framework\Admin\Schema\{FormSchemaBuilder, TableSchemaBuilder};
+use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 
 #[Group(path_prefix: "/products", name_prefix: "products")]
-class ProductsController extends AdminController
+class ProductsController extends ModuleController
 {
+    protected function defineTable(TableSchemaBuilder $builder): void
+    {
+        $builder->defaultSort('id', 'DESC')
+                ->perPage(10);
+
+        $builder->column('id', 'ID')->sortable();
+        $builder->column('name', 'Name')->sortable()->searchable();
+        $builder->column('price', 'Price')->sortable();
+        $builder->column('stock', 'Stock')->sortable();
+        $builder->column('created_at', 'Created')->sortable();
+
+        $builder->filter('category', 'category')
+                ->label('Category')
+                ->optionsFrom("SELECT DISTINCT category as value, category as label FROM products ORDER BY category");
+    }
+
+    protected function defineForm(FormSchemaBuilder $builder): void
+    {
+        $builder->field('name', 'Name')
+                ->input()
+                ->rules(['required']);
+
+        $builder->field('description', 'Description')
+                ->input();
+
+        $builder->field('price', 'Price')
+                ->number()
+                ->rules(['required', 'numeric']);
+
+        $builder->field('stock', 'Stock')
+                ->number()
+                ->rules(['required', 'numeric']);
+    }
+
     public function __construct()
     {
-        // Define table columns for listing
-        $this->table_columns = [
-            "ID" => "id",
-            "Name" => "name",
-            "Price" => "price",
-            "Stock" => "stock",
-            "Created" => "created_at",
-        ];
-
-        // Define searchable columns
-        $this->search_columns = ["Name"];
-
-        // Define form fields
-        $this->form_columns = [
-            "Name" => "name",
-            "Description" => "description",
-            "Price" => "price",
-            "Stock" => "stock",
-        ];
-
-        // Define form controls
-        $this->form_controls = [
-            "name" => "input",
-            "description" => "textarea",
-            "price" => "number",
-            "stock" => "number",
-        ];
-
-        // Define validation rules
-        $this->validation_rules = [
-            "name" => ["required"],
-            "price" => ["required", "numeric"],
-            "stock" => ["required", "numeric"],
-        ];
-
         parent::__construct("products"); // table name
     }
 }
 ```
 
-The `AdminController` automatically provides:
+The `ModuleController` automatically provides:
 - Paginated listing with sorting
 - Search functionality
-- Create/Edit forms
+- Create/Edit/Show forms with validation
 - Delete operations
 - Export to CSV
-- Filter dropdowns and quick links
+- Filter dropdowns, filter links, and date range filters
 - Modal-based editing via HTMX
-- Automatic validation
+- Permission checks per module and per user
 
 ### Admin Features
 
