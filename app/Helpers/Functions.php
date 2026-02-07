@@ -205,6 +205,14 @@ function cache(): \Echo\Framework\Cache\CacheInterface
 }
 
 /**
+ * Create a redirect response (handles HTMX automatically)
+ */
+function redirect(string $url, int $code = 302): \Echo\Framework\Http\RedirectResponse
+{
+    return new \Echo\Framework\Http\RedirectResponse($url, $code);
+}
+
+/**
  * Get crypto instance
  */
 function crypto(): \Echo\Framework\Crypto\Crypto

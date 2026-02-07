@@ -18,6 +18,11 @@ class CSRF implements Middleware
         $this->setup();
 
         if (!in_array('api', $middleware) && !$this->validate($request)) {
+            if ($request->isHTMX()) {
+                $res = new HttpResponse('', 200);
+                $res->setHeader('HX-Redirect', uri("auth.sign-in.index"));
+                return $res;
+            }
             return new HttpResponse("Invalid CSRF token", 403);
         }
 

@@ -20,9 +20,18 @@ class Auth implements Middleware
 
         if (in_array('auth', $middleware) && !$user) {
             Flash::add("warning", "Please sign in to view this page.");
-            $route = uri("auth.sign-in.index");
+            $loginRoute = uri("auth.sign-in.index");
+
+            // HTMX requests get HX-Redirect so the login page
+            // doesn't get swapped into a random target element
+            if ($request->isHTMX()) {
+                $res = new HttpResponse('', 200);
+                $res->setHeader('HX-Redirect', $loginRoute);
+                return $res;
+            }
+
             $res = new HttpResponse('', 302);
-            $res->setHeader('Location', $route);
+            $res->setHeader('Location', $loginRoute);
             return $res;
         }
 
