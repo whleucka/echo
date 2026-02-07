@@ -1,4 +1,4 @@
-  <a title="{{ module.title }}" href="{{ module.url }}" class="nav-link link link-light" hx-on::after-request="sidebarLinkActive(event)" {% if module.normal %}hx-boost="false"{% endif %}>
+  <a title="{{ module.title }}" href="{{ module.url }}" class="nav-link link link-light" {% if module.normal %}hx-boost="false"{% endif %}>
     <li>
         <i class="bi bi-{{ module.icon }}"></i> <span class="ps-2 desc">{{ module.title }}</span>
     </li>

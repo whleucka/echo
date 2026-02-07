@@ -28,16 +28,13 @@ var sidebarLinkActiveLoad = () => {
   });
 }
 
-var sidebarLinkActive = (e) => {
-  const links = document.querySelectorAll('#sidebar-links .link');
-  if (links.length) {
-    links.forEach((link) => {
-      link.classList.remove('active');
-    });
-    e.preventDefault();
-    e.currentTarget.classList.add('active');
-  }
-}
-
 sidebarLinkActiveLoad();
+
+document.body.addEventListener('htmx:afterSettle', function() {
+  sidebarLinkActiveLoad();
+});
+
+window.addEventListener('popstate', function() {
+  setTimeout(sidebarLinkActiveLoad, 50);
+});
 </script>
