@@ -12,7 +12,7 @@ class VersionCommand extends Command
 {
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $output->writeln('<info>' . config('app.version') . '</info>');
+        $output->writeln('<info>' . config('framework.version') . '</info>');
         return Command::SUCCESS;
     }
 }

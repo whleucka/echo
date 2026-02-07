@@ -14,7 +14,7 @@ class Kernel implements ConsoleKernel
     {
         $this->app = new Application(
             config('app.name') ?? 'Echo',
-            config('app.version') ?? '1.0.0'
+            config('framework.version') ?? 'v0.0.1'
         );
     }
 
