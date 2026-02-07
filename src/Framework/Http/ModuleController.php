@@ -658,9 +658,6 @@ abstract class ModuleController extends Controller
         }
 
         $control = $field->control;
-        if (in_array($control, ["file", "image"])) {
-            $fi = new FileInfo($value);
-        }
 
         return match ($control) {
             "input" => $this->renderControl("input", $field, $value, forceReadonly: $forceReadonly),
@@ -685,19 +682,23 @@ abstract class ModuleController extends Controller
                 "class" => "form-select",
                 "options" => $field->resolveOptions(),
             ], $forceReadonly),
-            "image" => $this->renderControl("image", $field, $value, [
-                "type" => "file",
-                "file" => $fi ? $fi->getAttributes() : false,
-                "stored_name" => $fi ? $fi->stored_name : false,
-                "accept" => $field->accept ?? "image/*",
-            ], $forceReadonly),
-            "file" => $this->renderControl("file", $field, $value, [
-                "type" => "file",
-                "file" => $fi ? $fi->getAttributes() : false,
-                "accept" => $field->accept ?? '',
-            ], $forceReadonly),
+            "image", "file" => $this->renderFileControl($control, $field, $value, $forceReadonly),
             default => $value,
         };
+    }
+
+    private function renderFileControl(string $control, FieldDefinition $field, ?string $value, bool $forceReadonly): string
+    {
+        $fi = new FileInfo($value);
+        $data = [
+            "type" => "file",
+            "file" => $fi ? $fi->getAttributes() : false,
+            "accept" => $field->accept ?? ($control === 'image' ? 'image/*' : ''),
+        ];
+        if ($control === 'image') {
+            $data["stored_name"] = $fi ? $fi->stored_name : false;
+        }
+        return $this->renderControl($control, $field, $value, $data, $forceReadonly);
     }
 
     private function renderControl(string $type, FieldDefinition $field, ?string $value, array $data = [], bool $forceReadonly = false)
