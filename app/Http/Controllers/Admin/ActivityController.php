@@ -2,45 +2,37 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Echo\Framework\Http\AdminController;
+use Echo\Framework\Admin\Schema\TableSchemaBuilder;
+use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 
 #[Group(path_prefix: "/activity", name_prefix: "activity")]
-class ActivityController extends AdminController
+class ActivityController extends ModuleController
 {
+    protected function defineTable(TableSchemaBuilder $builder): void
+    {
+        $builder->primaryKey('activity.id')
+                ->join('LEFT JOIN users ON users.id = activity.user_id')
+                ->defaultSort('activity.id', 'DESC');
+
+        $builder->column('id', 'ID', 'activity.id')->sortable();
+        $builder->column('email', 'User', 'users.email')->searchable();
+        $builder->column('ip', 'IP', 'INET_NTOA(activity.ip)');
+        $builder->column('uri', 'URI', 'activity.uri')->searchable();
+        $builder->column('created_at', 'Created', 'activity.created_at')->sortable();
+
+        $builder->filter('email', 'users.email')
+                ->label('User')
+                ->optionsFrom("SELECT email as value, CONCAT(first_name, ' ', surname) as label FROM users ORDER BY label");
+
+        $builder->filterLink('Frontend', "LEFT(activity.uri, 6) != '/admin'");
+        $builder->filterLink('Backend', "LEFT(activity.uri, 6) = '/admin'");
+        $builder->filterLink('Me', 'user_id = ' . user()->id);
+    }
+
     public function __construct()
     {
         $this->has_create = $this->has_edit = $this->has_delete = false;
-
-        $this->table_pk = "activity.id";
-
-        $this->table_columns = [
-            "ID" => "activity.id",
-            "User" => "users.email",
-            "IP" => "INET_NTOA(activity.ip) as ip",
-            "URI" => "activity.uri",
-            "Created" => "activity.created_at",
-        ];
-
-        $this->table_joins = [
-            "LEFT JOIN users ON users.id = activity.user_id",
-        ];
-
-        $this->filter_dropdowns = [
-            "users.email" => "SELECT email as value, CONCAT(first_name, ' ', surname) as label FROM users ORDER BY label",
-        ];
-
-        $this->filter_links = [
-            "Frontend" => "LEFT(activity.uri, 6) != '/admin'",
-            "Backend" => "LEFT(activity.uri, 6) = '/admin'",
-            "Me" => "user_id = " . user()->id,
-        ];
-
-        $this->search_columns = [
-            "URI",
-            "User",
-        ];
-
-        parent::__construct("activity");
+        parent::__construct('activity');
     }
 }

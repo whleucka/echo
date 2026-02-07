@@ -3,68 +3,57 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Audit;
-use Echo\Framework\Http\AdminController;
+use Echo\Framework\Admin\Schema\TableSchemaBuilder;
+use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;
 
 #[Group(path_prefix: "/audits", name_prefix: "audits")]
-class AuditController extends AdminController
+class AuditController extends ModuleController
 {
+    protected function defineTable(TableSchemaBuilder $builder): void
+    {
+        $builder->primaryKey('audits.id')
+                ->join('LEFT JOIN users ON users.id = audits.user_id')
+                ->dateColumn('audits.created_at')
+                ->defaultSort('audits.id', 'DESC');
+
+        $builder->column('id', 'ID', 'audits.id')->sortable();
+        $builder->column('user_name', 'User', "COALESCE(CONCAT(users.first_name, ' ', users.surname), 'System')")
+                ->searchable();
+        $builder->column('auditable_type', 'Type', 'audits.auditable_type')
+                ->searchable()
+                ->formatUsing(fn($col, $val) => $this->formatType($val));
+        $builder->column('auditable_id', 'Record ID', 'audits.auditable_id');
+        $builder->column('event', 'Event', 'audits.event')
+                ->sortable()
+                ->formatUsing(fn($col, $val) => $this->formatEvent($val));
+        $builder->column('ip_address', 'IP', 'audits.ip_address')->searchable();
+        $builder->column('created_at', 'Created', 'audits.created_at')->sortable();
+
+        $builder->filter('event', 'audits.event')
+                ->label('Event')
+                ->options([
+                    ['value' => 'created', 'label' => 'Created'],
+                    ['value' => 'updated', 'label' => 'Updated'],
+                    ['value' => 'deleted', 'label' => 'Deleted'],
+                ]);
+
+        $builder->filter('user', 'audits.user_id')
+                ->label('User')
+                ->optionsFrom("SELECT id as value, CONCAT(first_name, ' ', surname) as label FROM users ORDER BY label");
+
+        $builder->filterLink('Created', "audits.event = 'created'");
+        $builder->filterLink('Updated', "audits.event = 'updated'");
+        $builder->filterLink('Deleted', "audits.event = 'deleted'");
+    }
+
     public function __construct()
     {
         $this->has_create = false;
         $this->has_edit = false;
         $this->has_delete = false;
-
-        $this->table_pk = "audits.id";
-
-        $this->table_columns = [
-            "ID" => "audits.id",
-            "User" => "COALESCE(CONCAT(users.first_name, ' ', users.surname), 'System') as user_name",
-            "Type" => "audits.auditable_type",
-            "Record ID" => "audits.auditable_id",
-            "Event" => "audits.event",
-            "IP" => "audits.ip_address",
-            "Created" => "audits.created_at",
-        ];
-
-        $this->table_joins = [
-            "LEFT JOIN users ON users.id = audits.user_id"
-        ];
-
-        $this->table_format = [
-            "auditable_type" => fn($col, $val) => $this->formatType($val),
-            "event" => fn($col, $val) => $this->formatEvent($val),
-        ];
-
-        $this->filter_dropdowns = [
-            "audits.event" => [
-                ["value" => "created", "label" => "Created"],
-                ["value" => "updated", "label" => "Updated"],
-                ["value" => "deleted", "label" => "Deleted"],
-            ],
-            [
-                "column" => "audits.user_id",
-                "label" => "User",
-                "options" => "SELECT id as value, CONCAT(first_name, ' ', surname) as label FROM users ORDER BY label",
-            ],
-        ];
-
-        $this->filter_links = [
-            "Created" => "audits.event = 'created'",
-            "Updated" => "audits.event = 'updated'",
-            "Deleted" => "audits.event = 'deleted'",
-        ];
-
-        $this->search_columns = [
-            "Type",
-            "IP",
-            "User",
-        ];
-
-        $this->filter_date_column = "audits.created_at";
-
-        parent::__construct("audits");
+        parent::__construct('audits');
     }
 
     /**
@@ -127,25 +116,11 @@ class AuditController extends AdminController
         );
     }
 
-    /**
-     * Override table rendering to add diff link
-     */
-    protected function tableOverride(array $row): array
-    {
-        return $row;
-    }
-
-    /**
-     * Override hasShow to enable viewing audit details
-     */
     protected function hasShow(int $id): bool
     {
         return true;
     }
 
-    /**
-     * Override show to use diff view
-     */
     #[Get("/modal/{id}", "show")]
     public function show(int $id): string
     {

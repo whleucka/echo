@@ -3,15 +3,21 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Services\Admin\DashboardService;
+use Echo\Framework\Admin\Schema\TableSchemaBuilder;
 use Echo\Framework\Admin\WidgetRegistry;
-use Echo\Framework\Http\AdminController;
+use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;
 
 #[Group(path_prefix: "/dashboard", name_prefix: "dashboard")]
-class DashboardController extends AdminController
+class DashboardController extends ModuleController
 {
-    public function __construct(private DashboardService $service) 
+    protected function defineTable(TableSchemaBuilder $builder): void
+    {
+        // Dashboard uses custom rendering — no table
+    }
+
+    public function __construct(private DashboardService $service)
     {
         parent::__construct();
     }
