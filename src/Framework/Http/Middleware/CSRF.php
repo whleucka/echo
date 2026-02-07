@@ -62,7 +62,11 @@ class CSRF implements Middleware
         }
 
         $session_token = session()->get("csrf_token");
-        $request_token = $request->post->csrf_token;
+
+        // Check POST body first, then X-CSRF-Token header (for HTMX/AJAX)
+        $request_token = $request->post->csrf_token
+            ?? $_SERVER['HTTP_X_CSRF_TOKEN']
+            ?? null;
 
         if (
             !is_null($session_token) &&
