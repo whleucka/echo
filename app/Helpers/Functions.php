@@ -205,6 +205,18 @@ function cache(): \Echo\Framework\Cache\CacheInterface
 }
 
 /**
+ * Get crypto instance
+ */
+function crypto(): \Echo\Framework\Crypto\Crypto
+{
+    static $instance = null;
+    if ($instance === null) {
+        $instance = new \Echo\Framework\Crypto\Crypto();
+    }
+    return $instance;
+}
+
+/**
  * Get mailer instance
  */
 function mailer(): \Echo\Framework\Mail\Mailer

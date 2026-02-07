@@ -36,7 +36,10 @@
             <img class="qr rounded float-start me-3" src="{{ qr }}" alt="qr" />
             <button class="btn btn-primary" onClick="location.reload()">Refresh</button>
             {% if is_logged %}
-            <button class="btn btn-primary" onClick="location.replace('/sign-out')">Sign out</button>
+            <form method="POST" action="/admin/sign-out" class="d-inline">
+                {{ csrf() }}
+                <button type="submit" class="btn btn-primary">Sign out</button>
+            </form>
             {% endif %}
         </div>
     </div>

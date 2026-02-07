@@ -5,6 +5,7 @@ namespace Echo\Framework\Http\Middleware;
 use Closure;
 use Echo\Framework\Http\JsonResponse;
 use Echo\Framework\Http\Response as HttpResponse;
+use Echo\Framework\Logging\Logger;
 use Echo\Framework\RateLimit\RateLimiter;
 use Echo\Framework\RateLimit\RedisRateLimiter;
 use Echo\Framework\RateLimit\SessionRateLimiter;
@@ -14,6 +15,7 @@ use Echo\Interface\Http\{Request, Middleware, Response};
  * Request Limit Middleware
  *
  * Rate limits requests using Redis (preferred) or sessions (fallback).
+ * Supports per-route rate limiting via middleware parameters.
  */
 class RequestLimit implements Middleware
 {
@@ -48,13 +50,28 @@ class RequestLimit implements Middleware
         // Get rate limiter
         $limiter = $this->getLimiter();
 
-        // Create a rate limit key based on IP
-        $key = "request_limit:" . md5($request->getClientIp() ?? 'unknown');
+        // Build rate limit key: per-route when max_requests is explicitly set,
+        // otherwise global per-IP. This gives auth endpoints their own bucket.
+        $ip = $request->getClientIp() ?? 'unknown';
+        if (isset($middleware["max_requests"])) {
+            $routePath = $route["path"] ?? '';
+            $key = "request_limit:" . md5($ip . ':' . $routePath);
+        } else {
+            $key = "request_limit:" . md5($ip);
+        }
 
         // Attempt the request
         if (!$limiter->attempt($key, $max_requests, $decay_seconds)) {
             $retryAfter = $limiter->retryAfter($key);
             $message = "Too many requests. Try again in {$retryAfter} seconds.";
+
+            // Log rate limit hits
+            logger()->channel('auth')->warning('Rate limit exceeded', [
+                'ip' => $ip,
+                'path' => $route["path"] ?? '',
+                'max_requests' => $max_requests,
+                'retry_after' => $retryAfter,
+            ]);
 
             return in_array("api", $middleware)
                 ? new JsonResponse([

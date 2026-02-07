@@ -14,6 +14,9 @@ class Kernel extends ConsoleKernel
         
         // Admin
         Commands\AdminNewCommand::class,
+
+        // Security
+        Commands\KeyGenerateCommand::class,
         
         // Storage
         Commands\StorageFixCommand::class,

@@ -24,7 +24,7 @@ class RegisterController extends Controller
         return $this->render("auth/register/index.html.twig");
     }
 
-    #[Post("/register", "auth.register.post", ["max_requests" => 50])]
+    #[Post("/register", "auth.register.post", ["max_requests" => 10, "decay_seconds" => 60])]
     public function post(): string
     {
         $this->setValidationMessage("password.min_length", "Must be at least 10 characters");
