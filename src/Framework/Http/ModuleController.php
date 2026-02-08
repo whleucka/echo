@@ -171,7 +171,9 @@ abstract class ModuleController extends Controller
             return 0;
         }
 
-        [$where, $params] = $this->buildWhereConditions();
+        // Exclude the active filter link from base conditions so each count
+        // only applies its own filter link condition (not the active one).
+        [$where, $params] = $this->buildWhereConditions(includeFilterLink: false);
         $where[] = $filterLinks[$index]->condition;
         $from = $this->tableSchema->table . ' ' . implode(' ', $this->tableSchema->joins);
 
@@ -403,19 +405,23 @@ abstract class ModuleController extends Controller
     /**
      * Build WHERE conditions from active filters, search, date range, etc.
      *
+     * @param bool $includeFilterLink Whether to include the active filter link condition (default true).
+     *                                Pass false when building counts for individual filter links.
      * @return array{0: string[], 1: mixed[]} [$conditions, $params]
      */
-    protected function buildWhereConditions(): array
+    protected function buildWhereConditions(bool $includeFilterLink = true): array
     {
         $where = [];
         $params = [];
 
         // Filter links
-        $filterLinks = $this->tableSchema->filterLinks;
-        if (!empty($filterLinks)) {
-            $activeIdx = $this->state->getActiveFilterLink();
-            if (isset($filterLinks[$activeIdx])) {
-                $where[] = $filterLinks[$activeIdx]->condition;
+        if ($includeFilterLink) {
+            $filterLinks = $this->tableSchema->filterLinks;
+            if (!empty($filterLinks)) {
+                $activeIdx = $this->state->getActiveFilterLink();
+                if (isset($filterLinks[$activeIdx])) {
+                    $where[] = $filterLinks[$activeIdx]->condition;
+                }
             }
         }
 
@@ -467,12 +473,6 @@ abstract class ModuleController extends Controller
     // Row formatting
     // =========================================================================
 
-    private function formatRow(array $row): array
-    {
-        $row = $this->tableOverride($row);
-        return $row;
-    }
-
     /**
      * Format a single cell value using the schema's format/formatter.
      * Called from the Twig `format()` function.
@@ -510,7 +510,7 @@ abstract class ModuleController extends Controller
     /**
      * Hook for subclass row customization.
      */
-    protected function tableOverride(array $row): array
+    protected function formatRow(array $row): array
     {
         return $row;
     }

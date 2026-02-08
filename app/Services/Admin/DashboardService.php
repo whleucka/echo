@@ -640,6 +640,66 @@ class DashboardService
     }
 
     /**
+     * Get email queue widget data
+     */
+    public function getEmailQueueData(): array
+    {
+        $now = $this->now();
+        $today = $now->format('Y-m-d');
+        $sevenDaysAgo = $now->modify('-7 days')->format('Y-m-d H:i:s');
+
+        // Counts by status
+        $statusCounts = db()->fetchAll(
+            "SELECT status, COUNT(*) as count FROM email_jobs GROUP BY status"
+        );
+
+        $statuses = ['pending' => 0, 'processing' => 0, 'sent' => 0, 'failed' => 0, 'exhausted' => 0];
+        foreach ($statusCounts as $row) {
+            $statuses[$row['status']] = (int)$row['count'];
+        }
+
+        // Sent today
+        $sentToday = db()->execute(
+            "SELECT COUNT(*) FROM email_jobs WHERE status = 'sent' AND DATE(sent_at) = ?",
+            [$today]
+        )->fetchColumn();
+
+        // Failed/exhausted in last 7 days
+        $failedRecent = db()->execute(
+            "SELECT COUNT(*) FROM email_jobs WHERE status IN ('failed', 'exhausted') AND last_attempt_at >= ?",
+            [$sevenDaysAgo]
+        )->fetchColumn();
+
+        // Recent jobs (last 5)
+        $recentJobs = db()->fetchAll(
+            "SELECT id, to_address, subject, status, attempts, max_attempts, created_at, sent_at, last_attempt_at
+            FROM email_jobs
+            ORDER BY created_at DESC
+            LIMIT 5"
+        );
+
+        $recent = [];
+        foreach ($recentJobs as $job) {
+            $recent[] = [
+                'id' => $job['id'],
+                'to' => $job['to_address'],
+                'subject' => $job['subject'],
+                'status' => $job['status'],
+                'attempts' => (int)$job['attempts'] . '/' . (int)$job['max_attempts'],
+                'time_ago' => $this->timeAgo($job['created_at']),
+            ];
+        }
+
+        return [
+            'statuses' => $statuses,
+            'total' => array_sum($statuses),
+            'sent_today' => (int)$sentToday,
+            'failed_recent' => (int)$failedRecent,
+            'recent' => $recent,
+        ];
+    }
+
+    /**
      * Format bytes to human readable
      */
     private function formatBytes(int $bytes, int $precision = 2): string
