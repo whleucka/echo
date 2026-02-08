@@ -265,9 +265,9 @@ nav#nav-sidebar header h4 {
 #dashboard #widget-activity-heatmap .table {
   table-layout: fixed;
   width: 100%;
-  font-size: 0.5rem;
+  font-size: 0.6rem;
   border-collapse: separate;
-  border-spacing: 2px;
+  border-spacing: 4px;
 }
 #dashboard #widget-activity-heatmap .table th.day-label,
 #dashboard #widget-activity-heatmap .table td.day-label {
@@ -381,17 +381,36 @@ nav#nav-sidebar header h4 {
     max-width: 67px;
   }
 }
+@media (min-width: 576px) {
+  #dashboard #widget-activity-heatmap .table {
+    border-spacing: 6px;
+  }
+}
+
+@media (min-width: 768px) {
+  #dashboard #widget-activity-heatmap .table {
+    border-spacing: 8px;
+  }
+}
 
 @media (min-width: 992px) {
+  #dashboard #widget-activity-heatmap .table {
+    font-size: 0.7rem;
+    border-spacing: 10px;
+  }
 }
 
 @media (min-width: 1200px) {
   #dashboard #widget-activity-heatmap .table {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
+    border-spacing: 12px;
   }
 }
 
 @media (min-width: 1400px) {
+  #dashboard #widget-activity-heatmap .table {
+    font-size: 0.9rem;
+  }
 }
 
 
