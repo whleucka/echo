@@ -4,6 +4,7 @@ namespace Echo\Framework\Http;
 
 use App\Models\User;
 use chillerlan\QRCode\QRCode;
+use Echo\Framework\Http\Exception\HttpException;
 use Echo\Framework\Http\Response as HttpResponse;
 use Echo\Interface\Http\Kernel as HttpKernel;
 use Echo\Interface\Http\Request;
@@ -90,6 +91,25 @@ class Kernel implements HttpKernel
                 ]);
                 $response = new HttpResponse($content, 500);
                 return $response;
+            }
+        } catch (HttpException $ex) {
+            // Handle HTTP exceptions (404, 403, etc.)
+            if (in_array("api", $middleware)) {
+                $api_error = $this->sanitizeApiError($ex, 'HTTP_ERROR', $ex->getMessage());
+            } else {
+                $template = match ($ex->statusCode) {
+                    404 => "error/404.html.twig",
+                    403 => "error/permission-denied.html.twig",
+                    default => "error/blue-screen.html.twig",
+                };
+                $content = twig()->render($template, [
+                    "message" => $ex->getMessage(),
+                    "debug" => config("app.debug"),
+                    "request_id" => $request_id,
+                    "e" => $ex,
+                    "is_logged" => session()->get("user_uuid"),
+                ]);
+                return new HttpResponse($content, $ex->statusCode);
             }
         } catch (Exception $ex) {
             // Handle exception

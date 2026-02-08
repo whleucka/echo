@@ -15,13 +15,13 @@
       </button>
     </div>
     <div class="card-body p-3">
-      <div class="table-responsive">
+      <div>
         <table class="table table-sm mb-0">
           <thead>
             <tr>
-              <th class="fw-bold text-end"></th>
+              <th class="day-label"></th>
               {% for hour in data.hours %}
-              <th class="p-0 cell">{{ hour }}</th>
+              <th class="cell text-center">{{ hour }}</th>
               {% endfor %}
             </tr>
           </thead>
@@ -29,7 +29,7 @@
             {% set day_letters = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] %}
             {% for dow in 1..7 %}
             <tr>
-              <td class="fw-bold text-end p-1">{{ day_letters[dow - 1] }}</td>
+              <td class="day-label fw-bold">{{ day_letters[dow - 1] }}</td>
               {% for hour in data.hours %}
                 {% set count = data.matrix[dow][hour] %}
                 {% set intensity = data.max > 0 ? (count / data.max) : 0 %}
@@ -50,13 +50,13 @@
             {% endfor %}
           </tbody>
           <caption>
-            <div class="d-flex justify-content-end mt-2 small text-muted">
+            <div class="heatmap-legend d-flex justify-content-end align-items-center mt-2 small text-muted">
               <span class="me-2">Less</span>
-              <span class="d-inline-block bg-light border" style="width: 14px; height: 14px;"></span>
-              <span class="d-inline-block bg-success bg-opacity-25 border" style="width: 14px; height: 14px;"></span>
-              <span class="d-inline-block bg-success bg-opacity-50 border" style="width: 14px; height: 14px;"></span>
-              <span class="d-inline-block bg-success bg-opacity-75 border" style="width: 14px; height: 14px;"></span>
-              <span class="d-inline-block bg-success border" style="width: 14px; height: 14px;"></span>
+              <span class="d-inline-block bg-light border"></span>
+              <span class="d-inline-block bg-success bg-opacity-25 border"></span>
+              <span class="d-inline-block bg-success bg-opacity-50 border"></span>
+              <span class="d-inline-block bg-success bg-opacity-75 border"></span>
+              <span class="d-inline-block bg-success border"></span>
               <span class="ms-2">More</span>
             </div>
           </caption>

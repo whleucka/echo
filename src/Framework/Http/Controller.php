@@ -3,6 +3,8 @@
 namespace Echo\Framework\Http;
 
 use App\Models\User;
+use Echo\Framework\Http\Exception\HttpForbiddenException;
+use Echo\Framework\Http\Exception\HttpNotFoundException;
 use Echo\Framework\Session\Flash;
 use Echo\Interface\Http\Controller as HttpController;
 use Echo\Interface\Http\Request;
@@ -179,20 +181,14 @@ class Controller implements HttpController
         ];
     }
 
-    public function pageNotFound()
+    public function pageNotFound(): never
     {
-            $content = twig()->render("error/404.html.twig");
-            $response = new Response($content, 404);
-            $response->send();
-            exit;
+        throw new HttpNotFoundException();
     }
 
-    public function permissionDenied()
+    public function permissionDenied(): never
     {
-            $content = twig()->render("error/permission-denied.html.twig");
-            $response = new Response($content, 403);
-            $response->send();
-            exit;
+        throw new HttpForbiddenException();
     }
 
     protected function render(string $template, array $data = []): string
