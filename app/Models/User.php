@@ -46,4 +46,24 @@ class User extends Model
             ->get();
         return $permission ? true : false;
     }
+
+    /**
+     * Grant default permissions for a newly created standard user.
+     * Currently grants access to the dashboard module.
+     */
+    public function grantDefaultPermissions(): void
+    {
+        $dashboard = Module::where('link', 'dashboard')->first();
+
+        if ($dashboard && $this->id) {
+            UserPermission::create([
+                'module_id' => (int) $dashboard->id,
+                'user_id' => (int) $this->id,
+                'has_create' => 0,
+                'has_edit' => 0,
+                'has_delete' => 0,
+                'has_export' => 0,
+            ]);
+        }
+    }
 }

@@ -20,6 +20,7 @@ class RegisterService
         ]);
 
         if ($user) {
+            $user->grantDefaultPermissions();
             session()->regenerate();
             session()->set("user_uuid", $user->uuid);
             $log->info('Registration successful', [

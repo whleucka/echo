@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\User;
 use Echo\Framework\Admin\Schema\{FormSchemaBuilder, TableSchemaBuilder};
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
@@ -88,9 +89,17 @@ class UsersController extends ModuleController
 
     protected function handleStore(array $request): mixed
     {
+        $role = $request['role'] ?? 'standard';
         unset($request["password_match"]);
         $request["password"] = password_hash($request['password'], PASSWORD_ARGON2I);
-        return parent::handleStore($request);
+        $id = parent::handleStore($request);
+
+        if ($id !== false && $role !== 'admin') {
+            $user = User::find((string) $id);
+            $user?->grantDefaultPermissions();
+        }
+
+        return $id;
     }
 
     protected function handleUpdate(int $id, array $request): bool
