@@ -12,16 +12,17 @@ use Echo\Framework\Routing\Route\Get;
  * Standard benchmark endpoints for measuring framework performance.
  * These follow TechEmpower Framework Benchmark conventions.
  *
- * Only available when APP_DEBUG=true
+ * Controlled by the BENCHMARKS_ENABLED env flag (defaults to false).
+ * This is separate from APP_DEBUG so you can benchmark in production-like
+ * configurations without exposing debug tooling.
  */
 #[Group(path_prefix: "/benchmark", name_prefix: "benchmark")]
 class BenchmarkController extends Controller
 {
     public function __construct()
     {
-        if (!config('app.debug')) {
-            http_response_code(404);
-            exit;
+        if (!config('app.benchmarks')) {
+            $this->pageNotFound();
         }
     }
 

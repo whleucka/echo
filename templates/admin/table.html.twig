@@ -3,8 +3,8 @@
 </div>
 <div id="table" class="card shad border-0">
   <div class="card-body p-2">
-  <div id="table-actions" class="p-2">
-    <form>
+  <div id="table-actions" class="p-2 d-flex align-items-center flex-wrap">
+    <form class="d-flex align-items-center flex-wrap">
       {{ csrf()|raw }}
       {% if has_create() %}
         <button class="btn btn-sm btn-success me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/create" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi bi-plus-square pe-1"></i> New</button>
@@ -25,6 +25,18 @@
           <button hx-post="/admin/{{ module.link }}/modal/filter" type="submit" class="btn btn-sm btn-danger me-2" name="filter_clear"><i class="bi bi-trash pe-1"></i> Clear Filter</button>
       {% endif %}
     </form>
+    {% if table_actions|length > 0 %}
+    <div id="bulk-actions" class="d-flex align-items-center ms-auto" style="display: none !important;">
+      <span id="bulk-count" class="text-muted small me-2"></span>
+      <select name="table_action" class="form-select form-select-sm me-1" id="table-action" disabled>
+        <option disabled selected>Action</option>
+        {% for action in table_actions %}
+        <option value="{{ action.value }}">{{ action.label }}</option>
+        {% endfor %}
+      </select>
+      <button hx-post="/admin/{{ module.link }}/table-action" hx-include="#table-action, .checkbox-selection, [name='_csrf_token']" hx-confirm="Are you sure you want to apply this action?" hx-select="#module" hx-target="#module" hx-swap="outerHTML" type="button" class="btn btn-sm btn-primary" id="table-action-submit" disabled>Apply</button>
+    </div>
+    {% endif %}
   </div>
   <div class="table-responsive p-2">
     {% if data.rows|length > 0 %}
@@ -34,21 +46,8 @@
         <thead>
           <tr>
             {% if table_actions|length > 0 %}
-            <th>
-              <div class="d-flex justify-content-start align-items-center">
-                <input id="select-all" onClick="selectAllToggle(event)" type="checkbox" />
-                <div id="select-all-toggle" style="display: none;">
-                  <div class="d-flex">
-                    <select name="table_action" class="form-select p-1 ms-2" id="table-action" disabled>
-                      <option disabled selected>Action</option>
-                      {% for action in table_actions %}
-                      <option value="{{ action.value }}">{{ action.label }}</option>
-                      {% endfor %}
-                    </select>
-                    <button hx-post="/admin/{{ module.link }}/table-action" hx-confirm="Are you sure you want to apply this action?" hx-select="#module" hx-target="#module" hx-swap="outerHTML" type="submit" class="btn btn-sm btn-primary ms-1" id="table-action-submit" disabled>OK</button>
-                  </div>
-                </div>
-              </div>
+            <th class="checkbox-cell">
+              <input id="select-all" onClick="selectAllToggle(event)" type="checkbox" />
             </th>
             {% endif %}
             {% for column,title in headers %}
@@ -169,28 +168,38 @@
 </div>
 <script>
   var selectAllToggle = (e) => {
-    const state = e.currentTarget.checked
+    const state = e.currentTarget.checked;
     const checkboxes = document.querySelectorAll(".checkbox-selection");
     checkboxes.forEach((checkbox) => {
         checkbox.checked = state;
     });
-    setMultiActionDisabled(!state);
+    updateBulkActions();
   }
   var checkEnabledMultiAction = (e) => {
     const checkboxes = document.querySelectorAll(".checkbox-selection");
-    const checked = [];
-    checkboxes.forEach((checkbox) => {
-      if (checkbox.checked) {
-        checked.push(checkbox);
-      }
-    })
-    setMultiActionDisabled(!checked.length);
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    document.getElementById("select-all").checked = allChecked;
+    updateBulkActions();
   }
-  var setMultiActionDisabled = (state) => {
-    document.getElementById("table-action").disabled = state;
-    document.getElementById("table-action-submit").disabled = state;
-    document.getElementById("select-all-toggle").style.display = !state 
-      ? 'block' 
-      : 'none';
+  var updateBulkActions = () => {
+    const bulkActions = document.getElementById("bulk-actions");
+    if (!bulkActions) return;
+    const checked = document.querySelectorAll(".checkbox-selection:checked");
+    const count = checked.length;
+    const actionSelect = document.getElementById("table-action");
+    const actionSubmit = document.getElementById("table-action-submit");
+    const bulkCount = document.getElementById("bulk-count");
+    if (count > 0) {
+      bulkActions.style.display = 'flex';
+      bulkActions.style.removeProperty('display');
+      actionSelect.disabled = false;
+      actionSubmit.disabled = false;
+      bulkCount.textContent = count + ' selected';
+    } else {
+      bulkActions.style.setProperty('display', 'none', 'important');
+      actionSelect.disabled = true;
+      actionSubmit.disabled = true;
+      bulkCount.textContent = '';
+    }
   }
 </script>
