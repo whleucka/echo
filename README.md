@@ -4,7 +4,8 @@
 
 A modern PHP 8.2+ MVC framework with attribute-based routing, PHP-DI, and Twig. Runs in Docker (PHP 8.3-FPM, Nginx, MariaDB 11, Redis 7).
 
-> **Work in Progress** — APIs and internals may change. Use at your own risk.
+> **Work in Progress** — APIs and internals may change. This project will
+> eventually serve as a backend to my personal website.
 
 ## Quick Start
 

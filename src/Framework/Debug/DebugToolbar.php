@@ -131,7 +131,6 @@ class DebugToolbar
     right: 0;
     background: #1a1a2e;
     color: #eee;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
     font-size: 12px;
     z-index: 999999;
     box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
