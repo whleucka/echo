@@ -1,3 +1,7 @@
 #!/usr/bin/env bash
 
-docker-compose exec -T php php ./bin/console "$@"
+if [ -t 1 ]; then
+    docker-compose exec php php ./bin/console "$@"
+else
+    docker-compose exec -T php php ./bin/console "$@"
+fi
