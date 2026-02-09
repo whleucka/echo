@@ -94,7 +94,7 @@ Defined in `app/Http/Kernel.php` as `$middleware_layers`. Applied per-route via 
 
 ### Helper Functions
 
-Global helpers in `app/Helpers/Functions.php`: `app()`, `console()`, `container()`, `qb()`, `db()`, `twig()`, `uri()`, `session()`, `user()`, `config()`, `render()`.
+Global helpers in `app/Helpers/Functions.php`: `app()`, `console()`, `user()`, `container()`, `qb()`, `twig()`, `db()`, `session()`, `router()`, `request()`, `env()`, `uri()`, `dump()`, `dd()`, `logger()`, `profiler()`, `redis()`, `cache()`, `redirect()`, `crypto()`, `mailer()`, `config()`.
 
 ### Configuration
 
@@ -107,3 +107,23 @@ Twig templates in `templates/`. Cache in `templates/.cache/`. Auto-reload when `
 ## Testing
 
 PHPUnit 12, bootstrap in `tests/bootstrap.php` (sets `APP_ENV=testing`). Base class: `Tests\TestCase`. Tests organized by domain: `Database/`, `Http/`, `Session/`, `Routing/`, `Audit/`, `Admin/`.
+
+## Documentation Accuracy
+
+When modifying code that affects any of the following, **always** check and update `README.md` and this file (`CLAUDE.md`) to keep them in sync:
+
+- Helper functions (`app/Helpers/Functions.php`) — update the helper list in both files
+- Route attributes or routing behavior (`src/Framework/Routing/`)
+- Admin module system or `ModuleController`
+- Database Model or QueryBuilder APIs
+- Middleware names or stack
+- Configuration keys or file structure
+- Docker setup, container names, or CLI commands
+- Test structure or PHPUnit configuration
+
+**Rules:**
+1. After any code change, verify affected README/CLAUDE.md sections still match the source code.
+2. Never add functions, classes, or features to documentation that don't exist in the codebase.
+3. Never remove documentation for things that still exist.
+4. Keep README concise — short descriptions, useful examples, no bloat. Detailed internals belong in CLAUDE.md.
+5. When adding a new helper function, add it to both the CLAUDE.md helper list and the README helper table.
