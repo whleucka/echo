@@ -151,16 +151,23 @@ class DashboardService
         $now = $this->now();
         $tzOffset = $now->format('P');
 
+        // Compute ISO week boundaries (Mon-Sun) in UTC so the index is used
+        $dayOfWeek = (int)$now->format('N'); // 1=Mon, 7=Sun
+        $weekStart = $now->modify('-' . ($dayOfWeek - 1) . ' days')->setTime(0, 0, 0)
+            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $weekEnd = $now->modify('+' . (7 - $dayOfWeek) . ' days')->setTime(23, 59, 59)
+            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+
         $data = db()->fetchAll(
             "SELECT
                 MIN(DAYNAME(CONVERT_TZ(created_at, '+00:00', ?))) AS day_name,
                 DATE(CONVERT_TZ(created_at, '+00:00', ?)) AS day_date,
                 COUNT(*) AS total
             FROM activity
-            WHERE YEARWEEK(CONVERT_TZ(created_at, '+00:00', ?), 1) = YEARWEEK(?, 1)
+            WHERE created_at BETWEEN ? AND ?
             GROUP BY day_date
             ORDER BY day_date",
-            [$tzOffset, $tzOffset, $tzOffset, $now->format('Y-m-d')]
+            [$tzOffset, $tzOffset, $weekStart, $weekEnd]
         );
 
         $labels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -227,16 +234,21 @@ class DashboardService
         $now = $this->now();
         $tzOffset = $now->format('P');
 
+        // Compute month boundaries in UTC so the index on created_at is used
+        $monthStart = $now->modify('first day of this month')->setTime(0, 0, 0)
+            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $monthEnd = $now->modify('last day of this month')->setTime(23, 59, 59)
+            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+
         $data = db()->fetchAll(
             "SELECT
                 DAY(CONVERT_TZ(created_at, '+00:00', ?)) AS day_number,
                 COUNT(*) AS total
             FROM activity
-            WHERE YEAR(CONVERT_TZ(created_at, '+00:00', ?)) = ? AND
-                MONTH(CONVERT_TZ(created_at, '+00:00', ?)) = ?
+            WHERE created_at BETWEEN ? AND ?
             GROUP BY day_number
             ORDER BY day_number",
-            [$tzOffset, $tzOffset, $now->format('Y'), $tzOffset, $now->format('n')]
+            [$tzOffset, $monthStart, $monthEnd]
         );
 
         $daysInMonth = (int)$now->format('t');
@@ -300,15 +312,20 @@ class DashboardService
     {
         $now = $this->now();
         $tzOffset = $now->format('P');
-        $yearStart = $now->format('Y') . '-01-01';
+
+        // Compute Jan 1 in local TZ, convert to UTC so the index is used
+        $yearStart = $now->modify('first day of January')->setTime(0, 0, 0)
+            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $yearEnd = $now->setTime(23, 59, 59)
+            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
 
         $data = db()->fetchAll(
             "SELECT DATE_FORMAT(CONVERT_TZ(created_at, '+00:00', ?), '%Y-%m') AS month, COUNT(*) AS total
             FROM activity
-            WHERE CONVERT_TZ(created_at, '+00:00', ?) >= ?
+            WHERE created_at BETWEEN ? AND ?
             GROUP BY month
             ORDER BY month",
-            [$tzOffset, $tzOffset, $yearStart]
+            [$tzOffset, $yearStart, $yearEnd]
         );
 
         $labels = [];
