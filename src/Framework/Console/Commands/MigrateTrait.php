@@ -2,6 +2,8 @@
 
 namespace Echo\Framework\Console\Commands;
 
+use Symfony\Component\Console\Helper\Table;
+use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Output\OutputInterface;
 
 trait MigrateTrait
@@ -170,14 +172,46 @@ trait MigrateTrait
     {
         $migrationFiles = $this->getMigrationFiles(config("paths.migrations"));
 
+        if (empty($migrationFiles)) {
+            $output->writeln('<comment>No migration files found.</comment>');
+            return;
+        }
+
+        $ran = 0;
+        $pending = 0;
+        $rows = [];
+
         foreach ($migrationFiles as $basename => $filePath) {
             $hash = md5($filePath);
             $migration = $this->migrationHashExists($hash);
+
             if ($migration) {
-                $output->writeln("<info>✓ $basename</info> @ {$migration['created_at']}");
+                $ran++;
+                $rows[] = [
+                    '<info>Ran</info>',
+                    $basename,
+                    $migration['batch'],
+                    $migration['created_at'],
+                ];
             } else {
-                $output->writeln("<comment>✗ $basename</comment>");
+                $pending++;
+                $rows[] = [
+                    '<comment>Pending</comment>',
+                    $basename,
+                    '-',
+                    '-',
+                ];
             }
         }
+
+        $table = new Table($output);
+        $table->setHeaderTitle('Migrations');
+        $table->setHeaders(['Status', 'Migration', 'Batch', 'Ran at']);
+        $table->setRows($rows);
+        $table->render();
+
+        $output->writeln('');
+        $total = $ran + $pending;
+        $output->writeln("  <info>$ran ran</info>, <comment>$pending pending</comment>, $total total");
     }
 }
