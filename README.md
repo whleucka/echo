@@ -195,6 +195,25 @@ When `APP_DEBUG=true`, a toolbar shows request timing, database queries, memory 
 
 Endpoints at `/benchmark/*` (plaintext, json, db, queries, template, fullstack, memory). Requires `wrk` or `ab` for accurate results.
 
+## Console Commands
+
+`./bin/console` is the CLI entry point (Symfony Console). Run inside Docker:
+
+```bash
+docker-compose exec -it php ./bin/console <command>
+```
+
+| Group | Commands |
+|---|---|
+| `migrate:` | `run`, `rollback`, `status`, `create`, `fresh`, `up`, `down` |
+| `route:` | `list`, `cache`, `clear` |
+| `db:` | `backup`, `restore`, `list`, `cleanup` |
+| `mail:` | `queue`, `status`, `purge` |
+| `audit:` | `list`, `stats`, `purge` |
+| `session:` | `stats`, `cleanup` |
+| `admin:` | `new` |
+| Other | `version`, `key:generate`, `storage:fix`, `server` |
+
 ## Project Structure
 
 ```
@@ -202,13 +221,15 @@ app/                 # Application code (App\ namespace)
   Http/Controllers/  # Route controllers (auto-discovered)
   Models/            # Eloquent-style models
   Helpers/           # Global helper functions
+  Services/          # Business logic services
   Providers/         # Service providers
 src/Framework/       # Framework internals (Echo\ namespace)
 config/              # PHP config files
 templates/           # Twig templates
 migrations/          # Database migrations
 tests/               # PHPUnit tests
-public/index.php     # Entry point
+bin/console          # CLI entry point
+public/index.php     # Web entry point
 ```
 
 ## Testing
