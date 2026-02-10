@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Auth;
 
 use App\Services\Auth\SignInService;
 use Echo\Framework\Http\Controller;
+use Echo\Framework\Http\Response;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Post;
-use Echo\Framework\Session\Flash;
 
 #[Group(path_prefix: "/admin")]
 class SignOutController extends Controller
@@ -15,12 +15,11 @@ class SignOutController extends Controller
     {
     }
 
-    #[Post("/sign-out", "auth.sign-out.post", ["auth", "csrf"])]
-    public function post(): void
+    #[Post("/sign-out", "auth.sign-out.post", ["auth"])]
+    public function post(): Response
     {
         $this->service->signOut();
-        Flash::add("success", "You are now signed out");
         $path = uri("auth.sign-in.index");
-        header("Location: $path");
+        return redirect($path)->withFlash("success", "You are now signed out");
     }
 }

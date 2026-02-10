@@ -143,6 +143,10 @@ class Kernel implements KernelInterface
             }
         }
 
+        // Check if it is already a response class?
+        if ($content instanceof HttpResponse) {
+            return $content;
+        }
         // Create response (api or web)
         if (in_array("api", $middleware)) {
             $code = http_response_code();

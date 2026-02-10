@@ -37,7 +37,7 @@ class RequestLimitIntegrationTest extends TestCase
         parent::tearDown();
     }
 
-    private function createRequest(array $route = []): Request
+    private function createRequest(array $route = [], bool $htmx = false): Request
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';
 
@@ -51,6 +51,10 @@ class RequestLimitIntegrationTest extends TestCase
         ];
         $request->setAttribute('route', array_merge($defaultRoute, $route));
         $request->setAttribute('request_id', 'test-request-id');
+
+        if ($htmx) {
+            $request->headers->set("Hx-Request", "true");
+        }
 
         return $request;
     }
@@ -149,15 +153,11 @@ class RequestLimitIntegrationTest extends TestCase
      */
     public function testHtmxRequestsAreDetected(): void
     {
-        $_SERVER['HTTP_HX_REQUEST'] = 'true';
-
-        $request = $this->createRequest(['middleware' => ['web']]);
+        $request = $this->createRequest(['middleware' => ['web']], true);
         $response = $this->requestLimit->handle($request, $this->createNextHandler());
 
         // Should pass with higher HTMX limits
         $this->assertEquals(200, $response->getStatusCode());
-
-        unset($_SERVER['HTTP_HX_REQUEST']);
     }
 
     /**

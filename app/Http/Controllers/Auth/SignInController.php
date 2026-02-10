@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Services\Auth\SignInService;
 use Echo\Framework\Http\Controller;
+use Echo\Framework\Http\Response;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
 use Echo\Framework\Session\Flash;
@@ -24,7 +25,7 @@ class SignInController extends Controller
     }
 
     #[Post("/sign-in", "auth.sign-in.post", ["max_requests" => 10, "decay_seconds" => 60])]
-    public function post(): string
+    public function post(): string|Response
     {
         $valid = $this->validate([
             "email" => ["required", "email"],
@@ -34,9 +35,7 @@ class SignInController extends Controller
             $success = $this->service->signIn($valid->email, $valid->password);
             if ($success) {
                 $path = config("security.authenticated_route");
-                Flash::add("success", "Welcome, " . user()->fullName() . ". You are now signed in");
-                header("HX-Redirect: $path");
-                exit;
+                return redirect($path)->withFlash("success", "Welcome back, " . user()->fullName() . ". You are now signed in");
             } else {
                 Flash::add("warning", "Invalid email and/or password");
             }

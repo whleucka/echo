@@ -143,7 +143,7 @@ trait HtmxHelpers
      */
     protected function isHtmxRequest(): bool
     {
-        return isset($_SERVER['HTTP_HX_REQUEST']) && $_SERVER['HTTP_HX_REQUEST'] === 'true';
+        return request()->isHTMX();
     }
 
     /**

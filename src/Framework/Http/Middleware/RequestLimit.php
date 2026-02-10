@@ -8,7 +8,6 @@ use Echo\Framework\Http\Response as HttpResponse;
 use Echo\Framework\Http\RequestInterface;
 use Echo\Framework\Http\ResponseInterface;
 use Echo\Framework\Http\MiddlewareInterface;
-use Echo\Framework\Logging\Logger;
 use Echo\Framework\RateLimit\RateLimiter;
 use Echo\Framework\RateLimit\RedisRateLimiter;
 use Echo\Framework\RateLimit\SessionRateLimiter;

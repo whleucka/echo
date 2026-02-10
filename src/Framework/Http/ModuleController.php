@@ -38,6 +38,7 @@ abstract class ModuleController extends Controller
 
     /**
      * Subclasses define their table schema here.
+     * OR they can use NoTableTrait
      */
     abstract protected function defineTable(TableSchemaBuilder $builder): void;
 
@@ -1120,11 +1121,6 @@ abstract class ModuleController extends Controller
         return db()->fetch("SELECT *
             FROM modules
             WHERE enabled = 1 AND link = ?", [$link]);
-    }
-
-    private function getModuleLink(): string
-    {
-        return $this->module_link;
     }
 
     private function init(): void

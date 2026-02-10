@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Services\Auth\RegisterService;
 use Echo\Framework\Http\Controller;
+use Echo\Framework\Http\Response;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
 use Echo\Framework\Session\Flash;
@@ -25,7 +26,7 @@ class RegisterController extends Controller
     }
 
     #[Post("/register", "auth.register.post", ["max_requests" => 10, "decay_seconds" => 60])]
-    public function post(): string
+    public function post(): string|Response
     {
         $this->setValidationMessage("password.min_length", "Must be at least 10 characters");
         $this->setValidationMessage("password.regex", "Must contain 1 upper case, 1 digit, 1 symbol");
@@ -41,7 +42,7 @@ class RegisterController extends Controller
             $success = $this->service->register($valid->first_name, $valid->surname, $valid->email, $valid->password);
             if ($success) {
                 $path = config("security.authenticated_route");
-                header("HX-Redirect: $path");
+                return redirect($path)->withFlash("success", "Welcome, " . user()->fullName() . "! You are now signed in");
             } else {
                 Flash::add("warning", "Failed to register new account");
             }

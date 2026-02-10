@@ -17,7 +17,7 @@ class RedirectResponse extends Response
         parent::__construct('', $code);
 
         // HTMX requests need HX-Redirect for full page navigation
-        if (isset($_SERVER['HTTP_HX_REQUEST']) && $_SERVER['HTTP_HX_REQUEST'] === 'true') {
+        if (request()->isHTMX()) {
             $this->setHeader('HX-Redirect', $url);
         } else {
             $this->setHeader('Location', $url);
