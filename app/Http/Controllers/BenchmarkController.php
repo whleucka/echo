@@ -16,7 +16,7 @@ use Echo\Framework\Routing\Route\Get;
  * This is separate from APP_DEBUG so you can benchmark in production-like
  * configurations without exposing debug tooling.
  */
-#[Group(path_prefix: "/benchmark", name_prefix: "benchmark")]
+#[Group(path_prefix: "/benchmark", name_prefix: "benchmark", middleware: ["max_requests" => 0])]
 class BenchmarkController extends Controller
 {
     public function __construct()
@@ -30,7 +30,7 @@ class BenchmarkController extends Controller
      * Plaintext test - measures raw framework overhead
      * Returns "Hello, World!" as plain text
      */
-    #[Get("/plaintext", "plaintext", ["max_requests" => 0])]
+    #[Get("/plaintext", "plaintext")]
     public function plaintext(): string
     {
         header('Content-Type: text/plain');
@@ -41,7 +41,7 @@ class BenchmarkController extends Controller
      * JSON test - measures JSON serialization performance
      * Returns a simple JSON object
      */
-    #[Get("/json", "json", ["max_requests" => 0])]
+    #[Get("/json", "json")]
     public function json(): string
     {
         header('Content-Type: application/json');
@@ -52,7 +52,7 @@ class BenchmarkController extends Controller
      * Single query test - measures ORM/database overhead
      * Fetches a single row from the database
      */
-    #[Get("/db", "db", ["max_requests" => 0])]
+    #[Get("/db", "db")]
     public function db(): string
     {
         header('Content-Type: application/json');
@@ -68,7 +68,7 @@ class BenchmarkController extends Controller
      * Multiple queries test - measures repeated database access
      * Fetches N rows (default 10, max 500)
      */
-    #[Get("/queries/{count}", "queries", ["max_requests" => 0])]
+    #[Get("/queries/{count}", "queries")]
     public function queries(int $count = 10): string
     {
         header('Content-Type: application/json');
@@ -89,7 +89,7 @@ class BenchmarkController extends Controller
      * Template test - measures template rendering performance
      * Renders a simple Twig template
      */
-    #[Get("/template", "template", ["max_requests" => 0])]
+    #[Get("/template", "template")]
     public function template(): string
     {
         return $this->render('benchmark/template.html.twig', [
@@ -102,7 +102,7 @@ class BenchmarkController extends Controller
      * Full stack test - database + template
      * Fetches data and renders it in a template
      */
-    #[Get("/fullstack", "fullstack", ["max_requests" => 0])]
+    #[Get("/fullstack", "fullstack")]
     public function fullstack(): string
     {
         $users = db()->fetchAll(
@@ -120,7 +120,7 @@ class BenchmarkController extends Controller
     /**
      * Memory test - reports current memory usage
      */
-    #[Get("/memory", "memory", ["max_requests" => 0])]
+    #[Get("/memory", "memory")]
     public function memory(): string
     {
         header('Content-Type: application/json');

@@ -4,15 +4,17 @@ namespace App\Http\Controllers;
 
 use Echo\Framework\Debug\ProfilerStorage;
 use Echo\Framework\Http\Controller;
+use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;
 
 /**
  * Debug Controller - Serves profiler data for the debug toolbar
  * Only active when APP_DEBUG=true
  */
+#[Group(path_prefix: "/_debug/profiler", name_prefix: "debug.profiler", middleware: ["max_requests" => 0])]
 class DebugController extends Controller
 {
-    #[Get("/_debug/profiler/{id}", "debug.profiler")]
+    #[Get("{id}", "profiler")]
     public function profiler(string $id): string
     {
         // Only allow in debug mode
@@ -32,7 +34,7 @@ class DebugController extends Controller
         return $this->json($data);
     }
 
-    #[Get("/_debug/profiler", "debug.profiler.list")]
+    #[Get("/", "list")]
     public function list(): string
     {
         // Only allow in debug mode
