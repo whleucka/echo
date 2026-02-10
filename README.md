@@ -91,7 +91,7 @@ $user->update([
     'last_name' => 'Doe'
 ]);
 // or 
-$user->name = 'Alice';
+$user->first_name = 'Alice';
 $user->save();
 // delete a model
 $user->delete();
