@@ -33,7 +33,15 @@ class Kernel extends ConsoleKernel
         Commands\MigrateRollbackCommand::class,
         Commands\MigrateUpCommand::class,
         Commands\MigrateDownCommand::class,
-        Commands\MigrateCreateCommand::class,
+
+        // Generators
+        Commands\MakeMigrationCommand::class,
+        Commands\MakeControllerCommand::class,
+        Commands\MakeModelCommand::class,
+        Commands\MakeServiceCommand::class,
+        Commands\MakeMiddlewareCommand::class,
+        Commands\MakeProviderCommand::class,
+        Commands\MakeCommandCommand::class,
         
         // Sessions
         Commands\SessionCleanupCommand::class,

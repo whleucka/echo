@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Providers;
+
+use Echo\Framework\Support\ServiceProvider;
+
+class {{ class }} extends ServiceProvider
+{
+    /**
+     * Register services with the container
+     */
+    public function register(): void
+    {
+        // $this->container()->set(MyService::class, fn() => new MyService());
+    }
+
+    /**
+     * Bootstrap services after all providers are registered
+     */
+    public function boot(): void
+    {
+        // Initialize services that depend on other services
+    }
+}

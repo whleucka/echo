@@ -1,0 +1,15 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Echo\Framework\Http\Controller;
+use Echo\Framework\Routing\Route\Get;
+
+class {{ class }} extends Controller
+{
+    #[Get("/{{ route }}", "{{ name }}.index")]
+    public function index(): string
+    {
+        return $this->render("{{ template }}/index.twig");
+    }
+}
