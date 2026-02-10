@@ -11,11 +11,10 @@ use Echo\Framework\Routing\Route\Get;
 #[Group(path_prefix: "/audits", name_prefix: "audits")]
 class AuditController extends ModuleController
 {
-    public function __construct()
-    {
-        $this->has_create = $this->has_edit = $this->has_delete = false;
-        parent::__construct('audits');
-    }
+    protected string $table_name = "audits";
+    protected bool $has_create = false;
+    protected bool $has_edit = false;
+    protected bool $has_delete = false;
 
     protected function defineTable(TableSchemaBuilder $builder): void
     {

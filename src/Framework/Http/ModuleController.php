@@ -19,6 +19,7 @@ use Twig\TwigFunction;
 abstract class ModuleController extends Controller
 {
     // --- Schema-driven components ---
+    protected string $table_name;
     protected TableSchema $tableSchema;
     protected FormSchema $formSchema;
     protected ModuleState $state;
@@ -48,10 +49,14 @@ abstract class ModuleController extends Controller
      */
     protected function defineForm(FormSchemaBuilder $builder): void {}
 
-    public function __construct(private ?string $table_name = null)
+    public function __construct()
     {
+        if (!isset($this->table_name)) {
+            throw new RuntimeException(static::class . " must define a table_name property");
+        }
+
         // Build table schema
-        $tableBuilder = new TableSchemaBuilder($table_name);
+        $tableBuilder = new TableSchemaBuilder($this->table_name);
         $this->defineTable($tableBuilder);
         $this->tableSchema = $tableBuilder->build();
 

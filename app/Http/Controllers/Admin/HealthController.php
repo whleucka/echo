@@ -12,6 +12,7 @@ use Echo\Framework\Routing\Route\Get;
 class HealthController extends ModuleController
 {
     use NoTableTrait;
+    protected string $table_name = "";
 
     public function __construct(private SystemHealthService $service)
     {

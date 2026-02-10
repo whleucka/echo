@@ -9,11 +9,10 @@ use Echo\Framework\Routing\Group;
 #[Group(path_prefix: "/activity", name_prefix: "activity")]
 class ActivityController extends ModuleController
 {
-    public function __construct()
-    {
-        $this->has_create = $this->has_edit = $this->has_delete = false;
-        parent::__construct('activity');
-    }
+    protected string $table_name = "activity";
+    protected bool $has_create = false;
+    protected bool $has_edit = false;
+    protected bool $has_delete = false;
 
     protected function defineTable(TableSchemaBuilder $builder): void
     {

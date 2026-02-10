@@ -10,10 +10,7 @@ use Echo\Framework\Routing\Group;
 #[Group(path_prefix: "/users", name_prefix: "users")]
 class UsersController extends ModuleController
 {
-    public function __construct()
-    {
-        parent::__construct("users");
-    }
+    protected string $table_name = "users";
 
     protected function defineTable(TableSchemaBuilder $builder): void
     {

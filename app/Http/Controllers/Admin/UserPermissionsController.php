@@ -11,10 +11,7 @@ use Echo\Framework\Routing\Group;
 #[Group(path_prefix: "/user-permissions", name_prefix: "user-permissions")]
 class UserPermissionsController extends ModuleController
 {
-    public function __construct()
-    {
-        parent::__construct("user_permissions");
-    }
+    protected string $table_name = "user_permissions";
 
     protected function defineTable(TableSchemaBuilder $builder): void
     {
