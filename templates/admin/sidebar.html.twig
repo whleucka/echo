@@ -19,10 +19,11 @@
 <script>
 var sidebarLinkActiveLoad = () => {
   const links = document.querySelectorAll('#sidebar-links .link');
+  const path = window.location.href.split('?')[0];
   links.forEach((link) => {
     link.classList.remove('active');
-    let path = window.location.href.split('?')[0]
-    if (link.href === path) {
+    // Use startsWith to match pagination/sub-routes (e.g., /admin/users/page/2 matches /admin/users)
+    if (path === link.href || path.startsWith(link.href + '/')) {
       link.classList.add("active");
     }
   });
