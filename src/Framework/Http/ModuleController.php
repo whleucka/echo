@@ -345,6 +345,8 @@ abstract class ModuleController extends Controller
 
         $orderBy = $this->state->getOrderBy($this->tableSchema->defaultOrderBy);
         $sort = $this->state->getSort($this->tableSchema->defaultSort);
+        // Resolve orderBy to column name for template matching (handles expressions like 'activity.id' -> 'id')
+        $orderByColumnName = $this->resolveOrderByColumnName($orderBy);
 
         return $this->render("admin/table.html.twig", [
             ...$this->getCommonData(),
@@ -353,7 +355,7 @@ abstract class ModuleController extends Controller
             "has_edit" => $this->has_edit,
             "has_create" => $this->has_create,
             "table_actions" => $tableActions,
-            "order_by" => $orderBy,
+            "order_by" => $orderByColumnName,
             "filters" => [
                 "show" => !empty($this->tableSchema->getSearchableColumns())
                     || $this->tableSchema->dateColumn !== ''
@@ -364,7 +366,7 @@ abstract class ModuleController extends Controller
                     "active" => $this->state->getActiveFilterLink(),
                     "links" => array_map(fn($fl) => $fl->label, $this->tableSchema->filterLinks),
                 ],
-                "order_by" => $orderBy,
+                "order_by" => $orderByColumnName,
                 "sort" => $sort,
             ],
             "caption" => $result->totalPages > 1
@@ -396,6 +398,21 @@ abstract class ModuleController extends Controller
             whereConditions: $where,
             whereParams: $params,
         );
+    }
+
+    /**
+     * Resolve an orderBy value (which may be an expression like 'activity.id')
+     * to the corresponding column name for template matching.
+     */
+    private function resolveOrderByColumnName(string $orderBy): string
+    {
+        foreach ($this->tableSchema->columns as $col) {
+            // Match by name (e.g., 'id') or expression (e.g., 'activity.id')
+            if ($col->name === $orderBy || $col->expression === $orderBy) {
+                return $col->name;
+            }
+        }
+        return $orderBy;
     }
 
     // =========================================================================
