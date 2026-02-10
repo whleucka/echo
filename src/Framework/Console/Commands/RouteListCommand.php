@@ -47,7 +47,7 @@ class RouteListCommand extends Command
 
         foreach ($routes as $path => $methods) {
             foreach ($methods as $method => $route) {
-                $middleware = !empty($route['middleware']) ? '[' . implode(', ', $route['middleware']) . ']' : '';
+                $middleware = !empty($route['middleware']) ? '[' . $this->formatMiddleware($route['middleware']) . ']' : '';
                 $output->writeln(sprintf(
                     "  %-7s %-40s -> %s::%s %s",
                     strtoupper($method),
@@ -87,5 +87,18 @@ class RouteListCommand extends Command
     {
         $parts = explode('\\', $className);
         return end($parts);
+    }
+
+    private function formatMiddleware(array $middleware): string
+    {
+        $parts = [];
+        foreach ($middleware as $key => $value) {
+            if (is_string($key)) {
+                $parts[] = "$key => $value";
+            } else {
+                $parts[] = (string) $value;
+            }
+        }
+        return implode(', ', $parts);
     }
 }
