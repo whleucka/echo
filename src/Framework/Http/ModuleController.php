@@ -654,12 +654,12 @@ abstract class ModuleController extends Controller
     private function registerFunctions(bool $forceReadonly = false): void
     {
         $twig = twig();
-        $twig->addFunction(new TwigFunction("has_export", fn() => $this->hasExport()));
-        $twig->addFunction(new TwigFunction("has_create", fn() => $this->hasCreate()));
-        $twig->addFunction(new TwigFunction("has_edit", fn(int $id) => $this->hasEdit($id)));
-        $twig->addFunction(new TwigFunction("has_show", fn(int $id) => $this->hasShow($id)));
-        $twig->addFunction(new TwigFunction("has_delete", fn(int $id) => $this->hasDelete($id)));
-        $twig->addFunction(new TwigFunction("has_row_actions", fn() => $this->hasShow || $this->hasEdit || $this->hasDelete));
+        $twig->addFunction(new TwigFunction("hasExport", fn() => $this->hasExport()));
+        $twig->addFunction(new TwigFunction("hasCreate", fn() => $this->hasCreate()));
+        $twig->addFunction(new TwigFunction("hasEdit", fn(int $id) => $this->hasEdit($id)));
+        $twig->addFunction(new TwigFunction("hasShow", fn(int $id) => $this->hasShow($id)));
+        $twig->addFunction(new TwigFunction("hasDelete", fn(int $id) => $this->hasDelete($id)));
+        $twig->addFunction(new TwigFunction("hasRowActions", fn() => $this->hasShow || $this->hasEdit || $this->hasDelete));
         $twig->addFunction(new TwigFunction("control", fn(string $column, ?string $value) => $this->control($column, $value, $forceReadonly)));
         $twig->addFunction(new TwigFunction("format", fn(string $column, ?string $value) => $this->formatValue($column, $value)));
     }

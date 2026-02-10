@@ -6,7 +6,7 @@
   <div id="table-actions" class="p-2 d-flex align-items-center flex-wrap">
     <form class="d-flex align-items-center flex-wrap">
       {{ csrf()|raw }}
-      {% if has_create() %}
+      {% if hasCreate() %}
         <button class="btn btn-sm btn-success me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/create" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi bi-plus-square pe-1"></i> New</button>
       {% endif %}
       {% for link in filters.filterLinks.links %}
@@ -15,7 +15,7 @@
         </button>
         <span hx-get="/admin/{{ module.link }}/filter/count/{{ loop.index0 }}" hx-trigger="load" hx-swap="textContent" hx-target="previous .link-count"></span>
       {% endfor %}
-      {% if has_export() and data.rows %}
+      {% if hasExport() and data.rows %}
         <a href="/admin/{{ module.link }}/export-csv" class="btn btn-sm btn-primary me-2"><i class="bi bi-download pe-1"></i> Export</a>
       {% endif %}
       {% if filters.show %}
@@ -53,7 +53,7 @@
             {% for column,title in headers %}
             <th hx-get="/admin/{{ module.link }}/sort/{{ loop.index0 }}" hx-target="#table" hx-select="#table" hx-swap="outerHTML" class="pointer {% if column == filters.orderBy %}active {% if filters.sort == 'ASC' %}asc{% else %}desc{% endif %}{% endif %}" nowrap>{{ title }}</th>
             {% endfor %}
-            {% if has_row_actions() %}
+            {% if hasRowActions() %}
             <th class="text-end">Actions</th>
             {% endif %}
           </tr>
@@ -69,16 +69,16 @@
             {% for key,value in row %}
               <td>{{ format(key, value)|raw }}</td>
             {% endfor %}
-            {% if has_row_actions() %}
+            {% if hasRowActions() %}
               <td id="row-actions">
                 <div class="d-flex justify-content-end">
-                  {% if has_show(row.id) %}
+                  {% if hasShow(row.id) %}
                     <button class="btn btn-sm" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/{{ row.id }}" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi bi-eye"></i></button>
                   {% endif %}
-                  {% if has_edit(row.id) %}
+                  {% if hasEdit(row.id) %}
                     <button class="btn btn-sm ms-1" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/{{ row.id }}/edit" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi bi-pencil"></i></button>
                   {% endif %}
-                  {% if has_delete(row.id) %}
+                  {% if hasDelete(row.id) %}
                     <button class="btn btn-sm ms-1" hx-confirm="Please confirm deletion" hx-post="/admin/{{ module.link }}/{{ row.id }}/destroy"><i class="bi bi-trash"></i></button>
                   {% endif %}
                 </div>
