@@ -205,13 +205,15 @@ docker-compose exec -it php ./bin/console <command>
 
 | Group | Commands |
 |---|---|
-| `migrate:` | `run`, `rollback`, `status`, `create`, `fresh`, `up`, `down` |
-| `route:` | `list`, `cache`, `clear` |
+| `admin:` | `new` |
+| `audit:` | `list`, `stats`, `purge` |
 | `db:` | `backup`, `restore`, `list`, `cleanup` |
 | `mail:` | `queue`, `status`, `purge` |
-| `audit:` | `list`, `stats`, `purge` |
+| `make:` | `command`, `controller`, `middleware`, `migration`, `model`,
+`provider`, `service` |
+| `migrate:` | `run`, `rollback`, `status`, `create`, `fresh`, `up`, `down` |
+| `route:` | `list`, `cache`, `clear` |
 | `session:` | `stats`, `cleanup` |
-| `admin:` | `new` |
 | Other | `version`, `key:generate`, `storage:fix`, `server` |
 
 ## Project Structure
