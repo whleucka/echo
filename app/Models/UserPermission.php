@@ -9,10 +9,7 @@ class UserPermission extends Model
 {
     use Auditable;
 
-    public function __construct(?string $id = null)
-    {
-        parent::__construct('user_permissions', $id);
-    }
+    protected string $table_name = "user_permissions";
 
     public function user(): ?User
     {

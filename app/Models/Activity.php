@@ -6,10 +6,7 @@ use Echo\Framework\Database\Model;
 
 class Activity extends Model
 {
-    public function __construct(?string $id = null)
-    {
-        parent::__construct('activity', $id);
-    }
+    protected string $table_name = "activity";
 
     public function user(): ?User
     {

@@ -9,10 +9,7 @@ class FileInfo extends Model
 {
     use Auditable;
 
-    public function __construct(?string $id = null)
-    {
-        parent::__construct('file_info', $id);
-    }
+    protected string $table_name = "file_info";
 
     public function delete(): bool
     {

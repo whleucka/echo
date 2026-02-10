@@ -38,17 +38,17 @@ use Echo\Framework\Http\Controller;
 use Echo\Framework\Routing\Route\{Get, Post};
 use Echo\Framework\Routing\Group;
 
-#[Group(path_prefix: "/users", name_prefix: "user")]
+#[Group(path_prefix: "/users", name_prefix: "user", middleware: ["auth"])]
 class UserController extends Controller
 {
-    #[Get("/{id}", "show", ["auth"])]
+    #[Get("/{id}", "show")]
     public function show(string $id): string
     {
         $user = User::find($id);
         return $this->render('users/show.html.twig', ['user' => $user]);
     }
 
-    #[Post("/", "store", ["auth", "csrf"])]
+    #[Post("/", "store")]
     public function store(): string
     {
         $data = $this->validate([
@@ -70,15 +70,30 @@ use Echo\Framework\Database\Model;
 
 class User extends Model
 {
+    use Auditable;
+
     protected string $table = 'users';
-    protected array $fillable = ['email', 'first_name', 'surname'];
 }
 
 $user  = User::find(1);
 $user  = User::where('email', 'a@b.com')->first();
+$user  = User::where('dob', '>=', '1967-01-12')->first();
 $users = User::where('active', 1)->orderBy('created_at', 'DESC')->get();
-$user  = User::create(['email' => 'a@b.com', 'first_name' => 'Jo']);
-$user->update(['first_name' => 'Jane']);
+// create a new model
+$user  = User::create([
+    'email' => 'a@b.com', 
+    'first_name' => 'Abby', 
+    'last_name' => 'Green'
+]);
+// update a model
+$user->update([
+    'first_name' => 'Jane', 
+    'last_name' => 'Doe'
+]);
+// or 
+$user->name = 'Alice';
+$user->save();
+// delete a model
 $user->delete();
 
 // QueryBuilder for complex queries

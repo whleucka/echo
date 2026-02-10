@@ -6,10 +6,7 @@ use Echo\Framework\Database\Model;
 
 class Audit extends Model
 {
-    public function __construct(?string $id = null)
-    {
-        parent::__construct('audits', $id);
-    }
+    protected string $table_name = "audits";
 
     /**
      * Get the user who performed the action

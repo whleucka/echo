@@ -4,9 +4,11 @@ namespace Echo\Framework\Database;
 
 use Exception;
 use PDO;
+use RuntimeException;
 
-class Model implements ModelInterface
+abstract class Model implements ModelInterface
 {
+    protected string $table_name;
     protected string $primary_key = "id";
     protected bool $auto_increment = true;
     protected array $columns = ["*"];
@@ -30,8 +32,12 @@ class Model implements ModelInterface
         "like",
     ];
 
-    public function __construct(protected string $table_name, protected ?string $id = null)
+    public function __construct(protected ?string $id = null)
     {
+        if (!isset($this->table_name)) {
+            throw new RuntimeException(static::class . " must define a table_name property");
+        }
+
         // Initialize the query builder
         $this->qb = new QueryBuilder();
 

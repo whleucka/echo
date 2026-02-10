@@ -9,10 +9,7 @@ class User extends Model
 {
     use Auditable;
 
-    public function __construct(?string $id = null)
-    {
-        parent::__construct('users', $id);
-    }
+    protected string $table_name = "users";
 
     public function fullName()
     {
