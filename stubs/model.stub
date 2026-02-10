@@ -6,5 +6,5 @@ use Echo\Framework\Database\Model;
 
 class {{ class }} extends Model
 {
-    protected string $table_name = '{{ table }}';
+    protected string $tableName = '{{ table }}';
 }

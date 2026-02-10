@@ -8,10 +8,10 @@ use Echo\Framework\Admin\Schema\{FormSchemaBuilder, TableSchemaBuilder};
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 
-#[Group(path_prefix: "/user-permissions", name_prefix: "user-permissions")]
+#[Group(pathPrefix: "/user-permissions", namePrefix: "user-permissions")]
 class UserPermissionsController extends ModuleController
 {
-    protected string $table_name = "user_permissions";
+    protected string $tableName = "user_permissions";
 
     protected function defineTable(TableSchemaBuilder $builder): void
     {

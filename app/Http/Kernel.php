@@ -6,7 +6,7 @@ use Echo\Framework\Http\Kernel as HttpKernel;
 
 class Kernel extends HttpKernel
 {
-    protected array $middleware_layers = [
+    protected array $middlewareLayers = [
         \Echo\Framework\Http\Middleware\RequestID::class,
         \Echo\Framework\Http\Middleware\LogActivity::class,
         \Echo\Framework\Http\Middleware\CORS::class,

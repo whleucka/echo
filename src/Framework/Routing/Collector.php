@@ -53,11 +53,11 @@ class Collector
                 foreach (array_reverse($groupStack) as $group) {
                     if (!$group) continue;
 
-                    if ($group->path_prefix) {
-                        $pathPrefix .= '/' . trim($group->path_prefix, '/');
+                    if ($group->pathPrefix) {
+                        $pathPrefix .= '/' . trim($group->pathPrefix, '/');
                     }
-                    if ($group->name_prefix) {
-                        $namePrefix .= ($namePrefix ? '.' : '') . trim($group->name_prefix, '.');
+                    if ($group->namePrefix) {
+                        $namePrefix .= ($namePrefix ? '.' : '') . trim($group->namePrefix, '.');
                     }
                     $groupMiddleware = array_merge($groupMiddleware, $group->middleware);
                 }

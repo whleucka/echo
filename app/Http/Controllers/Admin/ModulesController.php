@@ -6,10 +6,10 @@ use Echo\Framework\Admin\Schema\{FormSchemaBuilder, TableSchemaBuilder};
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 
-#[Group(path_prefix: "/modules", name_prefix: "modules")]
+#[Group(pathPrefix: "/modules", namePrefix: "modules")]
 class ModulesController extends ModuleController
 {
-    protected string $table_name = "modules";
+    protected string $tableName = "modules";
 
     protected function defineTable(TableSchemaBuilder $builder): void
     {

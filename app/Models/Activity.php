@@ -6,7 +6,7 @@ use Echo\Framework\Database\Model;
 
 class Activity extends Model
 {
-    protected string $table_name = "activity";
+    protected string $tableName = "activity";
 
     public function user(): ?User
     {

@@ -6,7 +6,7 @@ use Echo\Framework\Database\Model;
 
 class EmailJob extends Model
 {
-    protected string $table_name = "email_jobs";
+    protected string $tableName = "email_jobs";
 
     /**
      * Check if this job can be retried

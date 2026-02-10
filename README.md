@@ -38,7 +38,7 @@ use Echo\Framework\Http\Controller;
 use Echo\Framework\Routing\Route\{Get, Post};
 use Echo\Framework\Routing\Group;
 
-#[Group(path_prefix: "/users", name_prefix: "user", middleware: ["auth"])]
+#[Group(pathPrefix: "/users", namePrefix: "user", middleware: ["auth"])]
 class UserController extends Controller
 {
     #[Get("/{id}", "show")]
@@ -48,7 +48,7 @@ class UserController extends Controller
         return $this->render('users/show.html.twig', ['user' => $user]);
     }
 
-    #[Post("/", "store")]
+    #[Post(path: "/", name: "store")]
     public function store(): string
     {
         $data = $this->validate([
@@ -134,7 +134,7 @@ All defined in `app/Helpers/Functions.php`:
 Extend `ModuleController` for instant CRUD with HTMX tables, modals, sorting, filtering, pagination, CSV export, and per-user permissions.
 
 ```php
-#[Group(path_prefix: "/products", name_prefix: "products")]
+#[Group(pathPrefix: "/products", namePrefix: "products")]
 class ProductsController extends ModuleController
 {
     public function __construct() { parent::__construct("products"); }

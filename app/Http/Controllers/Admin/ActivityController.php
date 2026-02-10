@@ -6,13 +6,13 @@ use Echo\Framework\Admin\Schema\TableSchemaBuilder;
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 
-#[Group(path_prefix: "/activity", name_prefix: "activity")]
+#[Group(pathPrefix: "/activity", namePrefix: "activity")]
 class ActivityController extends ModuleController
 {
-    protected string $table_name = "activity";
-    protected bool $has_create = false;
-    protected bool $has_edit = false;
-    protected bool $has_delete = false;
+    protected string $tableName = "activity";
+    protected bool $hasCreate = false;
+    protected bool $hasEdit = false;
+    protected bool $hasDelete = false;
 
     protected function defineTable(TableSchemaBuilder $builder): void
     {

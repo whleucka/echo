@@ -14,7 +14,7 @@ use PDOException;
 class Kernel implements KernelInterface
 {
     // Middleware layers
-    protected array $middleware_layers = [];
+    protected array $middlewareLayers = [];
 
     public function handle(RequestInterface $request): void
     {
@@ -34,7 +34,7 @@ class Kernel implements KernelInterface
 
         // Get controller payload
         $middleware = new Middleware();
-        $response = $middleware->layer($this->middleware_layers)
+        $response = $middleware->layer($this->middlewareLayers)
             ->handle($request, fn () => $this->response($route, $request));
 
         $response->send();

@@ -8,13 +8,13 @@ use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;
 
-#[Group(path_prefix: "/audits", name_prefix: "audits")]
+#[Group(pathPrefix: "/audits", namePrefix: "audits")]
 class AuditController extends ModuleController
 {
-    protected string $table_name = "audits";
-    protected bool $has_create = false;
-    protected bool $has_edit = false;
-    protected bool $has_delete = false;
+    protected string $tableName = "audits";
+    protected bool $hasCreate = false;
+    protected bool $hasEdit = false;
+    protected bool $hasDelete = false;
 
     protected function defineTable(TableSchemaBuilder $builder): void
     {

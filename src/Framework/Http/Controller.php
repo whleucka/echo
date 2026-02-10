@@ -13,8 +13,8 @@ class Controller implements ControllerInterface
     protected ?User $user = null;
     protected ?RequestInterface $request = null;
     private array $headers = [];
-    private array $validation_errors = [];
-    private array $validation_messages = [
+    private array $validationErrors = [];
+    private array $validationMessages = [
         "required" => "Required field",
         "unique" => "Must be unique",
         "string" => "Must be a string",
@@ -68,9 +68,9 @@ class Controller implements ControllerInterface
         return $this->request;
     }
 
-    public function getValiationErrors(): array
+    public function getValidationErrors(): array
     {
-        return $this->validation_errors;
+        return $this->validationErrors;
     }
 
     /**
@@ -130,10 +130,10 @@ class Controller implements ControllerInterface
                 if ($result) {
                     $data[$field] = $request[$field];
                 } else {
-                    if (isset($this->validation_messages[$field.'.'.$rule])) {
-                        $this->addValidationError($field, $this->validation_messages[$field.'.'.$rule]);
-                    } else if (isset($this->validation_messages[$rule])) {
-                        $this->addValidationError($field, $this->validation_messages[$rule]);
+                    if (isset($this->validationMessages[$field.'.'.$rule])) {
+                        $this->addValidationError($field, $this->validationMessages[$field.'.'.$rule]);
+                    } else if (isset($this->validationMessages[$rule])) {
+                        $this->addValidationError($field, $this->validationMessages[$rule]);
                     } else {
                         $this->addValidationError($field, "Invalid");
                     }
@@ -162,12 +162,12 @@ class Controller implements ControllerInterface
 
     protected function setValidationMessage(string $rule, string $message)
     {
-        $this->validation_messages[$rule] = $message;
+        $this->validationMessages[$rule] = $message;
     }
 
     protected function addValidationError(string $field, string $message)
     {
-        $this->validation_errors[$field][] = $message;
+        $this->validationErrors[$field][] = $message;
     }
 
     protected function getDefaultTemplateData(): array
@@ -175,7 +175,7 @@ class Controller implements ControllerInterface
         return [
             "app" => config("app"),
             "flash" => Flash::get(),
-            "validation_errors" => $this->validation_errors,
+            "validationErrors" => $this->validationErrors,
         ];
     }
 

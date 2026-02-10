@@ -15,27 +15,27 @@ use RuntimeException;
 use Throwable;
 use Twig\TwigFunction;
 
-#[Group(path_prefix: "/admin", middleware: ["auth"])]
+#[Group(pathPrefix: "/admin", middleware: ["auth"])]
 abstract class ModuleController extends Controller
 {
     // --- Schema-driven components ---
-    protected string $table_name;
+    protected string $tableName;
     protected TableSchema $tableSchema;
     protected FormSchema $formSchema;
     protected ModuleState $state;
     protected TableDataSource $dataSource;
 
     // --- Module metadata (populated from DB) ---
-    protected string $module_icon = "";
-    protected string $module_link = "";
-    protected string $module_title = "";
+    protected string $moduleIcon = "";
+    protected string $moduleLink = "";
+    protected string $moduleTitle = "";
 
     // --- Permissions ---
-    protected bool $has_edit = true;
-    protected bool $has_create = true;
-    protected bool $has_delete = true;
-    protected bool $has_export = true;
-    protected bool $has_show = true;
+    protected bool $hasEdit = true;
+    protected bool $hasCreate = true;
+    protected bool $hasDelete = true;
+    protected bool $hasExport = true;
+    protected bool $hasShow = true;
 
     /**
      * Subclasses define their table schema here.
@@ -51,12 +51,12 @@ abstract class ModuleController extends Controller
 
     public function __construct()
     {
-        if (!isset($this->table_name)) {
-            throw new RuntimeException(static::class . " must define a table_name property");
+        if (!isset($this->tableName)) {
+            throw new RuntimeException(static::class . " must define a tableName property");
         }
 
         // Build table schema
-        $tableBuilder = new TableSchemaBuilder($this->table_name);
+        $tableBuilder = new TableSchemaBuilder($this->tableName);
         $this->defineTable($tableBuilder);
         $this->tableSchema = $tableBuilder->build();
 
@@ -68,7 +68,7 @@ abstract class ModuleController extends Controller
         // Initialize components
         $this->dataSource = new QueryBuilderDataSource();
         $this->init();
-        $this->state = new ModuleState($this->module_link);
+        $this->state = new ModuleState($this->moduleLink);
     }
 
     // =========================================================================
@@ -120,7 +120,7 @@ abstract class ModuleController extends Controller
     }
 
     #[Get("/export-csv", "admin.export-csv")]
-    public function export_csv(): mixed
+    public function exportCsv(): mixed
     {
         if (!$this->hasExport()) {
             return $this->permissionDenied();
@@ -141,7 +141,7 @@ abstract class ModuleController extends Controller
             ->fetchAll();
 
         if ($rows) {
-            $this->streamCSV($rows, $this->module_link . '_export.csv');
+            $this->streamCSV($rows, $this->moduleLink . '_export.csv');
         }
         return null;
     }
@@ -156,13 +156,13 @@ abstract class ModuleController extends Controller
     }
 
     #[Get("/modal/filter", "admin.render-filter")]
-    public function render_filter(): string
+    public function showFilterModal(): string
     {
         return $this->renderFilter();
     }
 
     #[Get("/filter/link/{index}", "admin.filter-link")]
-    public function filter_link(int $index): string
+    public function filterLink(int $index): string
     {
         $this->state->setActiveFilterLink($index);
         $this->state->setPage(1);
@@ -170,7 +170,7 @@ abstract class ModuleController extends Controller
     }
 
     #[Get("/filter/count/{index}", "admin.filter-count")]
-    public function filter_count(int $index)
+    public function filterCount(int $index)
     {
         $filterLinks = $this->tableSchema->filterLinks;
         if (!isset($filterLinks[$index])) {
@@ -192,14 +192,14 @@ abstract class ModuleController extends Controller
     }
 
     #[Post("/table-action", "admin.table-action")]
-    public function table_action(): string
+    public function tableAction(): string
     {
         $this->handleRequest($this->request->request);
         return $this->index();
     }
 
     #[Post("/modal/filter", "admin.set-filter")]
-    public function set_filter(): string
+    public function setFilter(): string
     {
         $clear = isset($this->request->request->filter_clear);
         $valid = $this->validate([
@@ -225,7 +225,7 @@ abstract class ModuleController extends Controller
         Flash::add("warning", "Validation error");
         header("HX-Retarget: .modal-dialog");
         header("HX-Reselect: .modal-content");
-        return $this->render_filter();
+        return $this->showFilterModal();
     }
 
     #[Get("/modal/{id}", "admin.show")]
@@ -338,7 +338,7 @@ abstract class ModuleController extends Controller
         foreach ($this->tableSchema->actions as $action) {
             $tableActions[] = ['value' => $action->name, 'label' => $action->label];
         }
-        if ($this->has_delete) {
+        if ($this->hasDelete) {
             $tableActions[] = ['value' => 'delete', 'label' => 'Delete'];
         }
 
@@ -357,22 +357,22 @@ abstract class ModuleController extends Controller
         return $this->render("admin/table.html.twig", [
             ...$this->getCommonData(),
             "headers" => $headers,
-            "has_delete" => $this->has_delete,
-            "has_edit" => $this->has_edit,
-            "has_create" => $this->has_create,
-            "table_actions" => $tableActions,
-            "order_by" => $orderByColumnName,
+            "hasDelete" => $this->hasDelete,
+            "hasEdit" => $this->hasEdit,
+            "hasCreate" => $this->hasCreate,
+            "tableActions" => $tableActions,
+            "orderBy" => $orderByColumnName,
             "filters" => [
                 "show" => !empty($this->tableSchema->getSearchableColumns())
                     || $this->tableSchema->dateColumn !== ''
                     || !empty($this->tableSchema->filters),
-                "show_clear" => $this->state->hasFilters(),
-                "filter_links" => [
+                "showClear" => $this->state->hasFilters(),
+                "filterLinks" => [
                     "show" => !empty($this->tableSchema->filterLinks),
                     "active" => $this->state->getActiveFilterLink(),
                     "links" => array_map(fn($fl) => $fl->label, $this->tableSchema->filterLinks),
                 ],
-                "order_by" => $orderByColumnName,
+                "orderBy" => $orderByColumnName,
                 "sort" => $sort,
             ],
             "caption" => $result->totalPages > 1
@@ -383,9 +383,9 @@ abstract class ModuleController extends Controller
             ],
             "pagination" => [
                 "page" => $result->page,
-                "per_page" => $result->perPage,
-                "total_pages" => $result->totalPages,
-                "total_rows" => $result->totalRows,
+                "perPage" => $result->perPage,
+                "totalPages" => $result->totalPages,
+                "totalRows" => $result->totalRows,
                 "links" => $this->tableSchema->pagination->paginationLinks,
             ],
         ]);
@@ -567,13 +567,13 @@ abstract class ModuleController extends Controller
         $hasDateColumn = $this->tableSchema->dateColumn !== '';
 
         return $this->render("admin/filter.html.twig", [
-            "post" => "/admin/{$this->module_link}/modal/filter",
-            "show_clear" => $this->state->hasFilters(),
+            "post" => "/admin/{$this->moduleLink}/modal/filter",
+            "showClear" => $this->state->hasFilters(),
             "dropdowns" => [
                 "show" => !empty($this->tableSchema->filters),
                 "filters" => $dropdownFilters,
             ],
-            "date_filter" => [
+            "dateFilter" => [
                 "show" => $hasDateColumn,
                 "start" => $dateStart,
                 "end" => $dateEnd,
@@ -591,7 +591,7 @@ abstract class ModuleController extends Controller
 
     protected function renderForm(?int $id, string $type): string
     {
-        if (empty($this->formSchema->fields) || !$this->table_name) {
+        if (empty($this->formSchema->fields) || !$this->tableName) {
             return '';
         }
 
@@ -621,8 +621,8 @@ abstract class ModuleController extends Controller
             "id" => $id,
             "title" => $title,
             "post" => $id
-                ? "/admin/{$this->module_link}/$id/update"
-                : "/admin/{$this->module_link}",
+                ? "/admin/{$this->moduleLink}/$id/update"
+                : "/admin/{$this->moduleLink}",
             "submit" => $submit,
             "readonly" => $readonly,
             "labels" => $this->formSchema->getLabels(),
@@ -637,7 +637,7 @@ abstract class ModuleController extends Controller
         }
         $pk = $this->tableSchema->primaryKey;
         return qb()->select($this->formSchema->getSelectExpressions())
-            ->from($this->table_name)
+            ->from($this->tableName)
             ->where(["$pk = ?"], $id)
             ->execute();
     }
@@ -659,7 +659,7 @@ abstract class ModuleController extends Controller
         $twig->addFunction(new TwigFunction("has_edit", fn(int $id) => $this->hasEdit($id)));
         $twig->addFunction(new TwigFunction("has_show", fn(int $id) => $this->hasShow($id)));
         $twig->addFunction(new TwigFunction("has_delete", fn(int $id) => $this->hasDelete($id)));
-        $twig->addFunction(new TwigFunction("has_row_actions", fn() => $this->has_show || $this->has_edit || $this->has_delete));
+        $twig->addFunction(new TwigFunction("has_row_actions", fn() => $this->hasShow || $this->hasEdit || $this->hasDelete));
         $twig->addFunction(new TwigFunction("control", fn(string $column, ?string $value) => $this->control($column, $value, $forceReadonly)));
         $twig->addFunction(new TwigFunction("format", fn(string $column, ?string $value) => $this->formatValue($column, $value)));
     }
@@ -765,11 +765,11 @@ abstract class ModuleController extends Controller
 
     private function getValidationClass(string $column, bool $required)
     {
-        $validation_errors = $this->getValiationErrors();
+        $validationErrors = $this->getValidationErrors();
         $request = $this->request->request;
         $classname = [];
         if (isset($request->$column) || $required && !isset($request->$column)) {
-            $classname[] = isset($validation_errors[$column])
+            $classname[] = isset($validationErrors[$column])
                 ? 'is-invalid'
                 : (isset($request->$column) ? 'is-valid' : '');
         }
@@ -852,16 +852,16 @@ abstract class ModuleController extends Controller
     {
         try {
             $result = qb()->insert($request)
-                ->into($this->table_name)
+                ->into($this->tableName)
                 ->params(array_values($request))
                 ->execute();
             if ($result) {
                 $id = db()->lastInsertId();
                 $newValues = db()->fetch(
-                    "SELECT * FROM {$this->table_name} WHERE {$this->tableSchema->primaryKey} = ?",
+                    "SELECT * FROM {$this->tableName} WHERE {$this->tableSchema->primaryKey} = ?",
                     [$id]
                 );
-                AuditLogger::logCreated($this->table_name, $id, $newValues ?: []);
+                AuditLogger::logCreated($this->tableName, $id, $newValues ?: []);
                 return $id;
             }
             return false;
@@ -877,20 +877,20 @@ abstract class ModuleController extends Controller
         try {
             $pk = $this->tableSchema->primaryKey;
             $oldValues = db()->fetch(
-                "SELECT * FROM {$this->table_name} WHERE {$pk} = ?",
+                "SELECT * FROM {$this->tableName} WHERE {$pk} = ?",
                 [$id]
             );
             $result = qb()->update($request)
                 ->params(array_values($request))
-                ->table($this->table_name)
+                ->table($this->tableName)
                 ->where(["$pk = ?"], $id)
                 ->execute();
             if ($result) {
                 $newValues = db()->fetch(
-                    "SELECT * FROM {$this->table_name} WHERE {$pk} = ?",
+                    "SELECT * FROM {$this->tableName} WHERE {$pk} = ?",
                     [$id]
                 );
-                AuditLogger::logUpdated($this->table_name, $id, $oldValues ?: [], $newValues ?: []);
+                AuditLogger::logUpdated($this->tableName, $id, $oldValues ?: [], $newValues ?: []);
                 return true;
             }
             return false;
@@ -906,15 +906,15 @@ abstract class ModuleController extends Controller
         try {
             $pk = $this->tableSchema->primaryKey;
             $oldValues = db()->fetch(
-                "SELECT * FROM {$this->table_name} WHERE {$pk} = ?",
+                "SELECT * FROM {$this->tableName} WHERE {$pk} = ?",
                 [$id]
             );
             $result = qb()->delete()
-                ->from($this->table_name)
+                ->from($this->tableName)
                 ->where(["$pk = ?"], $id)
                 ->execute();
             if ($result) {
-                AuditLogger::logDeleted($this->table_name, $id, $oldValues ?: []);
+                AuditLogger::logDeleted($this->tableName, $id, $oldValues ?: []);
                 return true;
             }
             return false;
@@ -1065,27 +1065,27 @@ abstract class ModuleController extends Controller
 
     protected function hasExport(): bool
     {
-        return $this->checkPermission('has_export') && $this->has_export;
+        return $this->checkPermission('has_export') && $this->hasExport;
     }
 
     protected function hasCreate(): bool
     {
-        return $this->checkPermission('has_create') && $this->has_create && !empty($this->formSchema->fields);
+        return $this->checkPermission('has_create') && $this->hasCreate && !empty($this->formSchema->fields);
     }
 
     protected function hasShow(int $id): bool
     {
-        return $this->has_show && !empty($this->formSchema->fields);
+        return $this->hasShow && !empty($this->formSchema->fields);
     }
 
     protected function hasEdit(int $id): bool
     {
-        return $this->checkPermission('has_edit') && $this->has_edit && !empty($this->formSchema->fields);
+        return $this->checkPermission('has_edit') && $this->hasEdit && !empty($this->formSchema->fields);
     }
 
     protected function hasDelete(int $id): bool
     {
-        return $this->checkPermission('has_delete') && $this->has_delete;
+        return $this->checkPermission('has_delete') && $this->hasDelete;
     }
 
     // =========================================================================
@@ -1134,9 +1134,9 @@ abstract class ModuleController extends Controller
         $module = $this->getModule();
 
         if ($module) {
-            $this->module_title = $module['title'];
-            $this->module_link = $module['link'];
-            $this->module_icon = $module['icon'];
+            $this->moduleTitle = $module['title'];
+            $this->moduleLink = $module['link'];
+            $this->moduleIcon = $module['icon'];
         } else {
             $this->pageNotFound();
         }

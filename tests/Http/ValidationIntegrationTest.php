@@ -48,7 +48,7 @@ class ValidationIntegrationTest extends TestCase
         );
 
         $this->assertNull($result);
-        $errors = $this->controller->getValiationErrors();
+        $errors = $this->controller->getValidationErrors();
         $this->assertArrayHasKey('name', $errors);
     }
 
@@ -488,7 +488,7 @@ class ValidationIntegrationTest extends TestCase
             ['email' => ['email'], 'password' => ['required', 'min_length:8']]
         );
 
-        $errors = $this->controller->getValiationErrors();
+        $errors = $this->controller->getValidationErrors();
 
         $this->assertArrayHasKey('email', $errors);
         $this->assertArrayHasKey('password', $errors);
@@ -505,8 +505,8 @@ class ValidationTestController extends Controller
         return parent::validate($ruleset, $id);
     }
 
-    public function getValiationErrors(): array
+    public function getValidationErrors(): array
     {
-        return parent::getValiationErrors();
+        return parent::getValidationErrors();
     }
 }

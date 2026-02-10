@@ -16,7 +16,7 @@ use Echo\Framework\Routing\Route\Get;
  * This is separate from APP_DEBUG so you can benchmark in production-like
  * configurations without exposing debug tooling.
  */
-#[Group(path_prefix: "/benchmark", name_prefix: "benchmark", middleware: ["max_requests" => 0])]
+#[Group(pathPrefix: "/benchmark", namePrefix: "benchmark", middleware: ["max_requests" => 0])]
 class BenchmarkController extends Controller
 {
     public function __construct()

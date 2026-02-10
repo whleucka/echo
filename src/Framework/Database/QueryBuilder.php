@@ -12,10 +12,10 @@ class QueryBuilder
     private array $insert = [];
     private array $update = [];
     private array $where = [];
-    private array $or_where = [];
+    private array $orWhere = [];
     private array $having = [];
-    private array $group_by = [];
-    private array $order_by = [];
+    private array $groupBy = [];
+    private array $orderBy = [];
     private int $offset = 0;
     private int $limit = 0;
     private array $params = [];
@@ -113,14 +113,14 @@ class QueryBuilder
 
     public function orWhere(array $clauses, ...$replacements): QueryBuilder
     {
-        $this->or_where = $clauses;
+        $this->orWhere = $clauses;
         $this->addQueryParams($replacements);
         return $this;
     }
 
     public function groupBy(array $clauses): QueryBuilder
     {
-        $this->group_by = $clauses;
+        $this->groupBy = $clauses;
         return $this;
     }
 
@@ -133,7 +133,7 @@ class QueryBuilder
 
     public function orderBy(array $clauses): QueryBuilder
     {
-        $this->order_by = $clauses;
+        $this->orderBy = $clauses;
         return $this;
     }
 
@@ -183,13 +183,13 @@ class QueryBuilder
             implode(", ", $this->select),
             $this->table,
             $this->where ? " WHERE " . implode(" AND ", $this->where) : "",
-            $this->or_where ? " OR " . implode(" OR ", $this->or_where) : "",
-            $this->group_by
-                ? " GROUP BY " . implode(", ", $this->group_by)
+            $this->orWhere ? " OR " . implode(" OR ", $this->orWhere) : "",
+            $this->groupBy
+                ? " GROUP BY " . implode(", ", $this->groupBy)
                 : "",
             $this->having ? " HAVING " . implode(" AND ", $this->having) : "",
-            $this->order_by
-                ? " ORDER BY " . implode(", ", $this->order_by)
+            $this->orderBy
+                ? " ORDER BY " . implode(", ", $this->orderBy)
                 : "",
             $limit
         );

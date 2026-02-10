@@ -8,19 +8,19 @@ use RuntimeException;
 
 abstract class Model implements ModelInterface
 {
-    protected string $table_name;
-    protected string $primary_key = "id";
-    protected bool $auto_increment = true;
+    protected string $tableName;
+    protected string $primaryKey = "id";
+    protected bool $autoIncrement = true;
     protected array $columns = ["*"];
     protected QueryBuilder $qb;
     private array $where = [];
-    private array $or_where = [];
-    private array $order_by = [];
+    private array $orWhere = [];
+    private array $orderBy = [];
     private array $params = [];
     protected array $attributes = [];
     private array $relations = [];
     private array $eagerLoad = [];
-    private array $valid_operators = [
+    private array $validOperators = [
         "=",
         "!=",
         ">",
@@ -34,8 +34,8 @@ abstract class Model implements ModelInterface
 
     public function __construct(protected ?string $id = null)
     {
-        if (!isset($this->table_name)) {
-            throw new RuntimeException(static::class . " must define a table_name property");
+        if (!isset($this->tableName)) {
+            throw new RuntimeException(static::class . " must define a tableName property");
         }
 
         // Initialize the query builder
@@ -48,10 +48,10 @@ abstract class Model implements ModelInterface
 
     private function loadAttributes(string $id): void
     {
-        $key = $this->primary_key;
+        $key = $this->primaryKey;
         $result = $this->qb
             ->select($this->columns)
-            ->from($this->table_name)
+            ->from($this->tableName)
             ->where(["$key = ?"], $id)
             ->execute()
             ->fetch(PDO::FETCH_ASSOC);
@@ -66,13 +66,13 @@ abstract class Model implements ModelInterface
         $model = new $class();
         $result = $model->qb
             ->insert($data)
-            ->into($model->table_name)
+            ->into($model->tableName)
             ->params(array_values($data))
             ->execute();
-        if ($result && $model->auto_increment) {
+        if ($result && $model->autoIncrement) {
             $id = db()->lastInsertId();
             return self::find($id);
-        } elseif ($result && !$model->auto_increment) {
+        } elseif ($result && !$model->autoIncrement) {
             return true;
         }
         return false;
@@ -96,7 +96,7 @@ abstract class Model implements ModelInterface
         $model = new $class();
 
         // Default operator is =
-        if (!in_array(strtolower($operator), $model->valid_operators)) {
+        if (!in_array(strtolower($operator), $model->validOperators)) {
             $value = $operator;
             $operator = "=";
         }
@@ -109,12 +109,12 @@ abstract class Model implements ModelInterface
     public function orWhere(string $field, string $operator = '=', ?string $value = null): Model
     {
         // Default operator is =
-        if (!in_array(strtolower($operator), $this->valid_operators)) {
+        if (!in_array(strtolower($operator), $this->validOperators)) {
             $value = $operator;
             $operator = "=";
         }
         // Add the where clause and params
-        $this->or_where[] = "($field $operator ?)";
+        $this->orWhere[] = "($field $operator ?)";
         $this->params[] = $value;
         return $this;
     }
@@ -122,7 +122,7 @@ abstract class Model implements ModelInterface
     public function andWhere(string $field, string $operator = '=', ?string $value = null): Model
     {
         // Default operator is =
-        if (!in_array(strtolower($operator), $this->valid_operators)) {
+        if (!in_array(strtolower($operator), $this->validOperators)) {
             $value = $operator;
             $operator = "=";
         }
@@ -134,7 +134,7 @@ abstract class Model implements ModelInterface
 
     public function orderBy(string $column, string $direction = "ASC"): Model
     {
-        $this->order_by[] = "$column $direction";
+        $this->orderBy[] = "$column $direction";
         return $this;
     }
 
@@ -171,10 +171,10 @@ abstract class Model implements ModelInterface
     {
         $results = $this->qb
             ->select($this->columns)
-            ->from($this->table_name)
+            ->from($this->tableName)
             ->where($this->where)
-            ->orWhere($this->or_where)
-            ->orderBy($this->order_by)
+            ->orWhere($this->orWhere)
+            ->orderBy($this->orderBy)
             ->limit($limit)
             ->params($this->params)
             ->execute()
@@ -255,7 +255,7 @@ abstract class Model implements ModelInterface
         // Collect primary keys
         $primaryKeys = [];
         foreach ($models as $model) {
-            $pk = $model->{$model->primary_key};
+            $pk = $model->{$model->primaryKey};
             if ($pk !== null) {
                 $primaryKeys[] = $pk;
             }
@@ -284,10 +284,10 @@ abstract class Model implements ModelInterface
     {
         $results = $this->qb
             ->select($this->columns)
-            ->from($this->table_name)
+            ->from($this->tableName)
             ->where($this->where)
-            ->orWhere($this->or_where)
-            ->orderBy($this->order_by)
+            ->orWhere($this->orWhere)
+            ->orderBy($this->orderBy)
             ->limit(1)
             ->params($this->params)
             ->execute()
@@ -303,10 +303,10 @@ abstract class Model implements ModelInterface
     {
         $results = $this->qb
             ->select($this->columns)
-            ->from($this->table_name)
+            ->from($this->tableName)
             ->where($this->where)
-            ->orWhere($this->or_where)
-            ->orderBy($this->order_by)
+            ->orWhere($this->orWhere)
+            ->orderBy($this->orderBy)
             ->params($this->params)
             ->execute()
             ->fetchAll(PDO::FETCH_OBJ);
@@ -321,21 +321,21 @@ abstract class Model implements ModelInterface
     {
         $qb = $this->qb
             ->select($this->columns)
-            ->from($this->table_name)
+            ->from($this->tableName)
             ->where($this->where)
-            ->orWhere($this->or_where)
-            ->orderBy($this->order_by)
+            ->orWhere($this->orWhere)
+            ->orderBy($this->orderBy)
             ->params($this->params);
         return ["query" => $qb->getQuery(), "params" => $qb->getQueryParams()];
     }
 
     public function save(): Model
     {
-        $key = $this->primary_key;
+        $key = $this->primaryKey;
         $params = [...array_values($this->attributes), $this->id];
         $result = $this->qb
             ->update($this->attributes)
-            ->table($this->table_name)
+            ->table($this->tableName)
             ->where(["$key = ?"])
             ->params($params)
             ->execute();
@@ -347,11 +347,11 @@ abstract class Model implements ModelInterface
 
     public function update(array $data): Model
     {
-        $key = $this->primary_key;
+        $key = $this->primaryKey;
         $params = [...array_values($data), $this->id];
         $result = $this->qb
             ->update($data)
-            ->table($this->table_name)
+            ->table($this->tableName)
             ->where(["$key = ?"])
             ->params($params)
             ->execute();
@@ -363,10 +363,10 @@ abstract class Model implements ModelInterface
 
     public function delete(): bool
     {
-        $key = $this->primary_key;
+        $key = $this->primaryKey;
         $result = $this->qb
             ->delete()
-            ->from($this->table_name)
+            ->from($this->tableName)
             ->where(["$key = ?"], $this->id)
             ->execute();
         return (bool) $result;
@@ -395,7 +395,7 @@ abstract class Model implements ModelInterface
         $class = get_called_class();
         $model = new $class();
         $model->attributes = (array) $data;
-        $model->id = $data->{$model->primary_key} ?? null;
+        $model->id = $data->{$model->primaryKey} ?? null;
         return $model;
     }
 
@@ -410,7 +410,7 @@ abstract class Model implements ModelInterface
     public function hasMany(string $related, ?string $foreignKey = null, ?string $localKey = null): array
     {
         $foreignKey = $foreignKey ?? $this->getForeignKey();
-        $localKey = $localKey ?? $this->primary_key;
+        $localKey = $localKey ?? $this->primaryKey;
 
         $localValue = $this->$localKey;
         if ($localValue === null) {
@@ -432,7 +432,7 @@ abstract class Model implements ModelInterface
     {
         $relatedInstance = new $related();
         $foreignKey = $foreignKey ?? $relatedInstance->getForeignKey();
-        $ownerKey = $ownerKey ?? $relatedInstance->primary_key;
+        $ownerKey = $ownerKey ?? $relatedInstance->primaryKey;
 
         $foreignValue = $this->$foreignKey;
         if ($foreignValue === null) {
@@ -453,7 +453,7 @@ abstract class Model implements ModelInterface
     public function hasOne(string $related, ?string $foreignKey = null, ?string $localKey = null): ?Model
     {
         $foreignKey = $foreignKey ?? $this->getForeignKey();
-        $localKey = $localKey ?? $this->primary_key;
+        $localKey = $localKey ?? $this->primaryKey;
 
         $localValue = $this->$localKey;
         if ($localValue === null) {
@@ -500,7 +500,7 @@ abstract class Model implements ModelInterface
 
         $sql = sprintf(
             "INSERT INTO %s (%s) VALUES %s",
-            $model->table_name,
+            $model->tableName,
             implode(', ', $columns),
             implode(', ', $placeholders)
         );

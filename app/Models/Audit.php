@@ -6,7 +6,7 @@ use Echo\Framework\Database\Model;
 
 class Audit extends Model
 {
-    protected string $table_name = "audits";
+    protected string $tableName = "audits";
 
     /**
      * Get the user who performed the action

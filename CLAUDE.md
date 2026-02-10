@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Coding Conventions
+All PHP code must strictly comply with PSR-12, including camelCase methods and variables, PascalCase classes, 4-space indentation, and standard brace placement.
+
+
 ## Project Overview
 
 Echo is a custom PHP 8.2+ MVC framework using attribute-based routing, PHP-DI for dependency injection, and Twig for templating. It runs in Docker (PHP 8.3-FPM, Nginx, MariaDB 11, Redis 7).
@@ -44,7 +48,7 @@ Routes are declared via PHP 8 attributes on controller methods:
 use Echo\Framework\Routing\Route\{Get, Post, Put, Delete};
 use Echo\Framework\Routing\Group;
 
-#[Group(path_prefix: "/admin", middleware: ["auth"])]
+#[Group(pathPrefix: "/admin", middleware: ["auth"])]
 class MyController extends Controller
 {
     #[Get("/items", "items.index")]
@@ -64,16 +68,13 @@ Admin CRUD modules extend `ModuleController` (at `src/Framework/Http/ModuleContr
 Each module defines its schema declaratively via two builder methods:
 
 ```php
-#[Group(path_prefix: "/users", name_prefix: "users")]
+#[Group(pathPrefix: "/users", namePrefix: "users")]
 class UsersController extends ModuleController
 {
+    protected string $tableName = "users";
+
     protected function defineTable(TableSchemaBuilder $builder): void { ... }
     protected function defineForm(FormSchemaBuilder $builder): void { ... }
-
-    public function __construct()
-    {
-        parent::__construct("users");  // table name
-    }
 }
 ```
 
@@ -90,7 +91,7 @@ Admin modules: `app/Http/Controllers/Admin/` — Users, Audit, Activity, Health,
 
 ### Middleware
 
-Defined in `app/Http/Kernel.php` as `$middleware_layers`. Applied per-route via the `middleware` parameter on route attributes/groups (e.g., `middleware: ["auth"]`).
+Defined in `app/Http/Kernel.php` as `$middlewareLayers`. Applied per-route via the `middleware` parameter on route attributes/groups (e.g., `middleware: ["auth"]`).
 
 ### Helper Functions
 

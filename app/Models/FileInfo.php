@@ -9,7 +9,7 @@ class FileInfo extends Model
 {
     use Auditable;
 
-    protected string $table_name = "file_info";
+    protected string $tableName = "file_info";
 
     public function delete(): bool
     {

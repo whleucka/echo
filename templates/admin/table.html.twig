@@ -9,8 +9,8 @@
       {% if has_create() %}
         <button class="btn btn-sm btn-success me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/create" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi bi-plus-square pe-1"></i> New</button>
       {% endif %}
-      {% for link in filters.filter_links.links %}
-        <button hx-get="/admin/{{ module.link }}/filter/link/{{ loop.index0 }}" hx-swap="outerHTML" hx-target="#table" hx-select="#table" class="btn btn-primary btn-sm text-light filter-link {% if filters.filter_links.active == loop.index0 %}active{% endif %} me-2">
+      {% for link in filters.filterLinks.links %}
+        <button hx-get="/admin/{{ module.link }}/filter/link/{{ loop.index0 }}" hx-swap="outerHTML" hx-target="#table" hx-select="#table" class="btn btn-primary btn-sm text-light filter-link {% if filters.filterLinks.active == loop.index0 %}active{% endif %} me-2">
           <i class="bi bi-filter-circle me-1"></i> {{ link }} <span class="link-count badge bg-light text-dark ms-2">--</span>
         </button>
         <span hx-get="/admin/{{ module.link }}/filter/count/{{ loop.index0 }}" hx-trigger="load" hx-swap="textContent" hx-target="previous .link-count"></span>
@@ -21,16 +21,16 @@
       {% if filters.show %}
         <button class="btn btn-sm btn-primary me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/filter" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi bi-funnel pe-1"></i> Filter</button>
       {% endif %}
-      {% if filters.show_clear %}
+      {% if filters.showClear %}
           <button hx-post="/admin/{{ module.link }}/modal/filter" type="submit" class="btn btn-sm btn-danger me-2" name="filter_clear"><i class="bi bi-trash pe-1"></i> Clear Filter</button>
       {% endif %}
     </form>
-    {% if table_actions|length > 0 %}
+    {% if tableActions|length > 0 %}
     <div id="bulk-actions" class="d-flex align-items-center ms-auto" style="display: none !important;">
       <span id="bulk-count" class="text-muted small me-2"></span>
       <select name="table_action" class="form-select form-select-sm me-1" id="table-action" disabled>
         <option disabled selected>Action</option>
-        {% for action in table_actions %}
+        {% for action in tableActions %}
         <option value="{{ action.value }}">{{ action.label }}</option>
         {% endfor %}
       </select>
@@ -45,13 +45,13 @@
       <table class="table table-hover table m-0">
         <thead>
           <tr>
-            {% if table_actions|length > 0 %}
+            {% if tableActions|length > 0 %}
             <th class="checkbox-cell">
               <input id="select-all" onClick="selectAllToggle(event)" type="checkbox" />
             </th>
             {% endif %}
             {% for column,title in headers %}
-            <th hx-get="/admin/{{ module.link }}/sort/{{ loop.index0 }}" hx-target="#table" hx-select="#table" hx-swap="outerHTML" class="pointer {% if column == filters.order_by %}active {% if filters.sort == 'ASC' %}asc{% else %}desc{% endif %}{% endif %}" nowrap>{{ title }}</th>
+            <th hx-get="/admin/{{ module.link }}/sort/{{ loop.index0 }}" hx-target="#table" hx-select="#table" hx-swap="outerHTML" class="pointer {% if column == filters.orderBy %}active {% if filters.sort == 'ASC' %}asc{% else %}desc{% endif %}{% endif %}" nowrap>{{ title }}</th>
             {% endfor %}
             {% if has_row_actions() %}
             <th class="text-end">Actions</th>
@@ -61,7 +61,7 @@
         <tbody>
           {% for row in data.rows %}
           <tr>
-            {% if table_actions|length > 0 %}
+            {% if tableActions|length > 0 %}
               <td class="checkbox-cell">
                 <input type="checkbox" name="table_selection[]" onChange="checkEnabledMultiAction(event)" id="select_{{ row.id }}" class="checkbox-selection" value="{{ row.id }}" />
               </td>
@@ -98,7 +98,7 @@
       </div>
     {% endif %}
   </div>
-  {% if pagination.total_pages > 1 or pagination.total_rows > 10 %}
+  {% if pagination.totalPages > 1 or pagination.totalRows > 10 %}
     <div id="pagination-controls" class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-3 px-2">
       <div class="d-flex align-items-center gap-2 small text-muted order-2 order-sm-1">
         <span>Show</span>
@@ -110,12 +110,12 @@
           hx-swap="outerHTML"
           onchange="htmx.ajax('GET', '/admin/{{ module.link }}/per-page/' + this.value, {target: '#module', select: '#module', swap: 'outerHTML'})">
           {% for opt in [10, 25, 50, 100] %}
-            <option value="{{ opt }}" {% if pagination.per_page == opt %}selected{% endif %}>{{ opt }}</option>
+            <option value="{{ opt }}" {% if pagination.perPage == opt %}selected{% endif %}>{{ opt }}</option>
           {% endfor %}
         </select>
         <span>per page</span>
       </div>
-      {% if pagination.total_pages > 1 %}
+      {% if pagination.totalPages > 1 %}
       <nav id="pagination" class="order-1 order-sm-2" hx-boost="true" hx-target="#table" hx-select="#table" hx-swap="outerHTML">
         <ul class="pagination pagination-sm mb-0">
           {% if pagination.page != 1 and pagination.page > pagination.links %}
@@ -141,20 +141,20 @@
             <a class="page-link" href="/admin/{{ module.link }}/page/{{ pagination.page }}">{{ pagination.page }}</a>
           </li>
           {% for i in pagination.page + 1..pagination.page + pagination.links %}
-            {% if i <= pagination.total_pages %}
+            {% if i <= pagination.totalPages %}
             <li class="page-item">
               <a class="page-link" href="/admin/{{ module.link }}/page/{{ i }}">{{ i }}</a>
             </li>
             {% endif %}
           {% endfor %}
-          {% if pagination.page != pagination.total_pages and pagination.page < pagination.total_pages - pagination.pagination_links %}
+          {% if pagination.page != pagination.totalPages and pagination.page < pagination.totalPages - pagination.paginationLinks %}
           <li class="page-item">
-            <a class="page-link {% if pagination.page + 1 >= pagination.total_pages %}disabled{% endif %}" href="/admin/{{ module.link }}/page/{{ pagination.page + 1 }}">
+            <a class="page-link {% if pagination.page + 1 >= pagination.totalPages %}disabled{% endif %}" href="/admin/{{ module.link }}/page/{{ pagination.page + 1 }}">
               <span><i class="bi bi-chevron-right"></i></span>
             </a>
           </li>
           <li class="page-item">
-            <a class="page-link" href="/admin/{{ module.link }}/page/{{ pagination.total_pages }}">
+            <a class="page-link" href="/admin/{{ module.link }}/page/{{ pagination.totalPages }}">
               <span><i class="bi bi-chevron-double-right"></i></span>
             </a>
           </li>

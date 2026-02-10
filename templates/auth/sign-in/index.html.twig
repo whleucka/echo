@@ -19,12 +19,12 @@
             <hr>
             {% include "components/flash.html.twig" %}
             <div class="form-floating mb-3">
-                <input type="input" class="form-control {% if validation_errors.email is defined %}is-invalid{% endif %}" id="email" name="email" placeholder="" autocomplete="email">
+                <input type="input" class="form-control {% if validationErrors.email is defined %}is-invalid{% endif %}" id="email" name="email" placeholder="" autocomplete="email">
                 <label for="email">Email address</label>
                  {% include 'components/validation.html.twig' with {'validate': 'email'} %}
             </div>
             <div class="form-floating mb-3">
-                <input type="password" class="form-control {% if validation_errors.password is defined %}is-invalid{% endif %}" id="password" name="password" placeholder="" autocomplete="current-password">
+                <input type="password" class="form-control {% if validationErrors.password is defined %}is-invalid{% endif %}" id="password" name="password" placeholder="" autocomplete="current-password">
                 <label for="password">Password</label>
                  {% include 'components/validation.html.twig' with {'validate': 'password'} %}
             </div>

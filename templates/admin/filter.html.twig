@@ -9,7 +9,7 @@
         {% include "components/flash.html.twig" %}
       </div>
       {{ csrf()|raw }}
-      {% if date_filter.show %}
+      {% if dateFilter.show %}
       <div id="datetime" class="row mb-2">
         <div class="col-6">
           <label class="form-label p-0 mb-1" for="filter-date-start">Start</label>
@@ -17,8 +17,8 @@
             type="datetime-local"
             id="filter-date-start"
             name="filter_date_start"
-            class="form-control {% if validation_errors.filter_search is defined %}is-invalid{% endif %}"
-            value="{{ date_filter.start }}" />
+            class="form-control {% if validationErrors.filter_search is defined %}is-invalid{% endif %}"
+            value="{{ dateFilter.start }}" />
           {% include 'components/validation.html.twig' with {'validate': 'filter_date_start'} %}
         </div>
         <div class="col-6">
@@ -27,8 +27,8 @@
             type="datetime-local"
             id="filter-date-end"
             name="filter_date_end"
-            class="form-control {% if validation_errors.filter_search is defined %}is-invalid{% endif %}"
-            value="{{ date_filter.end }}" />
+            class="form-control {% if validationErrors.filter_search is defined %}is-invalid{% endif %}"
+            value="{{ dateFilter.end }}" />
           {% include 'components/validation.html.twig' with {'validate': 'filter_date_end'} %}
         </div>
       </div>
@@ -49,13 +49,13 @@
       {% if search.show %}
       <div id="search" class="mb-2"> 
         <label class="form-label p-0 mb-1" for="filter-search">Search</label>
-        <input type="search" name="filter_search" id="filter-search" class="form-control {% if validation_errors.filter_search is defined %}is-invalid{% endif %}" value="{{ search.term }}" />
+        <input type="search" name="filter_search" id="filter-search" class="form-control {% if validationErrors.filter_search is defined %}is-invalid{% endif %}" value="{{ search.term }}" />
         {% include 'components/validation.html.twig' with {'validate': 'filter_search'} %}
       </div>
       {% endif %}
     </div>
     <div class="modal-footer">
-      {% if show_clear %}
+      {% if showClear %}
       <button type="submit" name="filter_clear" class="btn btn-danger">Clear</button>
       {% endif %}
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

@@ -9,7 +9,7 @@ class ApiToken extends Model
 {
     use Auditable;
 
-    protected string $table_name = 'api_tokens';
+    protected string $tableName = 'api_tokens';
 
     /**
      * Generate a new API token for a user

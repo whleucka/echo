@@ -6,7 +6,7 @@ use Echo\Framework\Database\Model;
 
 class Module extends Model
 {
-    protected string $table_name = "modules";
+    protected string $tableName = "modules";
 
     public function parent(): ?Module
     {

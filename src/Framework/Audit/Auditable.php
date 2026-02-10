@@ -24,24 +24,24 @@ trait Auditable
 
         $result = $qb
             ->insert($data)
-            ->into($model->table_name)
+            ->into($model->tableName)
             ->params(array_values($data))
             ->execute();
 
-        if ($result && $model->auto_increment) {
+        if ($result && $model->autoIncrement) {
             $id = db()->lastInsertId();
             $newModel = self::find($id);
 
             if ($newModel) {
                 AuditLogger::logCreated(
-                    $model->table_name,
+                    $model->tableName,
                     $id,
                     $newModel->getAttributes()
                 );
             }
 
             return $newModel;
-        } elseif ($result && !$model->auto_increment) {
+        } elseif ($result && !$model->autoIncrement) {
             return true;
         }
 
@@ -53,7 +53,7 @@ trait Auditable
      */
     public function save(): static
     {
-        $key = $this->primary_key;
+        $key = $this->primaryKey;
         $oldAttributes = $this->getOldAttributes();
 
         $params = [...array_values($this->attributes), $this->id];
@@ -61,7 +61,7 @@ trait Auditable
 
         $result = $qb
             ->update($this->attributes)
-            ->table($this->table_name)
+            ->table($this->tableName)
             ->where(["$key = ?"])
             ->params($params)
             ->execute();
@@ -70,7 +70,7 @@ trait Auditable
             $this->loadAttributesForAudit($this->id);
 
             AuditLogger::logUpdated(
-                $this->table_name,
+                $this->tableName,
                 $this->id,
                 $oldAttributes,
                 $this->getAttributes()
@@ -85,7 +85,7 @@ trait Auditable
      */
     public function update(array $data): static
     {
-        $key = $this->primary_key;
+        $key = $this->primaryKey;
         $oldAttributes = $this->getAttributes();
 
         $params = [...array_values($data), $this->id];
@@ -93,7 +93,7 @@ trait Auditable
 
         $result = $qb
             ->update($data)
-            ->table($this->table_name)
+            ->table($this->tableName)
             ->where(["$key = ?"])
             ->params($params)
             ->execute();
@@ -102,7 +102,7 @@ trait Auditable
             $this->loadAttributesForAudit($this->id);
 
             AuditLogger::logUpdated(
-                $this->table_name,
+                $this->tableName,
                 $this->id,
                 $oldAttributes,
                 $this->getAttributes()
@@ -117,19 +117,19 @@ trait Auditable
      */
     public function delete(): bool
     {
-        $key = $this->primary_key;
+        $key = $this->primaryKey;
         $oldAttributes = $this->getAttributes();
         $qb = new QueryBuilder();
 
         $result = $qb
             ->delete()
-            ->from($this->table_name)
+            ->from($this->tableName)
             ->where(["$key = ?"], $this->id)
             ->execute();
 
         if ($result) {
             AuditLogger::logDeleted(
-                $this->table_name,
+                $this->tableName,
                 $this->id,
                 $oldAttributes
             );
@@ -143,12 +143,12 @@ trait Auditable
      */
     private function getOldAttributes(): array
     {
-        $key = $this->primary_key;
+        $key = $this->primaryKey;
         $qb = new QueryBuilder();
 
         $result = $qb
             ->select($this->columns)
-            ->from($this->table_name)
+            ->from($this->tableName)
             ->where(["$key = ?"], $this->id)
             ->execute()
             ->fetch(PDO::FETCH_ASSOC);
@@ -161,12 +161,12 @@ trait Auditable
      */
     private function loadAttributesForAudit(string $id): void
     {
-        $key = $this->primary_key;
+        $key = $this->primaryKey;
         $qb = new QueryBuilder();
 
         $result = $qb
             ->select($this->columns)
-            ->from($this->table_name)
+            ->from($this->tableName)
             ->where(["$key = ?"], $id)
             ->execute()
             ->fetch(PDO::FETCH_ASSOC);

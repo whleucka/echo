@@ -9,7 +9,7 @@ class User extends Model
 {
     use Auditable;
 
-    protected string $table_name = "users";
+    protected string $tableName = "users";
 
     public function fullName()
     {

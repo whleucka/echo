@@ -9,7 +9,7 @@ use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
 use Echo\Framework\Session\Flash;
 
-#[Group(path_prefix: '/admin')]
+#[Group(pathPrefix: '/admin')]
 class SignInController extends Controller
 {
     public function __construct(private SignInService $service)

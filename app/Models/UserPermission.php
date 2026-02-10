@@ -9,7 +9,7 @@ class UserPermission extends Model
 {
     use Auditable;
 
-    protected string $table_name = "user_permissions";
+    protected string $tableName = "user_permissions";
 
     public function user(): ?User
     {

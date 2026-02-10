@@ -9,11 +9,11 @@ use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;
 
-#[Group(path_prefix: "/dashboard", name_prefix: "dashboard", middleware: ["max_requests" => 0])]
+#[Group(pathPrefix: "/dashboard", namePrefix: "dashboard", middleware: ["max_requests" => 0])]
 class DashboardController extends ModuleController
 {
     use NoTableTrait;
-    protected string $table_name = "";
+    protected string $tableName = "";
 
     public function __construct(private DashboardService $service)
     {
@@ -21,31 +21,31 @@ class DashboardController extends ModuleController
     }
 
     #[Get("/requests/chart/today", "requests.today.chart")]
-    public function requests_today_chart()
+    public function requestsTodayChart()
     {
         return $this->render('admin/dashboard-chart.html.twig', $this->service->getTodayRequestsChart());
     }
 
     #[Get("/requests/chart/week", "requests.week.chart")]
-    public function requests_week_chart()
+    public function requestsWeekChart()
     {
         return $this->render('admin/dashboard-chart.html.twig', $this->service->getWeekRequestsChart());
     }
 
     #[Get("/requests/chart/month", "requests.month.chart")]
-    public function requests_month_chart()
+    public function requestsMonthChart()
     {
         return $this->render('admin/dashboard-chart.html.twig', $this->service->getMonthRequestsChart());
     }
 
     #[Get("/requests/chart/ytd", "requests.ytd.chart")]
-    public function requests_ytd_chart()
+    public function requestsYtdChart()
     {
         return $this->render('admin/dashboard-chart.html.twig', $this->service->getYTDRequestsChart());
     }
 
     #[Get("/widgets/{id}", "widgets.render")]
-    public function render_widget(string $id): string
+    public function renderWidget(string $id): string
     {
         // Useful for rendering widget elsewhere
         $widget = WidgetRegistry::get($id);
@@ -58,7 +58,7 @@ class DashboardController extends ModuleController
     }
 
     #[Get("/widgets", "widgets.all")]
-    public function render_all_widgets(): string
+    public function renderAllWidgets(): string
     {
         return WidgetRegistry::renderAll();
     }

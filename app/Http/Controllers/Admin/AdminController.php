@@ -7,7 +7,7 @@ use Echo\Framework\Http\Response;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;
 
-#[Group(path_prefix: "/admin", middleware: ["auth"])]
+#[Group(pathPrefix: "/admin", middleware: ["auth"])]
 class AdminController extends Controller
 {
     #[Get("/", "admin.redirect")]

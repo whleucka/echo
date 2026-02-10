@@ -8,11 +8,11 @@ use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;
 
-#[Group(path_prefix: "/health", name_prefix: "health", middleware: ["max_requests" => 0])]
+#[Group(pathPrefix: "/health", namePrefix: "health", middleware: ["max_requests" => 0])]
 class HealthController extends ModuleController
 {
     use NoTableTrait;
-    protected string $table_name = "";
+    protected string $tableName = "";
 
     public function __construct(private SystemHealthService $service)
     {
