@@ -125,6 +125,7 @@ class DebugToolbar
 <!-- Echo Debug Toolbar -->
 <style>
 .echo-debug-toolbar {
+    overflow-x: auto;
     position: fixed;
     bottom: 0;
     left: 0;
@@ -166,8 +167,10 @@ class DebugToolbar
 .echo-debug-value {
     color: #4ecca3;
     font-weight: 600;
+    white-space: nowrap;
 }
 .echo-debug-badge {
+    white-space: nowrap;
     background: #4ecca3;
     color: #1a1a2e;
     padding: 2px 6px;
@@ -286,6 +289,9 @@ class DebugToolbar
 .echo-debug-request-item.active {
     background: #4ecca3;
     color: #1a1a2e;
+}
+.echo-debug-request-item.active .echo-debug-time {
+    color: azure;
 }
 .echo-debug-request-item.initial {
     border: 1px solid #4ecca3;

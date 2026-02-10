@@ -306,13 +306,6 @@ nav#nav-sidebar header h4 {
 }
 
 /**
-* Profiler
-*/
-#echo-debug-toolbar {
-  overflow-x: auto;
-}
-
-/**
  * Modal
  */
 #modal {
