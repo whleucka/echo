@@ -2,7 +2,7 @@
 
 <a href='https://github.com/whleucka/echo/actions/workflows/php.yml'><img src='https://github.com/whleucka/echo/actions/workflows/php.yml/badge.svg' alt='github badge'></a>
 
-A modern PHP 8.2+ MVC framework with attribute-based routing, PHP-DI, and Twig. Runs in Docker (PHP 8.3-FPM, Nginx, MariaDB 11, Redis 7).
+A modern PHP 8.4+ MVC framework with attribute-based routing, PHP-DI, and Twig. Runs in Docker (PHP 8.3-FPM, Nginx, MariaDB 11, Redis 7).
 
 > **Work in Progress** — APIs and internals may change. This project will
 > eventually serve as a backend to my personal website.
