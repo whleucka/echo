@@ -3,26 +3,24 @@
 namespace Echo\Framework\Database;
 
 use Echo\Framework\Session\Flash;
-use Echo\Interface\Database\Connection as DatabaseConnection;
-use Echo\Interface\Database\Driver;
-use Echo\Traits\Creational\Singleton;
+use Echo\Framework\Support\SingletonTrait;
 use PDO;
 use PDOException;
 use PDOStatement;
 
-final class Connection implements DatabaseConnection
+final class Connection implements ConnectionInterface
 {
-  use Singleton;
+  use SingletonTrait;
 
   private bool $connected = false;
   private ?PDO $link = null;
-  private Driver $driver;
+  private DriverInterface $driver;
   private PDOStatement $stmt;
   private array $debug = [];
   private bool $debugEnabled;
   private bool $profilerAvailable;
 
-  public function __construct(Driver $driver)
+  public function __construct(DriverInterface $driver)
   {
     $this->driver = $driver;
     $this->debugEnabled = config('app.debug') ?? false;
@@ -30,7 +28,7 @@ final class Connection implements DatabaseConnection
     $this->connect();
   }
 
-  public static function getInstance(Driver $driver): Connection
+  public static function getInstance(DriverInterface $driver): Connection
   {
     if (self::$instance === null) {
       self::$instance = new self($driver);
@@ -38,7 +36,7 @@ final class Connection implements DatabaseConnection
     return self::$instance;
   }
 
-  public static function newInstance(Driver $driver): Connection
+  public static function newInstance(DriverInterface $driver): Connection
   {
     self::$instance = new self($driver);
     return self::$instance;

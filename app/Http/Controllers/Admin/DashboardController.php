@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Services\Admin\DashboardService;
-use Echo\Framework\Admin\Schema\TableSchemaBuilder;
+use Echo\Framework\Admin\NoTableTrait;
 use Echo\Framework\Admin\WidgetRegistry;
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
@@ -12,10 +12,7 @@ use Echo\Framework\Routing\Route\Get;
 #[Group(path_prefix: "/dashboard", name_prefix: "dashboard")]
 class DashboardController extends ModuleController
 {
-    protected function defineTable(TableSchemaBuilder $builder): void
-    {
-        // Dashboard uses custom rendering — no table
-    }
+    use NoTableTrait;
 
     public function __construct(private DashboardService $service)
     {
@@ -49,6 +46,7 @@ class DashboardController extends ModuleController
     #[Get("/widgets/{id}", "widgets.render", ["max_requests" => 0])]
     public function render_widget(string $id): string
     {
+        // Useful for rendering widget elsewhere
         $widget = WidgetRegistry::get($id);
 
         if (!$widget) {

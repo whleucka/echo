@@ -2,11 +2,10 @@
 
 namespace Echo\Framework\Database;
 
-use Echo\Interface\Database\Model as DatabaseModel;
 use Exception;
 use PDO;
 
-class Model implements DatabaseModel
+class Model implements ModelInterface
 {
     protected string $primary_key = "id";
     protected bool $auto_increment = true;

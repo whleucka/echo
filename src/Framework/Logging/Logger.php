@@ -2,14 +2,14 @@
 
 namespace Echo\Framework\Logging;
 
-use Echo\Traits\Creational\Singleton;
+use Echo\Framework\Support\SingletonTrait;
 
 /**
  * PSR-3 compatible file logger with daily rotation
  */
 class Logger
 {
-    use Singleton;
+    use SingletonTrait;
 
     private string $logPath;
     private string $channel;

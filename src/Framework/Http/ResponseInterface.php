@@ -1,8 +1,8 @@
 <?php
 
-namespace Echo\Interface\Http;
+namespace Echo\Framework\Http;
 
-interface Response
+interface ResponseInterface
 {
     public function send(): void;
     public function setHeader(string $name, string $value): void;

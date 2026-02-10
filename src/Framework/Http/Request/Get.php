@@ -2,9 +2,9 @@
 
 namespace Echo\Framework\Http\Request;
 
-use Echo\Traits\Data\Container;
+use Echo\Framework\Support\ContainerTrait;
 
 class Get
 {
-    use Container;
+    use ContainerTrait;
 }

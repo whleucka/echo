@@ -1,8 +1,8 @@
 <?php
 
-namespace Echo\Interface\Http;
+namespace Echo\Framework\Http;
 
-interface Request
+interface RequestInterface
 {
     public function isHTMX(): bool;
     public function getUri(): string;

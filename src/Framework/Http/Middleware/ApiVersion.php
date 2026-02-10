@@ -3,18 +3,20 @@
 namespace Echo\Framework\Http\Middleware;
 
 use Closure;
-use Echo\Interface\Http\{Request, Middleware, Response};
+use Echo\Framework\Http\RequestInterface;
+use Echo\Framework\Http\ResponseInterface;
+use Echo\Framework\Http\MiddlewareInterface;
 
 /**
  * API Versioning Middleware
  * Parses and sets API version from headers or URL
  */
-class ApiVersion implements Middleware
+class ApiVersion implements MiddlewareInterface
 {
     private const DEFAULT_VERSION = 'v1';
     private const SUPPORTED_VERSIONS = ['v1'];
 
-    public function handle(Request $request, Closure $next): Response
+    public function handle(RequestInterface $request, Closure $next): ResponseInterface
     {
         $route = $request->getAttribute("route");
         $middleware = $route["middleware"] ?? [];
@@ -41,7 +43,7 @@ class ApiVersion implements Middleware
      * Parse API version from request
      * Priority: Header > URL > Default
      */
-    private function parseVersion(Request $request): string
+    private function parseVersion(RequestInterface $request): string
     {
         // 1. Check Accept header: application/vnd.echo.v1+json
         $accept = $_SERVER['HTTP_ACCEPT'] ?? '';

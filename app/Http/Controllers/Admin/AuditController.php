@@ -11,6 +11,12 @@ use Echo\Framework\Routing\Route\Get;
 #[Group(path_prefix: "/audits", name_prefix: "audits")]
 class AuditController extends ModuleController
 {
+    public function __construct()
+    {
+        $this->has_create = $this->has_edit = $this->has_delete = false;
+        parent::__construct('audits');
+    }
+
     protected function defineTable(TableSchemaBuilder $builder): void
     {
         $builder->primaryKey('audits.id')
@@ -46,14 +52,6 @@ class AuditController extends ModuleController
         $builder->filterLink('Created', "audits.event = 'created'");
         $builder->filterLink('Updated', "audits.event = 'updated'");
         $builder->filterLink('Deleted', "audits.event = 'deleted'");
-    }
-
-    public function __construct()
-    {
-        $this->has_create = false;
-        $this->has_edit = false;
-        $this->has_delete = false;
-        parent::__construct('audits');
     }
 
     /**

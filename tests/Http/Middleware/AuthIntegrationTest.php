@@ -9,7 +9,7 @@ use Echo\Framework\Http\Middleware\Auth;
 use Echo\Framework\Http\Request;
 use Echo\Framework\Http\Response;
 use Echo\Framework\Session\Session;
-use Echo\Interface\Http\Response as ResponseInterface;
+use Echo\Framework\Http\ResponseInterface;
 use PHPUnit\Framework\TestCase;
 
 /**

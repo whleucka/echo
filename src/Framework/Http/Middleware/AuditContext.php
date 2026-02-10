@@ -4,7 +4,9 @@ namespace Echo\Framework\Http\Middleware;
 
 use Closure;
 use Echo\Framework\Audit\AuditLogger;
-use Echo\Interface\Http\{Request, Middleware, Response};
+use Echo\Framework\Http\RequestInterface;
+use Echo\Framework\Http\ResponseInterface;
+use Echo\Framework\Http\MiddlewareInterface;
 
 /**
  * AuditContext Middleware
@@ -12,9 +14,9 @@ use Echo\Interface\Http\{Request, Middleware, Response};
  * Sets the audit context (user, IP, user agent) for audit logging.
  * This middleware should be registered after Auth middleware.
  */
-class AuditContext implements Middleware
+class AuditContext implements MiddlewareInterface
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(RequestInterface $request, Closure $next): ResponseInterface
     {
         $user = user();
         $userId = $user?->id ? (int) $user->id : null;
@@ -30,7 +32,7 @@ class AuditContext implements Middleware
     /**
      * Get the user agent from the request
      */
-    private function getUserAgent(Request $request): ?string
+    private function getUserAgent(RequestInterface $request): ?string
     {
         return $_SERVER['HTTP_USER_AGENT'] ?? null;
     }

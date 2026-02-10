@@ -1,8 +1,8 @@
 <?php
 
-use Echo\Interface\Database\Migration;
+use Echo\Framework\Database\MigrationInterface;
 
-return new class implements Migration
+return new class implements MigrationInterface
 {
     public function up(): string
     {

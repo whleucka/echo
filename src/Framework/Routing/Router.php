@@ -2,9 +2,6 @@
 
 namespace Echo\Framework\Routing;
 
-use Echo\Framework\Routing\Collector;
-use Echo\Interface\Routing\Router as RouterInterface;
-
 class Router implements RouterInterface
 {
     private array $compiledPatterns = [];

@@ -1,10 +1,10 @@
 <?php
 
-namespace Echo\Interface\Database;
+namespace Echo\Framework\Database;
 
 use PDO;
 
-interface Connection
+interface ConnectionInterface
 {
     public function getLink(): ?PDO;
     public function isConnected(): bool;

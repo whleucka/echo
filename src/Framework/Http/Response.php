@@ -2,9 +2,7 @@
 
 namespace Echo\Framework\Http;
 
-use Echo\Interface\Http\Response as HttpResponse;
-
-class Response implements HttpResponse
+class Response implements ResponseInterface
 {
     private int $code;
     private array $headers = [];

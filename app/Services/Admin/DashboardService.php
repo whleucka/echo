@@ -6,10 +6,26 @@ class DashboardService
 {
     private \DateTimeZone $appTimezone;
 
+    /**
+     * Request-level cache for expensive queries called by multiple widgets
+     */
+    private array $cache = [];
+
     public function __construct()
     {
         $tz = config('app.timezone') ?? 'UTC';
         $this->appTimezone = new \DateTimeZone($tz);
+    }
+
+    /**
+     * Get a cached value or compute and cache it
+     */
+    private function cached(string $key, callable $callback): mixed
+    {
+        if (!array_key_exists($key, $this->cache)) {
+            $this->cache[$key] = $callback();
+        }
+        return $this->cache[$key];
     }
 
     /**
@@ -22,21 +38,23 @@ class DashboardService
 
     public function getUsersCount(): int
     {
-        return db()->execute(
+        return $this->cached('users_count', fn() => db()->execute(
             "SELECT count(*) FROM users"
-        )->fetchColumn();
+        )->fetchColumn());
     }
 
     public function getActiveUsersCount(): int
     {
-        $now = $this->now()->format('Y-m-d H:i:s');
-        $threshold = date('Y-m-d H:i:s', strtotime('-30 minutes', strtotime($now)));
-        return db()->execute(
-            "SELECT COUNT(DISTINCT user_id) AS active_users
-            FROM activity
-            WHERE created_at >= ?",
-            [$threshold]
-        )->fetchColumn();
+        return $this->cached('active_users_count', function () {
+            $now = $this->now()->format('Y-m-d H:i:s');
+            $threshold = date('Y-m-d H:i:s', strtotime('-30 minutes', strtotime($now)));
+            return db()->execute(
+                "SELECT COUNT(DISTINCT user_id) AS active_users
+                FROM activity
+                WHERE created_at >= ?",
+                [$threshold]
+            )->fetchColumn();
+        });
     }
 
     public function getModulesCount(): int
@@ -457,75 +475,77 @@ class DashboardService
      */
     public function getAuditSummary(): array
     {
-        $today = $this->now()->format('Y-m-d');
-        $sevenDaysAgo = $this->now()->modify('-7 days')->format('Y-m-d H:i:s');
+        return $this->cached('audit_summary', function () {
+            $today = $this->now()->format('Y-m-d');
+            $sevenDaysAgo = $this->now()->modify('-7 days')->format('Y-m-d H:i:s');
 
-        $todayCount = db()->execute(
-            "SELECT COUNT(*) FROM audits WHERE DATE(created_at) = ?",
-            [$today]
-        )->fetchColumn();
+            $todayCount = db()->execute(
+                "SELECT COUNT(*) FROM audits WHERE DATE(created_at) = ?",
+                [$today]
+            )->fetchColumn();
 
-        $byEvent = db()->fetchAll(
-            "SELECT event, COUNT(*) as count
-            FROM audits
-            WHERE created_at >= ?
-            GROUP BY event",
-            [$sevenDaysAgo]
-        );
+            $byEvent = db()->fetchAll(
+                "SELECT event, COUNT(*) as count
+                FROM audits
+                WHERE created_at >= ?
+                GROUP BY event",
+                [$sevenDaysAgo]
+            );
 
-        $byModel = db()->fetchAll(
-            "SELECT auditable_type, COUNT(*) as count
-            FROM audits
-            WHERE created_at >= ?
-            GROUP BY auditable_type
-            ORDER BY count DESC
-            LIMIT 5",
-            [$sevenDaysAgo]
-        );
+            $byModel = db()->fetchAll(
+                "SELECT auditable_type, COUNT(*) as count
+                FROM audits
+                WHERE created_at >= ?
+                GROUP BY auditable_type
+                ORDER BY count DESC
+                LIMIT 5",
+                [$sevenDaysAgo]
+            );
 
-        $eventCounts = ['created' => 0, 'updated' => 0, 'deleted' => 0];
-        foreach ($byEvent as $row) {
-            $eventCounts[$row['event']] = (int)$row['count'];
-        }
+            $eventCounts = ['created' => 0, 'updated' => 0, 'deleted' => 0];
+            foreach ($byEvent as $row) {
+                $eventCounts[$row['event']] = (int)$row['count'];
+            }
 
-        $modelCounts = [];
-        foreach ($byModel as $row) {
-            $modelCounts[$row['auditable_type']] = (int)$row['count'];
-        }
+            $modelCounts = [];
+            foreach ($byModel as $row) {
+                $modelCounts[$row['auditable_type']] = (int)$row['count'];
+            }
 
-        // Get recent activity (last 5)
-        $recentAudits = db()->fetchAll(
-            "SELECT
-                a.id,
-                a.event,
-                a.auditable_type,
-                a.auditable_id,
-                a.created_at,
-                COALESCE(CONCAT(u.first_name, ' ', u.surname), 'System') as user_name
-            FROM audits a
-            LEFT JOIN users u ON u.id = a.user_id
-            ORDER BY a.created_at DESC
-            LIMIT 5"
-        );
+            // Get recent activity (last 5)
+            $recentAudits = db()->fetchAll(
+                "SELECT
+                    a.id,
+                    a.event,
+                    a.auditable_type,
+                    a.auditable_id,
+                    a.created_at,
+                    COALESCE(CONCAT(u.first_name, ' ', u.surname), 'System') as user_name
+                FROM audits a
+                LEFT JOIN users u ON u.id = a.user_id
+                ORDER BY a.created_at DESC
+                LIMIT 5"
+            );
 
-        $recent = [];
-        foreach ($recentAudits as $audit) {
-            $recent[] = [
-                'id' => $audit['id'],
-                'event' => $audit['event'],
-                'type' => $audit['auditable_type'],
-                'record_id' => $audit['auditable_id'],
-                'user' => $audit['user_name'],
-                'time_ago' => $this->timeAgo($audit['created_at']),
+            $recent = [];
+            foreach ($recentAudits as $audit) {
+                $recent[] = [
+                    'id' => $audit['id'],
+                    'event' => $audit['event'],
+                    'type' => $audit['auditable_type'],
+                    'record_id' => $audit['auditable_id'],
+                    'user' => $audit['user_name'],
+                    'time_ago' => $this->timeAgo($audit['created_at']),
+                ];
+            }
+
+            return [
+                'today' => (int)$todayCount,
+                'by_event' => $eventCounts,
+                'by_model' => $modelCounts,
+                'recent' => $recent,
             ];
-        }
-
-        return [
-            'today' => (int)$todayCount,
-            'by_event' => $eventCounts,
-            'by_model' => $modelCounts,
-            'recent' => $recent,
-        ];
+        });
     }
 
     /**

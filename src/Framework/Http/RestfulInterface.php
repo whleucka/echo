@@ -1,8 +1,8 @@
 <?php
 
-namespace Echo\Interface\Http;
+namespace Echo\Framework\Http;
 
-interface Restful
+interface RestfulInterface
 {
     public function index(): string;
     public function create(): string;

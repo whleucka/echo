@@ -1,8 +1,8 @@
 <?php
 
-namespace Echo\Interface\Database;
+namespace Echo\Framework\Database;
 
-interface Driver
+interface DriverInterface
 {
     public function getDsn(): string;
     public function getUsername(): string;

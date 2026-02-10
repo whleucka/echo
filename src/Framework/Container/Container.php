@@ -2,12 +2,12 @@
 
 namespace Echo\Framework\Container;
 
-use Echo\Traits\Creational\Singleton;
+use Echo\Framework\Support\SingletonTrait;
 use DI\Container as DIContainer;
 
 class Container
 {
-    use Singleton;
+    use SingletonTrait;
 
     public static function getInstance(): DIContainer {
         if (self::$instance === null) {

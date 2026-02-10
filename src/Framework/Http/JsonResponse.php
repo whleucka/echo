@@ -2,9 +2,7 @@
 
 namespace Echo\Framework\Http;
 
-use Echo\Interface\Http\Response;
-
-class JsonResponse implements Response
+class JsonResponse implements ResponseInterface
 {
     private int $code;
     private array $headers;

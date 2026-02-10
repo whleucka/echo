@@ -5,11 +5,13 @@ namespace Echo\Framework\Http\Middleware;
 use Closure;
 use Echo\Framework\Http\JsonResponse;
 use Echo\Framework\Http\Response as HttpResponse;
+use Echo\Framework\Http\RequestInterface;
+use Echo\Framework\Http\ResponseInterface;
+use Echo\Framework\Http\MiddlewareInterface;
 use Echo\Framework\Logging\Logger;
 use Echo\Framework\RateLimit\RateLimiter;
 use Echo\Framework\RateLimit\RedisRateLimiter;
 use Echo\Framework\RateLimit\SessionRateLimiter;
-use Echo\Interface\Http\{Request, Middleware, Response};
 
 /**
  * Request Limit Middleware
@@ -17,11 +19,11 @@ use Echo\Interface\Http\{Request, Middleware, Response};
  * Rate limits requests using Redis (preferred) or sessions (fallback).
  * Supports per-route rate limiting via middleware parameters.
  */
-class RequestLimit implements Middleware
+class RequestLimit implements MiddlewareInterface
 {
     private ?RateLimiter $limiter = null;
 
-    public function handle(Request $request, Closure $next): Response
+    public function handle(RequestInterface $request, Closure $next): ResponseInterface
     {
         $route = $request->getAttribute("route");
         $middleware = $route["middleware"];

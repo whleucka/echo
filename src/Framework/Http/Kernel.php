@@ -6,19 +6,17 @@ use App\Models\User;
 use chillerlan\QRCode\QRCode;
 use Echo\Framework\Http\Exception\HttpException;
 use Echo\Framework\Http\Response as HttpResponse;
-use Echo\Interface\Http\Kernel as HttpKernel;
-use Echo\Interface\Http\Request;
-use Echo\Interface\Http\Response;
+
 use Error;
 use Exception;
 use PDOException;
 
-class Kernel implements HttpKernel
+class Kernel implements KernelInterface
 {
     // Middleware layers
     protected array $middleware_layers = [];
 
-    public function handle(Request $request): void
+    public function handle(RequestInterface $request): void
     {
         // Dispatch the route
         $route = router()->dispatch($request->getUri(), $request->getMethod());
@@ -43,7 +41,7 @@ class Kernel implements HttpKernel
         exit;
     }
 
-    private function response(array $route, Request $request): Response
+    private function response(array $route, RequestInterface $request): ResponseInterface
     {
         // Resolve the controller
         $controller_class = $route['controller'];

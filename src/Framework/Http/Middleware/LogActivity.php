@@ -4,14 +4,16 @@ namespace Echo\Framework\Http\Middleware;
 
 use App\Models\Activity;
 use Closure;
-use Echo\Interface\Http\{Request, Middleware, Response};
+use Echo\Framework\Http\RequestInterface;
+use Echo\Framework\Http\ResponseInterface;
+use Echo\Framework\Http\MiddlewareInterface;
 
 /**
  * LogActivity
  */
-class LogActivity implements Middleware
+class LogActivity implements MiddlewareInterface
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(RequestInterface $request, Closure $next): ResponseInterface
     {
         try {
             $user = user();

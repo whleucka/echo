@@ -9,6 +9,11 @@ use Echo\Framework\Routing\Group;
 #[Group(path_prefix: "/modules", name_prefix: "modules")]
 class ModulesController extends ModuleController
 {
+    public function __construct()
+    {
+        parent::__construct("modules");
+    }
+
     protected function defineTable(TableSchemaBuilder $builder): void
     {
         $builder->defaultSort('item_order', 'ASC');
@@ -46,11 +51,6 @@ class ModulesController extends ModuleController
                 ->datalist($this->getIconList());
 
         $builder->field('item_order', 'Order')->number();
-    }
-
-    public function __construct()
-    {
-        parent::__construct("modules");
     }
 
     private function getIconList(): array

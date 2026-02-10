@@ -9,9 +9,9 @@ use Echo\Framework\Database\Connection;
 use Echo\Framework\Database\QueryBuilder;
 use Echo\Framework\Http\Request;
 use Echo\Framework\Routing\Router;
+use Echo\Framework\Routing\RouterInterface;
 use Echo\Framework\Session\Session;
-use Echo\Interface\Http\Request as HttpRequest;
-use Echo\Interface\Routing\Router as RoutingRouter;
+use Echo\Framework\Http\RequestInterface;
 
 function recursiveFiles(string $directory)
 {
@@ -91,7 +91,7 @@ function session()
 /**
  * Get web router
  */
-function router(): RoutingRouter
+function router(): RouterInterface
 {
     return container()->get(Router::class);
 }
@@ -99,7 +99,7 @@ function router(): RoutingRouter
 /**
  * Get http request
  */
-function request(): HttpRequest
+function request(): RequestInterface
 {
     return container()->get(Request::class);
 }

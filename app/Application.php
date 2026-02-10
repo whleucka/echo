@@ -2,18 +2,18 @@
 
 namespace App;
 
+use Echo\Framework\ApplicationInterface;
+use Echo\Framework\Console\KernelInterface as ConsoleKernelInterface;
+use Echo\Framework\Http\KernelInterface as HttpKernelInterface;
 use Echo\Framework\Http\Request;
 use Echo\Framework\Support\ServiceProviderRegistry;
-use Echo\Interface\Console\Kernel as ConsoleKernel;
-use Echo\Interface\Application as EchoApplication;
-use Echo\Interface\Http\Kernel as HttpKernel;
 use Dotenv;
 
-class Application implements EchoApplication
+class Application implements ApplicationInterface
 {
     private ServiceProviderRegistry $providers;
 
-    public function __construct(private ConsoleKernel|HttpKernel $kernel)
+    public function __construct(private ConsoleKernelInterface|HttpKernelInterface $kernel)
     {
         $dotenv = Dotenv\Dotenv::createImmutable(config("paths.root"));
         $dotenv->safeLoad();
@@ -25,11 +25,11 @@ class Application implements EchoApplication
     public function run(): void
     {
         // Run the application (web or cli)
-        if ($this->kernel instanceof HttpKernel) {
+        if ($this->kernel instanceof HttpKernelInterface) {
             // Handle a web request
             $request = container()->get(Request::class);
             $this->kernel->handle($request);
-        } elseif ($this->kernel instanceof ConsoleKernel) {
+        } elseif ($this->kernel instanceof ConsoleKernelInterface) {
             // Run a command in cli mode
             $this->kernel->handle();
         }

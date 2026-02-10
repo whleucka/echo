@@ -8,10 +8,10 @@ use Echo\Framework\Routing\Router;
 use Echo\Framework\Routing\RouteCache;
 
 // Interface imports
-use Echo\Interface\Database\Connection as ConnectionInterface;
-use Echo\Interface\Database\Driver as DriverInterface;
-use Echo\Interface\Http\Request as RequestInterface;
-use Echo\Interface\Routing\Router as RouterInterface;
+use Echo\Framework\Database\ConnectionInterface;
+use Echo\Framework\Database\DriverInterface;
+use Echo\Framework\Http\RequestInterface;
+use Echo\Framework\Routing\RouterInterface;
 
 /**
  * Helpers

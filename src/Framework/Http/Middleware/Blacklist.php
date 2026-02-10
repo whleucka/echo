@@ -4,14 +4,16 @@ namespace Echo\Framework\Http\Middleware;
 
 use Closure;
 use Echo\Framework\Http\Response as HttpResponse;
-use Echo\Interface\Http\{Request, Middleware, Response};
+use Echo\Framework\Http\RequestInterface;
+use Echo\Framework\Http\ResponseInterface;
+use Echo\Framework\Http\MiddlewareInterface;
 
 /**
  * Blacklist
  */
-class Blacklist implements Middleware
+class Blacklist implements MiddlewareInterface
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(RequestInterface $request, Closure $next): ResponseInterface
     {
         $blacklist = config("security.blacklist");
         $ip = $request->getClientIp();

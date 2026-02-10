@@ -2,14 +2,14 @@
 
 namespace Echo\Framework\Debug;
 
-use Echo\Traits\Creational\Singleton;
+use Echo\Framework\Support\SingletonTrait;
 
 /**
  * Central Profiler - Orchestrates all profiling subsystems
  */
 class Profiler
 {
-    use Singleton;
+    use SingletonTrait;
 
     private ?QueryProfiler $queryProfiler = null;
     private ?RequestProfiler $requestProfiler = null;

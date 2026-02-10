@@ -6,14 +6,12 @@ use App\Models\User;
 use Echo\Framework\Http\Exception\HttpForbiddenException;
 use Echo\Framework\Http\Exception\HttpNotFoundException;
 use Echo\Framework\Session\Flash;
-use Echo\Interface\Http\Controller as HttpController;
-use Echo\Interface\Http\Request;
 use Error;
 
-class Controller implements HttpController
+class Controller implements ControllerInterface
 {
     protected ?User $user = null;
-    protected ?Request $request = null;
+    protected ?RequestInterface $request = null;
     private array $headers = [];
     private array $validation_errors = [];
     private array $validation_messages = [
@@ -60,12 +58,12 @@ class Controller implements HttpController
         return $this->user;
     }
 
-    public function setRequest(Request $request): void
+    public function setRequest(RequestInterface $request): void
     {
         $this->request = $request;
     }
 
-    public function getRequest(): Request
+    public function getRequest(): RequestInterface
     {
         return $this->request;
     }

@@ -4,15 +4,17 @@ namespace Echo\Framework\Http\Middleware;
 
 use Closure;
 use Echo\Framework\Http\Response as HttpResponse;
-use Echo\Interface\Http\{Request, Middleware, Response};
+use Echo\Framework\Http\RequestInterface;
+use Echo\Framework\Http\ResponseInterface;
+use Echo\Framework\Http\MiddlewareInterface;
 
 /**
  * CORS Middleware
  * Handles Cross-Origin Resource Sharing headers
  */
-class CORS implements Middleware
+class CORS implements MiddlewareInterface
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(RequestInterface $request, Closure $next): ResponseInterface
     {
         $route = $request->getAttribute("route");
         $middleware = $route["middleware"] ?? [];
@@ -35,7 +37,7 @@ class CORS implements Middleware
     /**
      * Handle preflight OPTIONS request
      */
-    private function preflightResponse(): Response
+    private function preflightResponse(): ResponseInterface
     {
         $response = new HttpResponse('', 204);
         return $this->addCorsHeaders($response);
@@ -44,7 +46,7 @@ class CORS implements Middleware
     /**
      * Add CORS headers to response
      */
-    private function addCorsHeaders(Response $response): Response
+    private function addCorsHeaders(ResponseInterface $response): ResponseInterface
     {
         $config = config('cors');
 

@@ -9,6 +9,12 @@ use Echo\Framework\Routing\Group;
 #[Group(path_prefix: "/activity", name_prefix: "activity")]
 class ActivityController extends ModuleController
 {
+    public function __construct()
+    {
+        $this->has_create = $this->has_edit = $this->has_delete = false;
+        parent::__construct('activity');
+    }
+
     protected function defineTable(TableSchemaBuilder $builder): void
     {
         $builder->primaryKey('activity.id')
@@ -28,11 +34,5 @@ class ActivityController extends ModuleController
         $builder->filterLink('Frontend', "LEFT(activity.uri, 6) != '/admin'");
         $builder->filterLink('Backend', "LEFT(activity.uri, 6) = '/admin'");
         $builder->filterLink('Me', 'user_id = ' . user()->id);
-    }
-
-    public function __construct()
-    {
-        $this->has_create = $this->has_edit = $this->has_delete = false;
-        parent::__construct('activity');
     }
 }

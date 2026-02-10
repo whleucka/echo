@@ -2,11 +2,11 @@
 
 namespace Echo\Framework\Session;
 
-use Echo\Traits\Creational\Singleton;
+use Echo\Framework\Support\SingletonTrait;
 
 class Session
 {
-    use Singleton;
+    use SingletonTrait;
 
     private bool $started = false;
     private array $data = [];

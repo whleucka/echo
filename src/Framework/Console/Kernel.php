@@ -2,10 +2,9 @@
 
 namespace Echo\Framework\Console;
 
-use Echo\Interface\Console\Kernel as ConsoleKernel;
 use Symfony\Component\Console\Application;
 
-class Kernel implements ConsoleKernel
+class Kernel implements KernelInterface
 {
     protected array $commands = [];
     protected Application $app;

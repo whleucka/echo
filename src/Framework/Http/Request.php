@@ -4,9 +4,7 @@ namespace Echo\Framework\Http;
 
 use Echo\Framework\Http\Request\{Get, Post, Files, Cookie, Headers};
 use Echo\Framework\Http\Request\Request as Req;
-use Echo\Interface\Http\Request as HttpRequest;
-
-class Request implements HttpRequest
+class Request implements RequestInterface
 {
     public Get $get;
     public Post $post;

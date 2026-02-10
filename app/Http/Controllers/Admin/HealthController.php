@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Services\Admin\SystemHealthService;
-use Echo\Framework\Admin\Schema\TableSchemaBuilder;
+use Echo\Framework\Admin\NoTableTrait;
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;
@@ -11,10 +11,7 @@ use Echo\Framework\Routing\Route\Get;
 #[Group(path_prefix: "/health", name_prefix: "health", middleware: ["max_requests" => 0])]
 class HealthController extends ModuleController
 {
-    protected function defineTable(TableSchemaBuilder $builder): void
-    {
-        // No table — health module uses custom rendering
-    }
+    use NoTableTrait;
 
     public function __construct(private SystemHealthService $service)
     {

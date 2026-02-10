@@ -6,15 +6,17 @@ use App\Models\ApiToken;
 use App\Models\User;
 use Closure;
 use Echo\Framework\Http\JsonResponse;
-use Echo\Interface\Http\{Request, Middleware, Response};
+use Echo\Framework\Http\RequestInterface;
+use Echo\Framework\Http\ResponseInterface;
+use Echo\Framework\Http\MiddlewareInterface;
 
 /**
  * Bearer Token Authentication Middleware
  * Validates API tokens for stateless authentication
  */
-class BearerAuth implements Middleware
+class BearerAuth implements MiddlewareInterface
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(RequestInterface $request, Closure $next): ResponseInterface
     {
         $route = $request->getAttribute("route");
         $middleware = $route["middleware"] ?? [];
@@ -135,7 +137,7 @@ class BearerAuth implements Middleware
     /**
      * Return 401 unauthorized JSON response
      */
-    private function unauthorizedResponse(string $message): Response
+    private function unauthorizedResponse(string $message): ResponseInterface
     {
         $response = new JsonResponse([
             'id' => request()->getAttribute('request_id'),

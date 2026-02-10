@@ -1,8 +1,8 @@
 <?php
 
-namespace Echo\Interface\Database;
+namespace Echo\Framework\Database;
 
-interface Migration
+interface MigrationInterface
 {
     public function up(): string;
     public function down(): string;

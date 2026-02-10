@@ -4,14 +4,16 @@ namespace Echo\Framework\Http\Middleware;
 
 use Closure;
 use Echo\Framework\Http\Response as HttpResponse;
-use Echo\Interface\Http\{Request, Middleware, Response};
+use Echo\Framework\Http\RequestInterface;
+use Echo\Framework\Http\ResponseInterface;
+use Echo\Framework\Http\MiddlewareInterface;
 
 /**
  * CSRF
  */
-class CSRF implements Middleware
+class CSRF implements MiddlewareInterface
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(RequestInterface $request, Closure $next): ResponseInterface
     {
         $route = $request->getAttribute("route");
         $middleware = $route["middleware"];
@@ -59,7 +61,7 @@ class CSRF implements Middleware
     /**
      * Validate a CSRF request token
      */
-    private function validate(Request $request): bool
+    private function validate(RequestInterface $request): bool
     {
         $request_method = $request->getMethod();
         if (in_array($request_method, ["GET", "HEAD", "OPTIONS"])) {

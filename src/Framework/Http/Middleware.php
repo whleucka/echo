@@ -3,9 +3,6 @@
 namespace Echo\Framework\Http;
 
 use Closure;
-use Echo\Interface\Http\Request;
-use Echo\Interface\Http\Middleware as HttpMiddleware;
-use Echo\Interface\Http\Response;
 
 class Middleware
 {
@@ -19,7 +16,7 @@ class Middleware
             $layers = $layers->toArray();
         }
 
-        if ($layers instanceof HttpMiddleware) {
+        if ($layers instanceof MiddlewareInterface) {
             $layers = [$layers];
         }
 
@@ -32,7 +29,7 @@ class Middleware
         return new static(array_merge($this->layers, $layers));
     }
 
-    public function handle(Request $request, Closure $core): Response
+    public function handle(RequestInterface $request, Closure $core): ResponseInterface
     {
         $coreFunction = $this->createCoreFunction($core);
 
@@ -67,7 +64,7 @@ class Middleware
         // If it's a class name string, resolve through container
         if (is_string($layer) && class_exists($layer)) {
             $layer = container()->get($layer);
-        } elseif (!($layer instanceof HttpMiddleware)) {
+        } elseif (!($layer instanceof MiddlewareInterface)) {
             // If it's not already an instance, create it directly
             $layer = new $layer;
         }

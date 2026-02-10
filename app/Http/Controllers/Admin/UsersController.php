@@ -10,6 +10,11 @@ use Echo\Framework\Routing\Group;
 #[Group(path_prefix: "/users", name_prefix: "users")]
 class UsersController extends ModuleController
 {
+    public function __construct()
+    {
+        parent::__construct("users");
+    }
+
     protected function defineTable(TableSchemaBuilder $builder): void
     {
         $builder->defaultSort('id', 'DESC')
@@ -66,11 +71,6 @@ class UsersController extends ModuleController
         $builder->field('password_match', 'Password (again)', "'' as password_match")
                 ->password()
                 ->rules(['required', 'match:password']);
-    }
-
-    public function __construct()
-    {
-        parent::__construct("users");
     }
 
     public function validate(array $ruleset = [], mixed $id = null): mixed

@@ -2,9 +2,9 @@
 
 namespace Echo\Framework\Database\Drivers;
 
-use Echo\Interface\Database\Driver;
+use Echo\Framework\Database\DriverInterface;
 
-class MySQL implements Driver
+class MySQL implements DriverInterface
 {
     public function __construct(private string $name, private string $username, private string $password, private string $host = 'localhost', private int $port = 3306, private string $charset = 'utf8mb4', private array $options = [])
     {

@@ -4,15 +4,17 @@ namespace Echo\Framework\Http\Middleware;
 
 use Closure;
 use Echo\Framework\Http\Response as HttpResponse;
+use Echo\Framework\Http\RequestInterface;
+use Echo\Framework\Http\ResponseInterface;
+use Echo\Framework\Http\MiddlewareInterface;
 use Echo\Framework\Session\Flash;
-use Echo\Interface\Http\{Request, Middleware, Response};
 
 /**
  * Authentication (route)
  */
-class Auth implements Middleware
+class Auth implements MiddlewareInterface
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(RequestInterface $request, Closure $next): ResponseInterface
     {
         $route = $request->getAttribute("route");
         $middleware = $route["middleware"];
