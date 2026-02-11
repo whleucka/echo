@@ -26,6 +26,10 @@ docker-compose up -d                       # start containers
 ./bin/php composer install                 # install dependencies
 ./bin/console migrate:run                  # run database migrations
 composer clear-cache                       # clear Twig template cache
+
+# Release
+./bin/release v0.x.x                       # create release (updates version, tags)
+git push && git push --tags                # publish release
 ```
 
 ## Architecture
