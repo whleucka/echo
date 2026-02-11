@@ -23,6 +23,7 @@ class SystemHealthService
         $this->registerCheck('php_version', fn() => $this->checkPhpVersion());
         $this->registerCheck('memory', fn() => $this->checkMemory());
         $this->registerCheck('disk', fn() => $this->checkDisk());
+        $this->registerCheck('uptime', fn() => $this->checkUptime());
         $this->registerCheck('extensions', fn() => $this->checkExtensions());
         $this->registerCheck('writable_dirs', fn() => $this->checkWritableDirs());
         $this->registerCheck('migrations', fn() => $this->checkMigrations());
@@ -252,6 +253,30 @@ class SystemHealthService
             'total' => $total,
             'used' => $used,
             'percent' => $percent,
+        ];
+    }
+
+    /**
+     * System uptime check (Linux only)
+     */
+    private function checkUptime(): array
+    {
+        if (PHP_OS_FAMILY !== 'Linux' || !file_exists('/proc/uptime')) {
+            return [
+                'status' => 'warning',
+                'message' => 'Uptime not available on this platform',
+            ];
+        }
+
+        $uptime = file_get_contents('/proc/uptime');
+        $seconds = (int)explode(' ', $uptime)[0];
+        $formatted = $this->formatUptime($seconds);
+
+        return [
+            'status' => 'ok',
+            'message' => "System up $formatted",
+            'uptime_seconds' => $seconds,
+            'uptime_formatted' => $formatted,
         ];
     }
 

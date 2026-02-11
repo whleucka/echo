@@ -17,7 +17,7 @@ class DashboardService
      */
     private array $cache = [];
 
-    public function __construct()
+    public function __construct(private SystemHealthService $healthService)
     {
         $tz = config('app.timezone') ?? 'UTC';
         $this->appTimezone = new \DateTimeZone($tz);
@@ -403,29 +403,24 @@ class DashboardService
      */
     public function getSystemHealth(): array
     {
-        $memoryUsage = memory_get_usage(true);
-        $memoryLimit = $this->parseBytes(ini_get('memory_limit'));
-        $memoryPercent = $memoryLimit > 0 ? round(($memoryUsage / $memoryLimit) * 100, 1) : 0;
-
-        $diskFree = disk_free_space('/');
-        $diskTotal = disk_total_space('/');
-        $diskUsed = $diskTotal - $diskFree;
-        $diskPercent = $diskTotal > 0 ? round(($diskUsed / $diskTotal) * 100, 1) : 0;
+        $memory = $this->healthService->getCheck('memory');
+        $disk = $this->healthService->getCheck('disk');
+        $phpVersion = $this->healthService->getCheck('php_version');
 
         return [
-            'php_version' => PHP_VERSION,
+            'php_version' => $phpVersion['current'] ?? PHP_VERSION,
             'memory' => [
-                'usage' => $this->formatBytes($memoryUsage),
+                'usage' => $memory['message'] ?? 'N/A',
                 'limit' => ini_get('memory_limit'),
-                'percent' => $memoryPercent,
-                'status' => $memoryPercent < 70 ? 'ok' : ($memoryPercent < 90 ? 'warning' : 'error'),
+                'percent' => $memory['percent'] ?? 0,
+                'status' => $memory['status'] ?? 'ok',
             ],
             'disk' => [
-                'free' => $this->formatBytes($diskFree),
-                'total' => $this->formatBytes($diskTotal),
-                'used' => $this->formatBytes($diskUsed),
-                'percent' => $diskPercent,
-                'status' => $diskPercent < 80 ? 'ok' : ($diskPercent < 95 ? 'warning' : 'error'),
+                'free' => $disk['free'] ?? 0,
+                'total' => $disk['total'] ?? 0,
+                'used' => $disk['used'] ?? 0,
+                'percent' => $disk['percent'] ?? 0,
+                'status' => $disk['status'] ?? 'ok',
             ],
             'uptime' => $this->getUptime(),
         ];
@@ -716,55 +711,11 @@ class DashboardService
     }
 
     /**
-     * Format bytes to human readable
-     */
-    private function formatBytes(int $bytes, int $precision = 2): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
-        $bytes /= pow(1024, $pow);
-
-        return round($bytes, $precision) . ' ' . $units[$pow];
-    }
-
-    /**
-     * Parse bytes from PHP ini format
-     */
-    private function parseBytes(string $value): int
-    {
-        $value = trim($value);
-        $last = strtolower($value[strlen($value) - 1]);
-        $value = (int)$value;
-
-        switch ($last) {
-            case 'g':
-                $value *= 1024;
-            case 'm':
-                $value *= 1024;
-            case 'k':
-                $value *= 1024;
-        }
-
-        return $value;
-    }
-
-    /**
      * Get system uptime if available
      */
     private function getUptime(): ?string
     {
-        if (PHP_OS_FAMILY === 'Linux' && file_exists('/proc/uptime')) {
-            $uptime = file_get_contents('/proc/uptime');
-            $seconds = (int)explode(' ', $uptime)[0];
-
-            $days = floor($seconds / 86400);
-            $hours = floor(($seconds % 86400) / 3600);
-            $minutes = floor(($seconds % 3600) / 60);
-
-            return "{$days}d {$hours}h {$minutes}m";
-        }
-        return null;
+        $uptime = $this->healthService->getCheck('uptime');
+        return $uptime['uptime_formatted'] ?? null;
     }
 }
