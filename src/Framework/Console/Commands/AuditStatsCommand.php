@@ -20,19 +20,23 @@ class AuditStatsCommand extends Command
             $total = Audit::countAll();
             $output->writeln(sprintf("  Total entries: %s", number_format($total)));
 
-            // GROUP BY queries stay raw (analytics-specific)
-            $byEvent = db()->fetchAll(
-                "SELECT event, COUNT(*) as count FROM audits GROUP BY event ORDER BY count DESC"
-            );
+            // GROUP BY using ORM
+            $byEvent = Audit::where('id', '>', '0')
+                ->select(['event', 'COUNT(*) as count'])
+                ->groupBy('event')
+                ->orderBy('count', 'DESC')
+                ->getRaw();
             $output->writeln("");
             $output->writeln("  By Event Type:");
             foreach ($byEvent as $row) {
                 $output->writeln(sprintf("    %-10s %s", ucfirst($row['event']) . ':', number_format($row['count'])));
             }
 
-            $byModel = db()->fetchAll(
-                "SELECT auditable_type, COUNT(*) as count FROM audits GROUP BY auditable_type ORDER BY count DESC LIMIT 10"
-            );
+            $byModel = Audit::where('id', '>', '0')
+                ->select(['auditable_type', 'COUNT(*) as count'])
+                ->groupBy('auditable_type')
+                ->orderBy('count', 'DESC')
+                ->getRaw(10);
             $output->writeln("");
             $output->writeln("  By Table (top 10):");
             foreach ($byModel as $row) {

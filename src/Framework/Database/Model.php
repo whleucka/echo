@@ -16,6 +16,7 @@ abstract class Model implements ModelInterface
     private array $where = [];
     private array $orWhere = [];
     private array $orderBy = [];
+    private array $groupBy = [];
     private array $params = [];
     protected array $attributes = [];
     private array $relations = [];
@@ -193,6 +194,53 @@ abstract class Model implements ModelInterface
     }
 
     /**
+     * Add a GROUP BY clause
+     *
+     * @param string ...$columns Columns to group by
+     * @return static
+     */
+    public function groupBy(string ...$columns): static
+    {
+        $this->groupBy = array_merge($this->groupBy, $columns);
+        return $this;
+    }
+
+    /**
+     * Set custom select columns (for aggregates, expressions, etc.)
+     *
+     * @param array $columns Columns or expressions to select
+     * @return static
+     */
+    public function select(array $columns): static
+    {
+        $this->columns = $columns;
+        return $this;
+    }
+
+    /**
+     * Get raw results as arrays (useful for GROUP BY / aggregate queries)
+     *
+     * @param int $limit Maximum number of results (0 = no limit)
+     * @return array
+     */
+    public function getRaw(int $limit = 0): array
+    {
+        $results = $this->qb
+            ->select($this->columns)
+            ->from($this->tableName)
+            ->where($this->where)
+            ->orWhere($this->orWhere)
+            ->groupBy($this->groupBy)
+            ->orderBy($this->orderBy)
+            ->limit($limit)
+            ->params($this->params)
+            ->execute()
+            ->fetchAll(PDO::FETCH_ASSOC);
+
+        return $results ?: [];
+    }
+
+    /**
      * Specify relationships to eager load
      *
      * @param string ...$relations Relation method names to eager load
@@ -228,6 +276,7 @@ abstract class Model implements ModelInterface
             ->from($this->tableName)
             ->where($this->where)
             ->orWhere($this->orWhere)
+            ->groupBy($this->groupBy)
             ->orderBy($this->orderBy)
             ->limit($limit)
             ->params($this->params)
@@ -444,6 +493,7 @@ abstract class Model implements ModelInterface
             ->from($this->tableName)
             ->where($this->where)
             ->orWhere($this->orWhere)
+            ->groupBy($this->groupBy)
             ->orderBy($this->orderBy)
             ->params($this->params);
         return ["query" => $qb->getQuery(), "params" => $qb->getQueryParams()];

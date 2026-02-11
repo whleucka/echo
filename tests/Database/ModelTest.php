@@ -94,4 +94,22 @@ class ModelTest extends TestCase
             ->sql();
         $this->assertSame("SELECT * FROM users WHERE (email = ?) AND (verified_at IS NOT NULL)", $sql["query"]);
     }
+
+    public function testGroupBy()
+    {
+        $sql = User::where("id", ">", "0")
+            ->groupBy("role")
+            ->sql();
+        $this->assertSame("SELECT * FROM users WHERE (id > ?) GROUP BY role", $sql["query"]);
+    }
+
+    public function testSelectWithGroupBy()
+    {
+        $sql = User::where("id", ">", "0")
+            ->select(["role", "COUNT(*) as count"])
+            ->groupBy("role")
+            ->orderBy("count", "DESC")
+            ->sql();
+        $this->assertSame("SELECT role, COUNT(*) as count FROM users WHERE (id > ?) GROUP BY role ORDER BY count DESC", $sql["query"]);
+    }
 }
