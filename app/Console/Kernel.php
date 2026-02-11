@@ -43,9 +43,9 @@ class Kernel extends ConsoleKernel
         Commands\MakeProviderCommand::class,
         Commands\MakeCommandCommand::class,
         
-        // Sessions
-        Commands\SessionCleanupCommand::class,
-        Commands\SessionStatsCommand::class,
+        // Activity
+        Commands\ActivityCleanupCommand::class,
+        Commands\ActivityStatsCommand::class,
         
         // Audits
         Commands\AuditListCommand::class,
