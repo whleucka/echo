@@ -30,8 +30,8 @@ class ActivityController extends ModuleController
                 ->label('User')
                 ->optionsFrom("SELECT email as value, CONCAT(first_name, ' ', surname) as label FROM users ORDER BY label");
 
-        $builder->filterLink('Frontend', "LEFT(activity.uri, 6) != '/admin'");
-        $builder->filterLink('Backend', "LEFT(activity.uri, 6) = '/admin'");
-        $builder->filterLink('Me', 'user_id = ' . user()->id);
+        $builder->filterLink('Frontend', "LEFT(activity.uri, 6) != '/admin' AND LEFT(activity.uri, 7) != '/_debug'");
+        $builder->filterLink('Backend', "LEFT(activity.uri, 6) = '/admin' AND LEFT(activity.uri, 7) != '/_debug'");
+        $builder->filterLink('Me', "user_id = " . user()->id . " AND LEFT(activity.uri, 7) != '/_debug'");
     }
 }
