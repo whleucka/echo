@@ -8,14 +8,15 @@ class RegisterService
 {
     public function register(string $first_name, string $surname, string $email, string $password): bool
     {
+        $service = container()->get(AuthService::class);
         $log = logger()->channel('auth');
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $ip = request()->getClientIp();
 
         $user = User::create([
             "first_name" => $first_name,
             "surname" => $surname,
             "email" => $email,
-            "password" => password_hash($password, PASSWORD_ARGON2I),
+            "password" => $service->hashPassword($password),
             "role" => "standard",
         ]);
 

@@ -11,4 +11,5 @@ return [
     "max_requests" => 200,
     "max_requests_htmx" => 1000,  // Higher limit for HTMX (authenticated interactions)
     "decay_seconds" => 60,
+    "password_algorithm" => PASSWORD_ARGON2I,
 ];

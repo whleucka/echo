@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\User;
+use App\Services\Auth\AuthService;
 use Echo\Framework\Admin\Schema\{FormSchemaBuilder, TableSchemaBuilder};
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
@@ -86,9 +87,10 @@ class UsersController extends ModuleController
 
     protected function handleStore(array $request): mixed
     {
+        $service = container()->get(AuthService::class);
         $role = $request['role'] ?? 'standard';
         unset($request["password_match"]);
-        $request["password"] = password_hash($request['password'], PASSWORD_ARGON2I);
+        $request["password"] = $service->hashPassword($request['password']);
         $id = parent::handleStore($request);
 
         if ($id !== false && $role !== 'admin') {
@@ -101,8 +103,9 @@ class UsersController extends ModuleController
 
     protected function handleUpdate(int $id, array $request): bool
     {
+        $service = container()->get(AuthService::class);
         unset($request["password_match"]);
-        $request["password"] = password_hash($request['password'], PASSWORD_ARGON2I);
+        $request["password"] = $service->hashPassword($request['password']);
         return parent::handleUpdate($id, $request);
     }
 }

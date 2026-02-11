@@ -2,6 +2,7 @@
 
 namespace Echo\Framework\Console\Commands;
 
+use App\Services\Auth\AuthService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -20,6 +21,7 @@ class AdminNewCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $service = container()->get(AuthService::class);
         $email = $input->getArgument('email');
         $password = $input->getArgument('password');
 
@@ -31,12 +33,12 @@ class AdminNewCommand extends Command
             return Command::FAILURE;
         }
 
-        $hashed = password_hash($password, PASSWORD_ARGON2I);
+        $hashed_password = $service->hashPassword($password);
 
         db()->execute("INSERT INTO users SET first_name='Administrator', 
             surname = '', role='admin', email=?, password=?", [
             $email,
-            $hashed
+            $hashed_password
         ]);
 
         $output->writeln("<info>✓ Successfully created admin user: $email</info>");
