@@ -89,6 +89,15 @@ class SystemHealthWidget extends Widget
             ];
         }
 
+        // System Uptime
+        if (isset($results['uptime'])) {
+            $checks['uptime'] = [
+                'label' => 'System Uptime',
+                'value' => $results['uptime']['uptime_formatted'] ?? 'N/A',
+                'status' => $results['uptime']['status'],
+            ];
+        }
+
         // Overall status
         $overallStatus = 'ok';
         foreach ($checks as $check) {
