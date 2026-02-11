@@ -9,8 +9,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'session:cleanup', description: 'Clean up old activity records')]
-class SessionCleanupCommand extends Command
+#[AsCommand(name: 'activity:cleanup', description: 'Clean up old activity records')]
+class ActivityCleanupCommand extends Command
 {
     protected function configure(): void
     {
