@@ -2,30 +2,30 @@
 
 namespace Echo\Framework\Console\Commands;
 
-use App\Models\Session;
+use App\Models\Activity;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'session:stats', description: 'Show session statistics')]
+#[AsCommand(name: 'session:stats', description: 'Show activity statistics')]
 class SessionStatsCommand extends Command
 {
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $output->writeln("Session Statistics:");
+        $output->writeln("Activity Statistics:");
         $output->writeln(str_repeat('-', 60));
 
         try {
-            $total = Session::countAll();
-            $output->writeln(sprintf("  Total sessions: %s", number_format($total)));
+            $total = Activity::countAll();
+            $output->writeln(sprintf("  Total activity: %s", number_format($total)));
 
-            $today = Session::where('id', '>', '0')
+            $today = Activity::where('id', '>', '0')
                 ->whereRaw("DATE(created_at) = CURDATE()")
                 ->count();
             $output->writeln(sprintf("  Today: %s", number_format($today)));
 
-            $active = Session::where('id', '>', '0')
+            $active = Activity::where('id', '>', '0')
                 ->whereRaw("created_at >= NOW() - INTERVAL 30 MINUTE")
                 ->whereNotNull('user_id')
                 ->count('DISTINCT user_id');
@@ -34,12 +34,12 @@ class SessionStatsCommand extends Command
             $output->writeln("");
             $output->writeln("  By Age:");
 
-            $last7 = Session::where('id', '>', '0')
+            $last7 = Activity::where('id', '>', '0')
                 ->whereRaw("created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)")
                 ->count();
             $output->writeln(sprintf("    Last 7 days: %s", number_format($last7)));
 
-            $last30 = Session::where('id', '>', '0')
+            $last30 = Activity::where('id', '>', '0')
                 ->whereRaw("created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)")
                 ->count();
             $output->writeln(sprintf("    Last 30 days: %s", number_format($last30)));
@@ -51,7 +51,7 @@ class SessionStatsCommand extends Command
             $size = db()->fetch(
                 "SELECT ROUND((data_length + index_length) / 1024 / 1024, 2) AS size_mb
                  FROM information_schema.tables
-                 WHERE table_schema = DATABASE() AND table_name = 'sessions'"
+                 WHERE table_schema = DATABASE() AND table_name = 'activity'"
             );
             if ($size) {
                 $output->writeln("");
