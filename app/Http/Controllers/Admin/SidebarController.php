@@ -17,7 +17,7 @@ class SidebarController extends Controller
     #[Get("/sidebar", "admin.sidebar.load")]
     public function load(): string
     {
-        $links = $this->service->getLinks([], [], user());
+        $links = $this->service->getLinks(null, user());
         // Non-admin users must be granted permission
         return $this->render("admin/sidebar.html.twig", [
             "hide" => $this->service->getState(),

@@ -2,6 +2,8 @@
 
 namespace App\Services\Admin;
 
+use App\Models\Migration;
+
 class SystemHealthService
 {
     private array $checks = [];
@@ -188,7 +190,7 @@ class SystemHealthService
      */
     private function checkPhpVersion(): array
     {
-        $requiredVersion = '8.2.0';
+        $requiredVersion = '8.4.0';
         $currentVersion = PHP_VERSION;
         $isOk = version_compare($currentVersion, $requiredVersion, '>=');
 
@@ -325,16 +327,16 @@ class SystemHealthService
     private function checkMigrations(): array
     {
         try {
-            $lastMigration = db()->fetch(
-                "SELECT * FROM migrations ORDER BY id DESC LIMIT 1"
-            );
+            $lastMigration = Migration::where('id', '>', '0')
+                ->orderBy('id', 'DESC')
+                ->first();
 
             if ($lastMigration) {
                 return [
                     'status' => 'ok',
-                    'message' => 'Last migration: ' . $lastMigration['basename'] . ' (' . $lastMigration['created_at'] . ')',
-                    'last_migration' => $lastMigration['basename'],
-                    'last_run' => $lastMigration['created_at'],
+                    'message' => 'Last migration: ' . $lastMigration->basename . ' (' . $lastMigration->created_at . ')',
+                    'last_migration' => $lastMigration->basename,
+                    'last_run' => $lastMigration->created_at,
                 ];
             }
 

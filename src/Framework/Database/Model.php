@@ -132,6 +132,60 @@ abstract class Model implements ModelInterface
         return $this;
     }
 
+    /**
+     * Add a raw WHERE clause
+     *
+     * @param string $sql Raw SQL condition
+     * @param array $params Parameters for the condition
+     * @return static
+     */
+    public function whereRaw(string $sql, array $params = []): static
+    {
+        $this->where[] = "($sql)";
+        $this->params = array_merge($this->params, $params);
+        return $this;
+    }
+
+    /**
+     * Add a WHERE BETWEEN clause
+     *
+     * @param string $field Column name
+     * @param mixed $start Start value
+     * @param mixed $end End value
+     * @return static
+     */
+    public function whereBetween(string $field, mixed $start, mixed $end): static
+    {
+        $this->where[] = "($field BETWEEN ? AND ?)";
+        $this->params[] = $start;
+        $this->params[] = $end;
+        return $this;
+    }
+
+    /**
+     * Add a WHERE IS NULL clause
+     *
+     * @param string $field Column name
+     * @return static
+     */
+    public function whereNull(string $field): static
+    {
+        $this->where[] = "($field IS NULL)";
+        return $this;
+    }
+
+    /**
+     * Add a WHERE IS NOT NULL clause
+     *
+     * @param string $field Column name
+     * @return static
+     */
+    public function whereNotNull(string $field): static
+    {
+        $this->where[] = "($field IS NOT NULL)";
+        return $this;
+    }
+
     public function orderBy(string $column, string $direction = "ASC"): Model
     {
         $this->orderBy[] = "$column $direction";
@@ -297,6 +351,39 @@ abstract class Model implements ModelInterface
             return static::hydrate($results[0]);
         }
         return null;
+    }
+
+    /**
+     * Count records matching the query
+     *
+     * @param string $column Column to count (default '*')
+     * @return int
+     */
+    public function count(string $column = '*'): int
+    {
+        $result = $this->qb
+            ->select(["COUNT($column) as aggregate"])
+            ->from($this->tableName)
+            ->where($this->where)
+            ->orWhere($this->orWhere)
+            ->params($this->params)
+            ->execute()
+            ->fetch(PDO::FETCH_ASSOC);
+
+        return (int)($result['aggregate'] ?? 0);
+    }
+
+    /**
+     * Static count with no conditions
+     *
+     * @param string $column Column to count (default '*')
+     * @return int
+     */
+    public static function countAll(string $column = '*'): int
+    {
+        $class = get_called_class();
+        $model = new $class();
+        return $model->count($column);
     }
 
     public function last(): ?static

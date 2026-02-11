@@ -1174,7 +1174,7 @@ abstract class ModuleController extends Controller
         return [
             "sidebar" => [
                 "hide" => $sidebar_provider->getState(),
-                "links" => $sidebar_provider->getLinks([], [], user()),
+                "links" => $sidebar_provider->getLinks(null, user()),
             ],
             "user" => [
                 "name" => $this->user->first_name . " " . $this->user->surname,

@@ -2,6 +2,12 @@
 
 namespace App\Services\Admin;
 
+use App\Models\Activity;
+use App\Models\Audit;
+use App\Models\EmailJob;
+use App\Models\Module;
+use App\Models\User;
+
 class DashboardService
 {
     private \DateTimeZone $appTimezone;
@@ -38,9 +44,7 @@ class DashboardService
 
     public function getUsersCount(): int
     {
-        return $this->cached('users_count', fn() => db()->execute(
-            "SELECT count(*) FROM users"
-        )->fetchColumn());
+        return $this->cached('users_count', fn() => User::countAll());
     }
 
     public function getActiveUsersCount(): int
@@ -48,27 +52,18 @@ class DashboardService
         return $this->cached('active_users_count', function () {
             $now = $this->now()->format('Y-m-d H:i:s');
             $threshold = date('Y-m-d H:i:s', strtotime('-30 minutes', strtotime($now)));
-            return db()->execute(
-                "SELECT COUNT(DISTINCT user_id) AS active_users
-                FROM activity
-                WHERE created_at >= ?",
-                [$threshold]
-            )->fetchColumn();
+            return Activity::where('created_at', '>=', $threshold)->count('DISTINCT user_id');
         });
     }
 
     public function getModulesCount(): int
     {
-        return db()->execute(
-            "SELECT count(*) FROM modules WHERE parent_id IS NOT NULL"
-        )->fetchColumn();
+        return Module::where('parent_id', 'is not', null)->count();
     }
 
     public function getTotalRequests(): int
     {
-        return db()->execute(
-            "SELECT count(*) FROM activity"
-        )->fetchColumn();
+        return Activity::countAll();
     }
 
     public function getTodayRequests(): int
@@ -76,10 +71,9 @@ class DashboardService
         $now = $this->now();
         $todayStart = $now->setTime(0, 0, 0)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
         $todayEnd = $now->setTime(23, 59, 59)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
-        return db()->execute(
-            "SELECT count(*) FROM activity WHERE created_at BETWEEN ? AND ?",
-            [$todayStart, $todayEnd]
-        )->fetchColumn();
+        return Activity::where('created_at', '>=', $todayStart)
+            ->andWhere('created_at', '<=', $todayEnd)
+            ->count();
     }
 
     public function getTodayRequestsChart(): array
@@ -479,11 +473,12 @@ class DashboardService
             $today = $this->now()->format('Y-m-d');
             $sevenDaysAgo = $this->now()->modify('-7 days')->format('Y-m-d H:i:s');
 
-            $todayCount = db()->execute(
-                "SELECT COUNT(*) FROM audits WHERE DATE(created_at) = ?",
-                [$today]
-            )->fetchColumn();
+            // Use ORM for simple date-based count
+            $todayCount = Audit::where('created_at', '>=', $today . ' 00:00:00')
+                ->andWhere('created_at', '<=', $today . ' 23:59:59')
+                ->count();
 
+            // GROUP BY queries still use raw SQL (analytics-specific)
             $byEvent = db()->fetchAll(
                 "SELECT event, COUNT(*) as count
                 FROM audits
@@ -512,30 +507,23 @@ class DashboardService
                 $modelCounts[$row['auditable_type']] = (int)$row['count'];
             }
 
-            // Get recent activity (last 5)
-            $recentAudits = db()->fetchAll(
-                "SELECT
-                    a.id,
-                    a.event,
-                    a.auditable_type,
-                    a.auditable_id,
-                    a.created_at,
-                    COALESCE(CONCAT(u.first_name, ' ', u.surname), 'System') as user_name
-                FROM audits a
-                LEFT JOIN users u ON u.id = a.user_id
-                ORDER BY a.created_at DESC
-                LIMIT 5"
-            );
+            // Use ORM for recent audits - models can access relations
+            $recentAuditModels = Audit::where('id', '>', '0')
+                ->orderBy('created_at', 'DESC')
+                ->get(5);
 
             $recent = [];
-            foreach ($recentAudits as $audit) {
+            $audits = is_array($recentAuditModels) ? $recentAuditModels : ($recentAuditModels ? [$recentAuditModels] : []);
+            foreach ($audits as $audit) {
+                $user = $audit->user();
+                $userName = $user ? trim($user->first_name . ' ' . $user->surname) : 'System';
                 $recent[] = [
-                    'id' => $audit['id'],
-                    'event' => $audit['event'],
-                    'type' => $audit['auditable_type'],
-                    'record_id' => $audit['auditable_id'],
-                    'user' => $audit['user_name'],
-                    'time_ago' => $this->timeAgo($audit['created_at']),
+                    'id' => $audit->id,
+                    'event' => $audit->event,
+                    'type' => $audit->auditable_type,
+                    'record_id' => $audit->auditable_id,
+                    'user' => $userName,
+                    'time_ago' => $this->timeAgo($audit->created_at),
                 ];
             }
 
@@ -589,33 +577,27 @@ class DashboardService
 
         // New users in the last 7 days
         $sevenDaysAgo = $this->now()->modify('-7 days')->format('Y-m-d H:i:s');
-        $newUsersWeek = db()->execute(
-            "SELECT COUNT(*) FROM users WHERE created_at >= ?",
-            [$sevenDaysAgo]
-        )->fetchColumn();
+        $newUsersWeek = User::where('created_at', '>=', $sevenDaysAgo)->count();
 
         // New users today
         $today = $this->now()->format('Y-m-d');
-        $newUsersToday = db()->execute(
-            "SELECT COUNT(*) FROM users WHERE DATE(created_at) = ?",
-            [$today]
-        )->fetchColumn();
+        $newUsersToday = User::where('created_at', '>=', $today . ' 00:00:00')
+            ->andWhere('created_at', '<=', $today . ' 23:59:59')
+            ->count();
 
-        // Recent users (last 5 signups)
-        $recentUsers = db()->fetchAll(
-            "SELECT id, first_name, surname, email, created_at
-            FROM users
-            ORDER BY created_at DESC
-            LIMIT 5"
-        );
+        // Recent users (last 5 signups) - use ORM
+        $recentUserModels = User::where('id', '>', '0')
+            ->orderBy('created_at', 'DESC')
+            ->get(5);
 
         $recent = [];
-        foreach ($recentUsers as $user) {
+        $users = is_array($recentUserModels) ? $recentUserModels : ($recentUserModels ? [$recentUserModels] : []);
+        foreach ($users as $user) {
             $recent[] = [
-                'id' => $user['id'],
-                'name' => trim(($user['first_name'] ?? '') . ' ' . ($user['surname'] ?? '')),
-                'email' => $user['email'],
-                'time_ago' => $this->timeAgo($user['created_at']),
+                'id' => $user->id,
+                'name' => $user->fullName(),
+                'email' => $user->email,
+                'time_ago' => $this->timeAgo($user->created_at),
             ];
         }
 
@@ -685,7 +667,7 @@ class DashboardService
         $today = $now->format('Y-m-d');
         $sevenDaysAgo = $now->modify('-7 days')->format('Y-m-d H:i:s');
 
-        // Counts by status
+        // Counts by status - GROUP BY still uses raw SQL (analytics-specific)
         $statusCounts = db()->fetchAll(
             "SELECT status, COUNT(*) as count FROM email_jobs GROUP BY status"
         );
@@ -695,35 +677,32 @@ class DashboardService
             $statuses[$row['status']] = (int)$row['count'];
         }
 
-        // Sent today
-        $sentToday = db()->execute(
-            "SELECT COUNT(*) FROM email_jobs WHERE status = 'sent' AND DATE(sent_at) = ?",
-            [$today]
-        )->fetchColumn();
+        // Sent today - use ORM
+        $sentToday = EmailJob::where('status', 'sent')
+            ->andWhere('sent_at', '>=', $today . ' 00:00:00')
+            ->andWhere('sent_at', '<=', $today . ' 23:59:59')
+            ->count();
 
-        // Failed/exhausted in last 7 days
-        $failedRecent = db()->execute(
-            "SELECT COUNT(*) FROM email_jobs WHERE status IN ('failed', 'exhausted') AND last_attempt_at >= ?",
-            [$sevenDaysAgo]
-        )->fetchColumn();
+        // Failed/exhausted in last 7 days - use ORM with whereRaw for IN clause
+        $failedRecent = EmailJob::where('last_attempt_at', '>=', $sevenDaysAgo)
+            ->whereRaw("status IN ('failed', 'exhausted')")
+            ->count();
 
-        // Recent jobs (last 5)
-        $recentJobs = db()->fetchAll(
-            "SELECT id, to_address, subject, status, attempts, max_attempts, created_at, sent_at, last_attempt_at
-            FROM email_jobs
-            ORDER BY created_at DESC
-            LIMIT 5"
-        );
+        // Recent jobs (last 5) - use ORM
+        $recentJobModels = EmailJob::where('id', '>', '0')
+            ->orderBy('created_at', 'DESC')
+            ->get(5);
 
         $recent = [];
-        foreach ($recentJobs as $job) {
+        $jobs = is_array($recentJobModels) ? $recentJobModels : ($recentJobModels ? [$recentJobModels] : []);
+        foreach ($jobs as $job) {
             $recent[] = [
-                'id' => $job['id'],
-                'to' => $job['to_address'],
-                'subject' => $job['subject'],
-                'status' => $job['status'],
-                'attempts' => (int)$job['attempts'] . '/' . (int)$job['max_attempts'],
-                'time_ago' => $this->timeAgo($job['created_at']),
+                'id' => $job->id,
+                'to' => $job->to_address,
+                'subject' => $job->subject,
+                'status' => $job->status,
+                'attempts' => (int)$job->attempts . '/' . (int)$job->max_attempts,
+                'time_ago' => $this->timeAgo($job->created_at),
             ];
         }
 

@@ -2,6 +2,7 @@
 
 namespace App\Services\Admin;
 
+use App\Models\Module;
 use App\Models\User;
 
 class SidebarService
@@ -27,47 +28,49 @@ class SidebarService
         $this->setState(!$state);
     }
 
-    public function getLinks(array $nodes = [], array $modules = [], ?User $user = null): array
+    /**
+     * Get sidebar links for a user
+     *
+     * @param Module[]|null $nodes Root nodes to process (null = fetch root modules)
+     * @param User|null $user Current user
+     * @return array Sidebar link structure
+     */
+    public function getLinks(?array $nodes = null, ?User $user = null): array
     {
         if (is_null($user)) {
             return [];
         }
 
-        if (empty($nodes)) {
-            $nodes = db()->fetchAll(
-                "SELECT * FROM modules
-                WHERE parent_id IS NULL AND enabled = 1
-                ORDER BY item_order"
-            );
+        // Fetch root modules if not provided
+        if (is_null($nodes)) {
+            $rootModules = Module::where('enabled', '1')
+                ->whereNull('parent_id')
+                ->orderBy('item_order')
+                ->get();
+            $nodes = is_array($rootModules) ? $rootModules : ($rootModules ? [$rootModules] : []);
         }
 
+        $modules = [];
         foreach ($nodes as $node) {
-            if ($user->role === 'admin') {
-                $children = db()->fetchAll(
-                    "SELECT *, CONCAT('/admin/', link) as url
-                    FROM modules
-                    WHERE parent_id = ? AND enabled = 1
-                    ORDER BY item_order",
-                    [$node['id']]
-                );
-            } else {
-                $children = db()->fetchAll(
-                    "SELECT *, CONCAT('/admin/', link) as url
-                    FROM modules
-                    WHERE parent_id = ? AND
-                    enabled = 1 AND
-                    EXISTS (SELECT *
-                        FROM user_permissions
-                        WHERE user_id = ? AND module_id = modules.id)
-                    ORDER BY item_order",
-                    [$node['id'], $user->id]
+            // Get children for this node
+            $childModules = $node->children();
+
+            // Filter by permissions for non-admin users
+            if ($user->role !== 'admin') {
+                $childModules = array_filter($childModules, fn(Module $child) =>
+                    $user->hasPermission((int)$child->id)
                 );
             }
 
-            if ($children) {
-                $node['children'] = $this->getLinks($children, [], $user);
+            // Convert to array format for template compatibility
+            $nodeData = $node->getAttributes();
+            $nodeData['url'] = $node->url();
+
+            if (!empty($childModules)) {
+                $nodeData['children'] = $this->getLinks(array_values($childModules), $user);
             }
-            $modules[] = $node;
+
+            $modules[] = $nodeData;
         }
 
         return $modules;
