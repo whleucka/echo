@@ -2,6 +2,7 @@
 
 namespace Echo\Framework\Console\Commands;
 
+use App\Models\Session;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -16,35 +17,37 @@ class SessionStatsCommand extends Command
         $output->writeln(str_repeat('-', 60));
 
         try {
-            $total = db()->execute("SELECT COUNT(*) FROM sessions")->fetchColumn();
+            $total = Session::countAll();
             $output->writeln(sprintf("  Total sessions: %s", number_format($total)));
 
-            $today = db()->execute(
-                "SELECT COUNT(*) FROM sessions WHERE DATE(created_at) = CURDATE()"
-            )->fetchColumn();
+            $today = Session::where('id', '>', '0')
+                ->whereRaw("DATE(created_at) = CURDATE()")
+                ->count();
             $output->writeln(sprintf("  Today: %s", number_format($today)));
 
-            $active = db()->execute(
-                "SELECT COUNT(DISTINCT user_id) FROM sessions WHERE created_at >= NOW() - INTERVAL 30 MINUTE AND user_id IS NOT NULL"
-            )->fetchColumn();
+            $active = Session::where('id', '>', '0')
+                ->whereRaw("created_at >= NOW() - INTERVAL 30 MINUTE")
+                ->whereNotNull('user_id')
+                ->count('DISTINCT user_id');
             $output->writeln(sprintf("  Active users (30 min): %s", number_format($active)));
 
             $output->writeln("");
             $output->writeln("  By Age:");
 
-            $last7 = db()->execute(
-                "SELECT COUNT(*) FROM sessions WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)"
-            )->fetchColumn();
+            $last7 = Session::where('id', '>', '0')
+                ->whereRaw("created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)")
+                ->count();
             $output->writeln(sprintf("    Last 7 days: %s", number_format($last7)));
 
-            $last30 = db()->execute(
-                "SELECT COUNT(*) FROM sessions WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
-            )->fetchColumn();
+            $last30 = Session::where('id', '>', '0')
+                ->whereRaw("created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)")
+                ->count();
             $output->writeln(sprintf("    Last 30 days: %s", number_format($last30)));
 
             $older = $total - $last30;
             $output->writeln(sprintf("    Older than 30 days: %s", number_format($older)));
 
+            // Table size query stays raw (information_schema query)
             $size = db()->fetch(
                 "SELECT ROUND((data_length + index_length) / 1024 / 1024, 2) AS size_mb
                  FROM information_schema.tables

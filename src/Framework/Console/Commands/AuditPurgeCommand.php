@@ -2,6 +2,7 @@
 
 namespace Echo\Framework\Console\Commands;
 
+use App\Models\Audit;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -29,10 +30,9 @@ class AuditPurgeCommand extends Command
         $output->writeln(sprintf("Purging audit entries older than %d days...", $days));
 
         try {
-            $count = db()->execute(
-                "SELECT COUNT(*) FROM audits WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)",
-                [$days]
-            )->fetchColumn();
+            $count = Audit::where('id', '>', '0')
+                ->whereRaw("created_at < DATE_SUB(NOW(), INTERVAL ? DAY)", [$days])
+                ->count();
 
             if ($count == 0) {
                 $output->writeln("No entries to purge.");
@@ -49,6 +49,7 @@ class AuditPurgeCommand extends Command
                 return Command::SUCCESS;
             }
 
+            // Bulk delete still uses raw SQL for efficiency
             db()->execute(
                 "DELETE FROM audits WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)",
                 [$days]

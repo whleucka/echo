@@ -2,6 +2,7 @@
 
 namespace Echo\Framework\Console\Commands;
 
+use App\Models\Session;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -28,10 +29,9 @@ class SessionCleanupCommand extends Command
         $output->writeln(sprintf("Cleaning up sessions older than %d days...", $days));
 
         try {
-            $count = db()->execute(
-                "SELECT COUNT(*) FROM sessions WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)",
-                [$days]
-            )->fetchColumn();
+            $count = Session::where('id', '>', '0')
+                ->whereRaw("created_at < DATE_SUB(NOW(), INTERVAL ? DAY)", [$days])
+                ->count();
 
             if ($count == 0) {
                 $output->writeln("No old sessions to clean up.");
@@ -40,6 +40,7 @@ class SessionCleanupCommand extends Command
 
             $output->writeln(sprintf("Found %s sessions to delete.", number_format($count)));
 
+            // Bulk delete still uses raw SQL for efficiency
             db()->execute(
                 "DELETE FROM sessions WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)",
                 [$days]

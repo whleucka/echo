@@ -2,6 +2,7 @@
 
 namespace Echo\Framework\Console\Commands;
 
+use App\Models\Audit;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -16,9 +17,10 @@ class AuditStatsCommand extends Command
         $output->writeln(str_repeat('-', 60));
 
         try {
-            $total = db()->execute("SELECT COUNT(*) FROM audits")->fetchColumn();
+            $total = Audit::countAll();
             $output->writeln(sprintf("  Total entries: %s", number_format($total)));
 
+            // GROUP BY queries stay raw (analytics-specific)
             $byEvent = db()->fetchAll(
                 "SELECT event, COUNT(*) as count FROM audits GROUP BY event ORDER BY count DESC"
             );
@@ -37,15 +39,15 @@ class AuditStatsCommand extends Command
                 $output->writeln(sprintf("    %-20s %s", $row['auditable_type'] . ':', number_format($row['count'])));
             }
 
-            $today = db()->execute(
-                "SELECT COUNT(*) FROM audits WHERE DATE(created_at) = CURDATE()"
-            )->fetchColumn();
+            $today = Audit::where('id', '>', '0')
+                ->whereRaw("DATE(created_at) = CURDATE()")
+                ->count();
             $output->writeln("");
             $output->writeln(sprintf("  Today's entries: %s", number_format($today)));
 
-            $week = db()->execute(
-                "SELECT COUNT(*) FROM audits WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)"
-            )->fetchColumn();
+            $week = Audit::where('id', '>', '0')
+                ->whereRaw("created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)")
+                ->count();
             $output->writeln(sprintf("  Last 7 days: %s", number_format($week)));
 
         } catch (\Exception $e) {
@@ -56,6 +58,4 @@ class AuditStatsCommand extends Command
         $output->writeln(str_repeat('-', 60));
         return Command::SUCCESS;
     }
-
-
 }

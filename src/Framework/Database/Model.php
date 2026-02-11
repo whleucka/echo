@@ -386,6 +386,39 @@ abstract class Model implements ModelInterface
         return $model->count($column);
     }
 
+    /**
+     * Get the maximum value of a column
+     *
+     * @param string $column Column name
+     * @return mixed
+     */
+    public function max(string $column): mixed
+    {
+        $result = $this->qb
+            ->select(["MAX($column) as aggregate"])
+            ->from($this->tableName)
+            ->where($this->where)
+            ->orWhere($this->orWhere)
+            ->params($this->params)
+            ->execute()
+            ->fetch(PDO::FETCH_ASSOC);
+
+        return $result['aggregate'] ?? null;
+    }
+
+    /**
+     * Static max with no conditions
+     *
+     * @param string $column Column name
+     * @return mixed
+     */
+    public static function maxAll(string $column): mixed
+    {
+        $class = get_called_class();
+        $model = new $class();
+        return $model->max($column);
+    }
+
     public function last(): ?static
     {
         $results = $this->qb

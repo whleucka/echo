@@ -2,6 +2,7 @@
 
 namespace Echo\Framework\Console\Commands;
 
+use App\Models\Migration;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -29,40 +30,53 @@ trait MigrateTrait
 
     private function getNextBatchNumber(): int
     {
-        $result = db()->fetch("SELECT MAX(batch) as max_batch FROM migrations");
-        return ($result['max_batch'] ?? 0) + 1;
+        $maxBatch = Migration::maxAll('batch');
+        return ($maxBatch ?? 0) + 1;
     }
 
     private function getLastBatchNumber(): int
     {
-        $result = db()->fetch("SELECT MAX(batch) as max_batch FROM migrations");
-        return $result['max_batch'] ?? 0;
+        return Migration::maxAll('batch') ?? 0;
     }
 
     private function getMigrationsFromBatch(int $batch): array
     {
-        return db()->fetchAll("SELECT * FROM migrations WHERE batch = ? ORDER BY id DESC", [$batch]);
+        $result = Migration::where('batch', (string)$batch)
+            ->orderBy('id', 'DESC')
+            ->get();
+
+        if (is_null($result)) {
+            return [];
+        }
+
+        $migrations = is_array($result) ? $result : [$result];
+
+        // Convert to array format for compatibility
+        return array_map(fn(Migration $m) => $m->getAttributes(), $migrations);
     }
 
     private function insertMigration(string $filePath, int $batch = 1): void
     {
-        $basename = basename($filePath);
-        db()->execute("INSERT INTO migrations (filepath, basename, hash, batch) VALUES (?, ?, ?, ?)", [
-            $filePath,
-            $basename,
-            md5($filePath),
-            $batch,
+        Migration::create([
+            'filepath' => $filePath,
+            'basename' => basename($filePath),
+            'hash' => md5($filePath),
+            'batch' => $batch,
         ]);
     }
 
     private function deleteMigration(string $filePath): void
     {
-        db()->execute("DELETE FROM migrations WHERE hash = ?", [md5($filePath)]);
+        $migration = Migration::where('hash', md5($filePath))->first();
+        if ($migration) {
+            $migration->delete();
+        }
     }
 
     private function migrationHashExists(string $hash): ?array
     {
-        return db()->fetch("SELECT * FROM migrations WHERE hash = ?", [$hash]) ?: null;
+        $migration = Migration::where('hash', $hash)->first();
+        return $migration ? $migration->getAttributes() : null;
     }
 
     private function getMigrationFiles(string $directory): array
