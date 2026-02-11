@@ -2,6 +2,7 @@
 
 namespace Echo\Framework\Console\Commands;
 
+use App\Models\User;
 use App\Services\Auth\AuthService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -26,7 +27,7 @@ class AdminNewCommand extends Command
         $password = $input->getArgument('password');
 
         // Check for existing user
-        $user = db()->fetch("SELECT * FROM users WHERE email = ?", [$email]);
+        $user = User::where("email" , $email)->get();
         
         if ($user) {
             $output->writeln('<error>This admin user already exists</error>');
@@ -34,12 +35,18 @@ class AdminNewCommand extends Command
         }
 
         $hashed_password = $service->hashPassword($password);
+        $admin_user = User::insert([[
+            "first_name" => "Admin",
+            "role" => "admin",
+            "surname" => '',
+            "email" => $email,
+            "password" => $hashed_password
+        ]]);
 
-        db()->execute("INSERT INTO users SET first_name='Administrator', 
-            surname = '', role='admin', email=?, password=?", [
-            $email,
-            $hashed_password
-        ]);
+        if (!$admin_user) {
+            $output->writeln('<error>Couldn not create admin!</error>');
+            return Command::FAILURE;
+        }
 
         $output->writeln("<info>✓ Successfully created admin user: $email</info>");
         return Command::SUCCESS;
