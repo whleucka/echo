@@ -225,7 +225,7 @@ docker-compose exec -it php ./bin/console <command>
 | `db:` | `backup`, `restore`, `list`, `cleanup` |
 | `mail:` | `queue`, `status`, `purge` |
 | `make:` | `command`, `controller`, `middleware`, `migration`, `model`, `provider`, `service` |
-| `migrate:` | `run`, `rollback`, `status`, `create`, `fresh`, `up`, `down` |
+| `migrate:` | `run`, `rollback`, `status`, `fresh`, `up`, `down` |
 | `route:` | `list`, `cache`, `clear` |
 | `session:` | `stats`, `cleanup` |
 | Other | `version`, `key:generate`, `storage:fix`, `server` |
