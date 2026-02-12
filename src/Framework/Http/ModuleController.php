@@ -392,6 +392,7 @@ abstract class ModuleController extends Controller
             "pagination" => [
                 "page" => $result->page,
                 "perPage" => $result->perPage,
+                "perPageOptions" => $result->perPageOptions,
                 "totalPages" => $result->totalPages,
                 "totalRows" => $result->totalRows,
                 "links" => $this->tableSchema->pagination->paginationLinks,
@@ -407,6 +408,7 @@ abstract class ModuleController extends Controller
             schema: $this->tableSchema,
             page: $this->state->getPage(),
             perPage: $this->state->getPerPage($this->tableSchema->pagination->perPage),
+            perPageOptions: $this->tableSchema->pagination->perPageOptions,
             orderBy: $this->state->getOrderBy($this->tableSchema->defaultOrderBy),
             sort: $this->state->getSort($this->tableSchema->defaultSort),
             whereConditions: $where,

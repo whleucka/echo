@@ -40,10 +40,20 @@ function console(): Application
 
 function user(): ?User
 {
+    static $cached = null;
+    static $cachedUuid = null;
+
     $uuid = session()->get("user_uuid");
-    return $uuid
-        ? User::where("uuid", $uuid)->first()
-        : null;
+    if (!$uuid) {
+        return null;
+    }
+
+    if ($cached === null || $cachedUuid !== $uuid) {
+        $cachedUuid = $uuid;
+        $cached = User::where("uuid", $uuid)->first();
+    }
+
+    return $cached;
 }
 
 /**

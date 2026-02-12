@@ -113,7 +113,7 @@
           hx-select="#module"
           hx-swap="outerHTML"
           onchange="htmx.ajax('GET', '/admin/{{ module.link }}/per-page/' + this.value, {target: '#module', select: '#module', swap: 'outerHTML'})">
-          {% for opt in [10, 25, 50, 100] %}
+          {% for opt in pagination.perPageOptions %}
             <option value="{{ opt }}" {% if pagination.perPage == opt %}selected{% endif %}>{{ opt }}</option>
           {% endfor %}
         </select>

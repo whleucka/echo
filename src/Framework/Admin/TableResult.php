@@ -9,6 +9,7 @@ final class TableResult
         public readonly int $totalRows,
         public readonly int $page,
         public readonly int $perPage,
+        public readonly array $perPageOptions,
         public readonly int $totalPages,
     ) {}
 }

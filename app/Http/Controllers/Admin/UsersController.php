@@ -15,8 +15,7 @@ class UsersController extends ModuleController
 
     protected function defineTable(TableSchemaBuilder $builder): void
     {
-        $builder->defaultSort('id', 'DESC')
-                ->perPage(10);
+        $builder->defaultSort('id', 'DESC');
 
         $builder->column('id', 'ID')->sortable();
         $builder->column('uuid', 'UUID');

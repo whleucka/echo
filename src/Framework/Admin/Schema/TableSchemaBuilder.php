@@ -15,7 +15,8 @@ class TableSchemaBuilder
     private string $defaultOrderBy = 'id';
     private string $defaultSort = 'DESC';
     private string $dateColumn = 'created_at';
-    private int $perPage = 10;
+    private int $perPage = 15;
+    private array $perPageOptions = [15, 25, 50, 75, 100, 500, 1000];
 
     public function __construct(private ?string $table = null) {}
 
@@ -162,7 +163,7 @@ class TableSchemaBuilder
             defaultOrderBy: $this->defaultOrderBy,
             defaultSort: $this->defaultSort,
             dateColumn: $this->dateColumn,
-            pagination: new PaginationConfig(perPage: $this->perPage),
+            pagination: new PaginationConfig(perPage: $this->perPage, perPageOptions: $this->perPageOptions),
         );
     }
 }

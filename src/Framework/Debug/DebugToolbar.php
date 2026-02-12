@@ -500,18 +500,11 @@ class DebugToolbar
 
     // Clear history button
     document.getElementById('echo-debug-clear-history').addEventListener('click', function() {
-        const initial = requests.find(r => r.isInitial);
-        requests = initial ? [initial] : [];
+        requests = [];
         profileCache = {};
-        if (initial && profileCache[initial.id]) {
-            profileCache[initial.id] = initialProfile;
-        }
-        selectedRequest = requests[0] || null;
+        selectedRequest = null;
         renderRequestList();
-        if (selectedRequest) {
-            updateToolbarStats(selectedRequest);
-            loadAndDisplayProfile(selectedRequest.id);
-        }
+        document.getElementById('echo-debug-request-count').textContent = '0';
     });
 
     // Listen for HTMX requests

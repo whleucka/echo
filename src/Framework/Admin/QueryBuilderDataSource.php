@@ -11,6 +11,7 @@ class QueryBuilderDataSource implements TableDataSource
         TableSchema $schema,
         int $page,
         int $perPage,
+        array $perPageOptions,
         string $orderBy,
         string $sort,
         array $whereConditions,
@@ -44,6 +45,7 @@ class QueryBuilderDataSource implements TableDataSource
             totalRows: $totalRows,
             page: $page,
             perPage: $perPage,
+            perPageOptions: $perPageOptions,
             totalPages: $totalRows > 0 ? (int) ceil($totalRows / $perPage) : 1,
         );
     }

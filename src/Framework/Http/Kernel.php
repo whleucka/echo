@@ -2,7 +2,6 @@
 
 namespace Echo\Framework\Http;
 
-use App\Models\User;
 use chillerlan\QRCode\QRCode;
 use Echo\Framework\Http\Exception\HttpException;
 use Echo\Framework\Http\Response as HttpResponse;
@@ -62,9 +61,8 @@ class Kernel implements KernelInterface
             $controller->setRequest($request);
 
             // Set the application user
-            $uuid = session()->get("user_uuid");
-            if ($uuid) {
-                $user = User::where("uuid", $uuid)->first();
+            $user = user();
+            if ($user) {
                 $controller->setUser($user);
             }
 

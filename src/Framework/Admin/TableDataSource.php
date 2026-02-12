@@ -21,6 +21,7 @@ interface TableDataSource
         TableSchema $schema,
         int $page,
         int $perPage,
+        array $perPageOptions,
         string $orderBy,
         string $sort,
         array $whereConditions,
