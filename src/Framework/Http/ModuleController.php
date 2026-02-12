@@ -5,7 +5,7 @@ namespace Echo\Framework\Http;
 use App\Models\FileInfo;
 use App\Services\Admin\SidebarService;
 use Echo\Framework\Admin\{ModuleState, QueryBuilderDataSource, TableDataSource, TableResult};
-use Echo\Framework\Admin\Schema\{ColumnDefinition, FieldDefinition, FormSchema, FormSchemaBuilder, TableSchema, TableSchemaBuilder};
+use Echo\Framework\Admin\Schema\{ColumnDefinition, FieldDefinition, FormSchema, FormSchemaBuilder, RowActionDefinition, TableSchema, TableSchemaBuilder, ToolbarActionDefinition};
 use Echo\Framework\Audit\AuditLogger;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
@@ -29,13 +29,6 @@ abstract class ModuleController extends Controller
     protected string $moduleIcon = "";
     protected string $moduleLink = "";
     protected string $moduleTitle = "";
-
-    // --- Permissions ---
-    protected bool $hasEdit = true;
-    protected bool $hasCreate = true;
-    protected bool $hasDelete = true;
-    protected bool $hasExport = true;
-    protected bool $hasShow = true;
 
     /**
      * Subclasses define their table schema here.
@@ -333,13 +326,28 @@ abstract class ModuleController extends Controller
             $headers[$col->name] = $col->label;
         }
 
-        // Build table actions
+        // Build bulk actions from schema
         $tableActions = [];
         foreach ($this->tableSchema->actions as $action) {
             $tableActions[] = ['value' => $action->name, 'label' => $action->label];
         }
-        if ($this->hasDelete) {
-            $tableActions[] = ['value' => 'delete', 'label' => 'Delete'];
+
+        // Build filtered row actions (respecting requiresForm)
+        $rowActions = [];
+        foreach ($this->tableSchema->rowActions as $action) {
+            if ($action->requiresForm && empty($this->formSchema->fields)) {
+                continue;
+            }
+            $rowActions[] = $action;
+        }
+
+        // Build filtered toolbar actions (respecting requiresForm + permissions)
+        $toolbarActions = [];
+        foreach ($this->tableSchema->toolbarActions as $action) {
+            if ($action->requiresForm && empty($this->formSchema->fields)) {
+                continue;
+            }
+            $toolbarActions[] = $action;
         }
 
         // Register Twig functions
@@ -357,9 +365,8 @@ abstract class ModuleController extends Controller
         return $this->render("admin/table.html.twig", [
             ...$this->getCommonData(),
             "headers" => $headers,
-            "hasDelete" => $this->hasDelete,
-            "hasEdit" => $this->hasEdit,
-            "hasCreate" => $this->hasCreate,
+            "rowActions" => $rowActions,
+            "toolbarActions" => $toolbarActions,
             "tableActions" => $tableActions,
             "orderBy" => $orderByColumnName,
             "filters" => [
@@ -654,12 +661,10 @@ abstract class ModuleController extends Controller
     private function registerFunctions(bool $forceReadonly = false): void
     {
         $twig = twig();
-        $twig->addFunction(new TwigFunction("hasExport", fn() => $this->hasExport()));
-        $twig->addFunction(new TwigFunction("hasCreate", fn() => $this->hasCreate()));
-        $twig->addFunction(new TwigFunction("hasEdit", fn(int $id) => $this->hasEdit($id)));
         $twig->addFunction(new TwigFunction("hasShow", fn(int $id) => $this->hasShow($id)));
+        $twig->addFunction(new TwigFunction("hasEdit", fn(int $id) => $this->hasEdit($id)));
         $twig->addFunction(new TwigFunction("hasDelete", fn(int $id) => $this->hasDelete($id)));
-        $twig->addFunction(new TwigFunction("hasRowActions", fn() => $this->hasShow || $this->hasEdit || $this->hasDelete));
+        $twig->addFunction(new TwigFunction("isToolbarActionAllowed", fn(string $name) => $this->isToolbarActionAllowed($name)));
         $twig->addFunction(new TwigFunction("control", fn(string $column, ?string $value) => $this->control($column, $value, $forceReadonly)));
         $twig->addFunction(new TwigFunction("format", fn(string $column, ?string $value) => $this->formatValue($column, $value)));
     }
@@ -1008,7 +1013,7 @@ abstract class ModuleController extends Controller
 
         // Write headers from schema columns
         $headers = array_map(fn(ColumnDefinition $col) => $col->label, $this->tableSchema->columns);
-        fputcsv($output_handle, $headers);
+        fputcsv($output_handle, $headers, escape: '');
 
         foreach ($rows as $row) {
             $row = $this->exportOverride($row);
@@ -1016,7 +1021,7 @@ abstract class ModuleController extends Controller
             foreach ($this->tableSchema->columns as $col) {
                 $ordered_row[] = $this->sanitizeCsvValue($row[$col->name] ?? '');
             }
-            fputcsv($output_handle, $ordered_row);
+            fputcsv($output_handle, $ordered_row, escape: '');
             flush();
         }
 
@@ -1063,29 +1068,65 @@ abstract class ModuleController extends Controller
         return true;
     }
 
+    /**
+     * Check if a row action is allowed for a given record.
+     */
+    protected function isActionAllowed(string $name, ?int $id = null): bool
+    {
+        $action = $this->tableSchema->getRowAction($name);
+        if (!$action) {
+            return false;
+        }
+        if ($action->requiresForm && empty($this->formSchema->fields)) {
+            return false;
+        }
+        if ($action->permission && !$this->checkPermission($action->permission)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Check if a toolbar action is allowed.
+     */
+    protected function isToolbarActionAllowed(string $name): bool
+    {
+        $action = $this->tableSchema->getToolbarAction($name);
+        if (!$action) {
+            return false;
+        }
+        if ($action->requiresForm && empty($this->formSchema->fields)) {
+            return false;
+        }
+        if ($action->permission && !$this->checkPermission($action->permission)) {
+            return false;
+        }
+        return true;
+    }
+
     protected function hasExport(): bool
     {
-        return $this->checkPermission('has_export') && $this->hasExport;
+        return $this->isToolbarActionAllowed('export');
     }
 
     protected function hasCreate(): bool
     {
-        return $this->checkPermission('has_create') && $this->hasCreate && !empty($this->formSchema->fields);
+        return $this->isToolbarActionAllowed('create');
     }
 
     protected function hasShow(int $id): bool
     {
-        return $this->hasShow && !empty($this->formSchema->fields);
+        return $this->isActionAllowed('show', $id);
     }
 
     protected function hasEdit(int $id): bool
     {
-        return $this->checkPermission('has_edit') && $this->hasEdit && !empty($this->formSchema->fields);
+        return $this->isActionAllowed('edit', $id);
     }
 
     protected function hasDelete(int $id): bool
     {
-        return $this->checkPermission('has_delete') && $this->hasDelete;
+        return $this->isActionAllowed('delete', $id);
     }
 
     // =========================================================================

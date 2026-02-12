@@ -36,6 +36,15 @@ class UserPermissionsController extends ModuleController
         $builder->filter('user', 'user_permissions.user_id')
                 ->label('User')
                 ->optionsFrom("SELECT id as value, CONCAT(first_name, ' ', surname) as label FROM users WHERE role != 'admin' ORDER BY label");
+
+        $builder->rowAction('show');
+        $builder->rowAction('edit');
+        $builder->rowAction('delete');
+
+        $builder->toolbarAction('create');
+        $builder->toolbarAction('export');
+
+        $builder->bulkAction('delete', 'Delete');
     }
 
     protected function defineForm(FormSchemaBuilder $builder): void

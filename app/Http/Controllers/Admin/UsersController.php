@@ -35,6 +35,15 @@ class UsersController extends ModuleController
                     ['value' => 'standard', 'label' => 'Standard'],
                     ['value' => 'admin', 'label' => 'Admin'],
                 ]);
+
+        $builder->rowAction('show');
+        $builder->rowAction('edit');
+        $builder->rowAction('delete');
+
+        $builder->toolbarAction('create');
+        $builder->toolbarAction('export');
+
+        $builder->bulkAction('delete', 'Delete');
     }
 
     protected function defineForm(FormSchemaBuilder $builder): void

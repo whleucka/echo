@@ -650,7 +650,7 @@ abstract class Model implements ModelInterface
      * @param array $records Array of associative arrays with column => value pairs
      * @return bool True on success
      */
-    public static function insert(array $records): bool
+    public static function createBulk(array $records): bool
     {
         if (empty($records)) {
             return false;

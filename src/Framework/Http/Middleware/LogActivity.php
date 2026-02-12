@@ -17,7 +17,7 @@ class LogActivity implements MiddlewareInterface
     {
         try {
             $user = user();
-            Activity::insert([[
+            Activity::createBulk([[
                 "user_id" => $user ? $user->id : null,
                 "uri" => $request->getUri(),
                 "ip" => ip2long($request->getClientIp())

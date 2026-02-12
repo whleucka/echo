@@ -35,13 +35,13 @@ class AdminNewCommand extends Command
         }
 
         $hashed_password = $service->hashPassword($password);
-        $admin_user = User::insert([[
+        $admin_user = User::create([
             "first_name" => "Admin",
             "role" => "admin",
             "surname" => '',
             "email" => $email,
             "password" => $hashed_password
-        ]]);
+        ]);
 
         if (!$admin_user) {
             $output->writeln('<error>Couldn not create admin!</error>');

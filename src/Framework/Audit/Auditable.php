@@ -9,7 +9,7 @@ use PDO;
  * Trait Auditable
  *
  * Add this trait to models that need audit logging.
- * It overrides create, save, update, and delete methods to log changes.
+ * It overrides create, save, update, delete, and createBulk methods to log changes.
  */
 trait Auditable
 {
@@ -18,34 +18,17 @@ trait Auditable
      */
     public static function create(array $data): static|bool
     {
-        $class = get_called_class();
-        $model = new $class();
-        $qb = new QueryBuilder();
+        $result = parent::create($data);
 
-        $result = $qb
-            ->insert($data)
-            ->into($model->tableName)
-            ->params(array_values($data))
-            ->execute();
-
-        if ($result && $model->autoIncrement) {
-            $id = db()->lastInsertId();
-            $newModel = self::find($id);
-
-            if ($newModel) {
-                AuditLogger::logCreated(
-                    $model->tableName,
-                    $id,
-                    $newModel->getAttributes()
-                );
-            }
-
-            return $newModel;
-        } elseif ($result && !$model->autoIncrement) {
-            return true;
+        if ($result instanceof static) {
+            AuditLogger::logCreated(
+                $result->tableName,
+                $result->id,
+                $result->getAttributes()
+            );
         }
 
-        return false;
+        return $result;
     }
 
     /**
@@ -53,29 +36,15 @@ trait Auditable
      */
     public function save(): static
     {
-        $key = $this->primaryKey;
         $oldAttributes = $this->getOldAttributes();
+        parent::save();
 
-        $params = [...array_values($this->attributes), $this->id];
-        $qb = new QueryBuilder();
-
-        $result = $qb
-            ->update($this->attributes)
-            ->table($this->tableName)
-            ->where(["$key = ?"])
-            ->params($params)
-            ->execute();
-
-        if ($result) {
-            $this->loadAttributesForAudit($this->id);
-
-            AuditLogger::logUpdated(
-                $this->tableName,
-                $this->id,
-                $oldAttributes,
-                $this->getAttributes()
-            );
-        }
+        AuditLogger::logUpdated(
+            $this->tableName,
+            $this->id,
+            $oldAttributes,
+            $this->getAttributes()
+        );
 
         return $this;
     }
@@ -85,29 +54,15 @@ trait Auditable
      */
     public function update(array $data): static
     {
-        $key = $this->primaryKey;
         $oldAttributes = $this->getAttributes();
+        parent::update($data);
 
-        $params = [...array_values($data), $this->id];
-        $qb = new QueryBuilder();
-
-        $result = $qb
-            ->update($data)
-            ->table($this->tableName)
-            ->where(["$key = ?"])
-            ->params($params)
-            ->execute();
-
-        if ($result) {
-            $this->loadAttributesForAudit($this->id);
-
-            AuditLogger::logUpdated(
-                $this->tableName,
-                $this->id,
-                $oldAttributes,
-                $this->getAttributes()
-            );
-        }
+        AuditLogger::logUpdated(
+            $this->tableName,
+            $this->id,
+            $oldAttributes,
+            $this->getAttributes()
+        );
 
         return $this;
     }
@@ -117,15 +72,8 @@ trait Auditable
      */
     public function delete(): bool
     {
-        $key = $this->primaryKey;
         $oldAttributes = $this->getAttributes();
-        $qb = new QueryBuilder();
-
-        $result = $qb
-            ->delete()
-            ->from($this->tableName)
-            ->where(["$key = ?"], $this->id)
-            ->execute();
+        $result = parent::delete();
 
         if ($result) {
             AuditLogger::logDeleted(
@@ -135,11 +83,44 @@ trait Auditable
             );
         }
 
-        return (bool) $result;
+        return $result;
     }
 
     /**
-     * Get old attributes before update (for save method)
+     * Bulk insert multiple records with audit logging
+     */
+    public static function createBulk(array $records): bool
+    {
+        $result = parent::createBulk($records);
+
+        if ($result && !empty($records)) {
+            $model = new static();
+
+            if ($model->autoIncrement) {
+                $firstId = (int) db()->lastInsertId();
+                foreach ($records as $i => $record) {
+                    AuditLogger::logCreated(
+                        $model->tableName,
+                        $firstId + $i,
+                        $record
+                    );
+                }
+            } else {
+                foreach ($records as $record) {
+                    AuditLogger::logCreated(
+                        $model->tableName,
+                        $record[$model->primaryKey] ?? 0,
+                        $record
+                    );
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get old attributes from DB before save (in-memory attrs are already dirty)
      */
     private function getOldAttributes(): array
     {
@@ -154,25 +135,5 @@ trait Auditable
             ->fetch(PDO::FETCH_ASSOC);
 
         return $result ?: [];
-    }
-
-    /**
-     * Load attributes for audit (after save/update)
-     */
-    private function loadAttributesForAudit(string $id): void
-    {
-        $key = $this->primaryKey;
-        $qb = new QueryBuilder();
-
-        $result = $qb
-            ->select($this->columns)
-            ->from($this->tableName)
-            ->where(["$key = ?"], $id)
-            ->execute()
-            ->fetch(PDO::FETCH_ASSOC);
-
-        if ($result) {
-            $this->attributes = $result;
-        }
     }
 }

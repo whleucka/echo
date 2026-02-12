@@ -6,18 +6,22 @@
   <div id="table-actions" class="p-2 d-flex align-items-center flex-wrap">
     <form class="d-flex align-items-center flex-wrap">
       {{ csrf()|raw }}
-      {% if hasCreate() %}
-        <button class="btn btn-sm btn-success me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/create" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi bi-plus-square pe-1"></i> New</button>
-      {% endif %}
+      {% for action in toolbarActions %}
+        {% if action.name == 'create' and isToolbarActionAllowed('create') %}
+          <button class="btn btn-sm btn-success me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/create" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi {{ action.icon }} pe-1"></i> {{ action.label }}</button>
+        {% endif %}
+      {% endfor %}
       {% for link in filters.filterLinks.links %}
         <button hx-get="/admin/{{ module.link }}/filter/link/{{ loop.index0 }}" hx-swap="outerHTML" hx-target="#table" hx-select="#table" class="btn btn-primary btn-sm text-light filter-link {% if filters.filterLinks.active == loop.index0 %}active{% endif %} me-2">
           <i class="bi bi-filter-circle me-1"></i> {{ link }} <span class="link-count badge bg-light text-dark ms-2">--</span>
         </button>
         <span hx-get="/admin/{{ module.link }}/filter/count/{{ loop.index0 }}" hx-trigger="load" hx-swap="textContent" hx-target="previous .link-count"></span>
       {% endfor %}
-      {% if hasExport() and data.rows %}
-        <a href="/admin/{{ module.link }}/export-csv" class="btn btn-sm btn-primary me-2"><i class="bi bi-download pe-1"></i> Export</a>
-      {% endif %}
+      {% for action in toolbarActions %}
+        {% if action.name == 'export' and isToolbarActionAllowed('export') and data.rows %}
+          <a href="/admin/{{ module.link }}/export-csv" class="btn btn-sm btn-primary me-2"><i class="bi {{ action.icon }} pe-1"></i> {{ action.label }}</a>
+        {% endif %}
+      {% endfor %}
       {% if filters.show %}
         <button class="btn btn-sm btn-primary me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/filter" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi bi-funnel pe-1"></i> Filter</button>
       {% endif %}
@@ -53,7 +57,7 @@
             {% for column,title in headers %}
             <th hx-get="/admin/{{ module.link }}/sort/{{ loop.index0 }}" hx-target="#table" hx-select="#table" hx-swap="outerHTML" class="pointer {% if column == filters.orderBy %}active {% if filters.sort == 'ASC' %}asc{% else %}desc{% endif %}{% endif %}" nowrap>{{ title }}</th>
             {% endfor %}
-            {% if hasRowActions() %}
+            {% if rowActions|length > 0 %}
             <th class="text-end">Actions</th>
             {% endif %}
           </tr>
@@ -69,18 +73,18 @@
             {% for key,value in row %}
               <td>{{ format(key, value)|raw }}</td>
             {% endfor %}
-            {% if hasRowActions() %}
+            {% if rowActions|length > 0 %}
               <td id="row-actions">
                 <div class="d-flex justify-content-end">
-                  {% if hasShow(row.id) %}
-                    <button class="btn btn-sm" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/{{ row.id }}" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi bi-eye"></i></button>
-                  {% endif %}
-                  {% if hasEdit(row.id) %}
-                    <button class="btn btn-sm ms-1" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/{{ row.id }}/edit" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi bi-pencil"></i></button>
-                  {% endif %}
-                  {% if hasDelete(row.id) %}
-                    <button class="btn btn-sm ms-1" hx-confirm="Please confirm deletion" hx-post="/admin/{{ module.link }}/{{ row.id }}/destroy"><i class="bi bi-trash"></i></button>
-                  {% endif %}
+                  {% for action in rowActions %}
+                    {% if action.name == 'show' and hasShow(row.id) %}
+                      <button class="btn btn-sm" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/{{ row.id }}" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi {{ action.icon }}"></i></button>
+                    {% elseif action.name == 'edit' and hasEdit(row.id) %}
+                      <button class="btn btn-sm ms-1" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/{{ row.id }}/edit" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi {{ action.icon }}"></i></button>
+                    {% elseif action.name == 'delete' and hasDelete(row.id) %}
+                      <button class="btn btn-sm ms-1" hx-confirm="{{ action.confirm }}" hx-post="/admin/{{ module.link }}/{{ row.id }}/destroy"><i class="bi {{ action.icon }}"></i></button>
+                    {% endif %}
+                  {% endfor %}
                 </div>
               </td>
             {% endif %}

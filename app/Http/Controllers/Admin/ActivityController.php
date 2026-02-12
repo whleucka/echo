@@ -10,9 +10,6 @@ use Echo\Framework\Routing\Group;
 class ActivityController extends ModuleController
 {
     protected string $tableName = "activity";
-    protected bool $hasCreate = false;
-    protected bool $hasEdit = false;
-    protected bool $hasDelete = false;
 
     protected function defineTable(TableSchemaBuilder $builder): void
     {
@@ -33,5 +30,7 @@ class ActivityController extends ModuleController
         $builder->filterLink('Frontend', "LEFT(activity.uri, 6) != '/admin' AND LEFT(activity.uri, 7) != '/_debug'");
         $builder->filterLink('Backend', "LEFT(activity.uri, 6) = '/admin' AND LEFT(activity.uri, 7) != '/_debug'");
         $builder->filterLink('Me', "user_id = " . user()->id . " AND LEFT(activity.uri, 7) != '/_debug'");
+
+        $builder->toolbarAction('export');
     }
 }

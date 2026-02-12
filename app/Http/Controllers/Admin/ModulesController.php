@@ -25,6 +25,15 @@ class ModulesController extends ModuleController
 
         $builder->filterLink('Parents', 'parent_id IS NULL');
         $builder->filterLink('Children', 'parent_id IS NOT NULL');
+
+        $builder->rowAction('show');
+        $builder->rowAction('edit');
+        $builder->rowAction('delete');
+
+        $builder->toolbarAction('create');
+        $builder->toolbarAction('export');
+
+        $builder->bulkAction('delete', 'Delete');
     }
 
     protected function defineForm(FormSchemaBuilder $builder): void

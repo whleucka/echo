@@ -12,9 +12,6 @@ use Echo\Framework\Routing\Route\Get;
 class AuditController extends ModuleController
 {
     protected string $tableName = "audits";
-    protected bool $hasCreate = false;
-    protected bool $hasEdit = false;
-    protected bool $hasDelete = false;
 
     protected function defineTable(TableSchemaBuilder $builder): void
     {
@@ -51,6 +48,9 @@ class AuditController extends ModuleController
         $builder->filterLink('Created', "audits.event = 'created'");
         $builder->filterLink('Updated', "audits.event = 'updated'");
         $builder->filterLink('Deleted', "audits.event = 'deleted'");
+
+        $builder->rowAction('show')->requiresForm(false);
+        $builder->toolbarAction('export');
     }
 
     /**
@@ -111,11 +111,6 @@ class AuditController extends ModuleController
             $badgeClass,
             ucfirst($event ?? 'unknown')
         );
-    }
-
-    protected function hasShow(int $id): bool
-    {
-        return true;
     }
 
     #[Get("/modal/{id}", "show")]

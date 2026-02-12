@@ -9,6 +9,8 @@ class TableSchemaBuilder
     private array $filters = [];
     private array $filterLinks = [];
     private array $actions = [];
+    private array $rowActions = [];
+    private array $toolbarActions = [];
     private array $joins = [];
     private string $defaultOrderBy = 'id';
     private string $defaultSort = 'DESC';
@@ -87,6 +89,36 @@ class TableSchemaBuilder
         return $this;
     }
 
+    /**
+     * Define a row action (show, edit, delete, or custom).
+     *
+     * Usage:
+     *   $builder->rowAction('show')
+     *   $builder->rowAction('edit')
+     *   $builder->rowAction('delete')
+     *   $builder->rowAction('show')->requiresForm(false)
+     */
+    public function rowAction(string $name): RowActionBuilder
+    {
+        $actionBuilder = new RowActionBuilder($name);
+        $this->rowActions[] = $actionBuilder;
+        return $actionBuilder;
+    }
+
+    /**
+     * Define a toolbar action (create, export, or custom).
+     *
+     * Usage:
+     *   $builder->toolbarAction('create')
+     *   $builder->toolbarAction('export')
+     */
+    public function toolbarAction(string $name): ToolbarActionBuilder
+    {
+        $actionBuilder = new ToolbarActionBuilder($name);
+        $this->toolbarActions[] = $actionBuilder;
+        return $actionBuilder;
+    }
+
     public function defaultSort(string $column, string $direction = 'DESC'): self
     {
         $this->defaultOrderBy = $column;
@@ -124,6 +156,8 @@ class TableSchemaBuilder
                 fn(array $a) => new ActionDefinition($a['name'], $a['label']),
                 $this->actions
             ),
+            rowActions: array_map(fn(RowActionBuilder $a) => $a->build(), $this->rowActions),
+            toolbarActions: array_map(fn(ToolbarActionBuilder $a) => $a->build(), $this->toolbarActions),
             joins: $this->joins,
             defaultOrderBy: $this->defaultOrderBy,
             defaultSort: $this->defaultSort,
