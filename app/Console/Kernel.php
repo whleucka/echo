@@ -21,6 +21,9 @@ class Kernel extends ConsoleKernel
         // Storage
         Commands\StorageFixCommand::class,
         
+        // Cache
+        Commands\CacheClearCommand::class,
+
         // Routes
         Commands\RouteCacheCommand::class,
         Commands\RouteClearCommand::class,

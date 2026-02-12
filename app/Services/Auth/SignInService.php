@@ -11,8 +11,9 @@ class SignInService
         $log = logger()->channel('auth');
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $user = User::where("email", $email_address)->first();
+        $service = container()->get(AuthService::class);
 
-        if ($user && password_verify($password, $user->password)) {
+        if ($user && $service->verifyPassword($password, $user->password)) {
             session()->regenerate();
             session()->set("user_uuid", $user->uuid);
             $log->info('Login successful', [

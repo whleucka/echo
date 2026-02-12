@@ -1,0 +1,34 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ parent() }} - Forgot Password{% endblock %}
+
+{% block content %}
+    <style>
+    html, body {
+        height: 100%;
+    }
+    #forgot-password form {
+        max-width: 360px;
+    }
+    </style>
+    <section id="forgot-password" class="container d-flex justify-content-center align-items-center h-100">
+        <form class="bg-light rounded shadow p-4" method="POST" hx-post="{{ uri('auth.forgot-password.post') }}" hx-swap="outerHTML" hx-target="#forgot-password" hx-select="#forgot-password">
+            {{ csrf()|raw }}
+            <h1>Forgot Password</h1>
+            <p>Enter your email address and we'll send you a link to reset your password.</p>
+            <hr>
+            {% include "components/flash.html.twig" %}
+            <div class="form-floating mb-3">
+                <input type="input" class="form-control {% if validationErrors.email is defined %}is-invalid{% endif %}" id="email" name="email" placeholder="" autocomplete="email">
+                <label for="email">Email address</label>
+                {% include 'components/validation.html.twig' with {'validate': 'email'} %}
+            </div>
+            <div class="d-grid gap-2 mb-3">
+                <button type="submit" class="btn btn-primary">Send Reset Link</button>
+            </div>
+            <div class="d-flex mt-4 justify-content-center">
+                <p><a hx-boost="true" href="{{ uri('auth.sign-in.index') }}" hx-swap="outerHTML" hx-select="#sign-in" hx-target="#forgot-password">Back to Sign In</a></p>
+            </div>
+        </form>
+    </section>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ parent() }} - Reset Password{% endblock %}
+
+{% block content %}
+    <style>
+    html, body {
+        height: 100%;
+    }
+    #password-reset form {
+        max-width: 360px;
+    }
+    </style>
+    <section id="password-reset" class="container d-flex justify-content-center align-items-center h-100">
+        <form class="bg-light rounded shadow p-4" method="POST" hx-post="{{ uri('auth.password-reset.post') }}" hx-swap="outerHTML" hx-target="#password-reset" hx-select="#password-reset">
+            {{ csrf()|raw }}
+            <input type="hidden" name="token" value="{{ token }}">
+            <input type="hidden" name="email" value="{{ email }}">
+            <h1>Reset Password</h1>
+            <p>Enter your new password below.</p>
+            <hr>
+            {% include "components/flash.html.twig" %}
+            <div class="form-floating mb-3">
+                <input type="password" class="form-control {% if validationErrors.password is defined %}is-invalid{% endif %}" id="password" name="password" placeholder="" autocomplete="new-password">
+                <label for="password">New password</label>
+                {% include 'components/validation.html.twig' with {'validate': 'password'} %}
+            </div>
+            <div class="form-floating mb-3">
+                <input type="password" class="form-control {% if validationErrors.password_match is defined %}is-invalid{% endif %}" id="password-match" name="password_match" placeholder="" autocomplete="new-password">
+                <label for="password-match">Confirm password</label>
+                {% include 'components/validation.html.twig' with {'validate': 'password_match'} %}
+            </div>
+            <div class="d-grid gap-2 mb-3">
+                <button type="submit" class="btn btn-primary">Reset Password</button>
+            </div>
+            <div class="d-flex mt-4 justify-content-center">
+                <p><a hx-boost="true" href="{{ uri('auth.sign-in.index') }}" hx-swap="outerHTML" hx-select="#sign-in" hx-target="#password-reset">Back to Sign In</a></p>
+            </div>
+        </form>
+    </section>
+{% endblock %}

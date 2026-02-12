@@ -28,6 +28,9 @@
                 <label for="password">Password</label>
                  {% include 'components/validation.html.twig' with {'validate': 'password'} %}
             </div>
+            <div class="d-flex justify-content-end mb-3">
+                <a hx-boost="true" href="{{ uri('auth.forgot-password.index') }}" hx-swap="outerHTML" hx-select="#forgot-password" hx-target="#sign-in" class="small">Forgot password?</a>
+            </div>
             <div class="d-grid gap-2 mb-3">
                 <button type="submit" class="btn btn-primary">Log in</button>
             </div>

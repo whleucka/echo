@@ -18,6 +18,8 @@ return new class implements MigrationInterface
             $table->varchar("email");
             $table->varchar("role");
             $table->binary("password", 96);
+            $table->varchar("reset_token", 64)->nullable();
+            $table->timestamp("reset_expires_at")->nullable();
             $table->timestamps();
             $table->unique("email");
             $table->primaryKey("id");
