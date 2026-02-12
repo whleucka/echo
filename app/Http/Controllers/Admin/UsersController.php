@@ -73,7 +73,7 @@ class UsersController extends ModuleController
 
         $builder->field('password', 'Password', "'' as password")
                 ->password()
-                ->rules(['required', 'min_length:10', 'regex:^(?=.*[A-Z])(?=.*\W)(?=.*\d).+$']);
+                ->rules(['required', 'min_length:4']);
 
         $builder->field('password_match', 'Password (again)', "'' as password_match")
                 ->password()
