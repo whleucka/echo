@@ -228,7 +228,7 @@ docker-compose exec -it php ./bin/console <command>
 | `migrate:` | `run`, `rollback`, `status`, `fresh`, `up`, `down` |
 | `route:` | `list`, `cache`, `clear` |
 | `session:` | `stats`, `cleanup` |
-| Other | `version`, `key:generate`, `storage:fix`, `server` |
+| Other | `version`, `key:generate`, `storage:fix`, `cache:clear`, `server` |
 
 ## Project Structure
 
