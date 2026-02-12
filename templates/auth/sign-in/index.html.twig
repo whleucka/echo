@@ -8,35 +8,43 @@
         height: 100%;
     }
     #sign-in form {
-        max-width: 360px;
+        max-width: 380px;
+        width: 100%;
+    }
+    #sign-in h4 {
+        font-weight: 700;
+    }
+    #sign-in .auth-subtext {
+        color: #6c757d;
+        font-size: 0.9rem;
     }
     </style>
     <section id="sign-in" class="container d-flex justify-content-center align-items-center h-100">
-        <form class="bg-light rounded shadow p-4" method="POST" hx-post="{{ uri('auth.sign-in.post') }}" hx-swap="outerHTML" hx-target="#sign-in" hx-select="#sign-in">
+        <form class="bg-light rounded shadow-sm p-4 pt-5 pb-4" method="POST" hx-post="{{ uri('auth.sign-in.post') }}" hx-swap="outerHTML" hx-target="#sign-in" hx-select="#sign-in">
             {{ csrf()|raw }}
-            <h1>Sign In</h1>
-            <p>Welcome back! Please sign in below.</p>
-            <hr>
+            <h4 class="mb-1">Sign In</h4>
+            <p class="auth-subtext mb-4">Welcome back! Please sign in below.</p>
             {% include "components/flash.html.twig" %}
             <div class="form-floating mb-3">
                 <input type="input" class="form-control {% if validationErrors.email is defined %}is-invalid{% endif %}" id="email" name="email" placeholder="" autocomplete="email">
                 <label for="email">Email address</label>
                  {% include 'components/validation.html.twig' with {'validate': 'email'} %}
             </div>
-            <div class="form-floating mb-3">
+            <div class="form-floating mb-2">
                 <input type="password" class="form-control {% if validationErrors.password is defined %}is-invalid{% endif %}" id="password" name="password" placeholder="" autocomplete="current-password">
                 <label for="password">Password</label>
                  {% include 'components/validation.html.twig' with {'validate': 'password'} %}
             </div>
             <div class="d-flex justify-content-end mb-3">
-                <a hx-boost="true" href="{{ uri('auth.forgot-password.index') }}" hx-swap="outerHTML" hx-select="#forgot-password" hx-target="#sign-in" class="small">Forgot password?</a>
+                <a href="{{ uri('auth.forgot-password.index') }}" class="small text-muted">Forgot password?</a>
             </div>
-            <div class="d-grid gap-2 mb-3">
+            <div class="d-grid mb-3">
                 <button type="submit" class="btn btn-primary">Log in</button>
             </div>
             {% if register_enabled %}
-            <div class="d-flex mt-4 justify-content-center">
-                <p><a hx-boost="true" href="{{ uri('auth.register.index') }}" hx-swap="outerHTML" hx-select="#register" hx-target="#sign-in">Create new account</a></p>
+            <div class="text-center mt-3">
+                <span class="text-muted small">Don't have an account?</span>
+                <a href="{{ uri('auth.register.index') }}" class="small">Create one</a>
             </div>
             {% endif %}
         </form>

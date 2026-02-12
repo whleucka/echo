@@ -8,15 +8,22 @@
         height: 100%;
     }
     #register form {
-        max-width: 520px;
+        max-width: 480px;
+        width: 100%;
+    }
+    #register h4 {
+        font-weight: 700;
+    }
+    #register .auth-subtext {
+        color: #6c757d;
+        font-size: 0.9rem;
     }
     </style>
     <section id="register" class="container d-flex justify-content-center align-items-center h-100">
-        <form class="bg-light rounded shadow p-4" method="POST" hx-post="{{ uri('auth.register.post') }}" hx-swap="outerHTML" hx-target="#register" hx-select="#register">
+        <form class="bg-light rounded shadow-sm p-4 pt-5 pb-4" method="POST" hx-post="{{ uri('auth.register.post') }}" hx-swap="outerHTML" hx-target="#register" hx-select="#register">
             {{ csrf()|raw }}
-            <h1>Create your account</h1>
-            <p>Let’s get you set up—just a few quick steps!</p>
-            <hr>
+            <h4 class="mb-1">Create Your Account</h4>
+            <p class="auth-subtext mb-4">Let's get you set up — just a few quick steps!</p>
             {% include "components/flash.html.twig" %}
             <div class="row">
                 <div class="col-6">
@@ -29,7 +36,7 @@
                 <div class="col-6">
                     <div class="form-floating mb-3">
                         <input type="input" value="{{ old('surname') }}" class="form-control {% if validationErrors.surname is defined %}is-invalid{% endif %}" id="surname" name="surname" placeholder="" autocomplete="family-name">
-                        <label for="first-name">Surname</label>
+                        <label for="surname">Surname</label>
                         {% include 'components/validation.html.twig' with {'validate': 'surname'} %}
                     </div>
                 </div>
@@ -40,21 +47,21 @@
                  {% include 'components/validation.html.twig' with {'validate': 'email'} %}
             </div>
             <div class="form-floating mb-3">
-                <input type="password" class="form-control {% if validationErrors.password is defined %}is-invalid{% endif %}" id="password" name="password" placeholder="" autocomplete="current-password">
+                <input type="password" class="form-control {% if validationErrors.password is defined %}is-invalid{% endif %}" id="password" name="password" placeholder="" autocomplete="new-password">
                 <label for="password">Password</label>
                  {% include 'components/validation.html.twig' with {'validate': 'password'} %}
             </div>
             <div class="form-floating mb-3">
-                <input type="password" class="form-control {% if validationErrors.password_match is defined %}is-invalid{% endif %}" id="password-match" name="password_match" placeholder="" autocomplete="current-password">
+                <input type="password" class="form-control {% if validationErrors.password_match is defined %}is-invalid{% endif %}" id="password-match" name="password_match" placeholder="" autocomplete="new-password">
                 <label for="password-match">Password (again)</label>
                  {% include 'components/validation.html.twig' with {'validate': 'password_match'} %}
             </div>
-            <div class="mb-3">
-                <p><small class="text-muted">By clicking Sign up, you agree to our <a href="{{ uri("tos.index") }}">Terms of Service</a> and <a href="{{ uri("privacy.index") }}">Privacy Policy</a>.</small></p>
-            </div>
-            <div class="d-flex mt-4 justify-content-center">
+            <div class="d-grid mb-3">
                 <button type="submit" class="btn btn-success">Sign up</button>
-                <a hx-boost="true" class="btn btn-secondary ms-2" href="{{ uri('auth.sign-in.index') }}" hx-swap="outerHTML" hx-select="#sign-in" hx-target="#register">Cancel</a>
+            </div>
+            <div class="text-center mt-3">
+                <span class="text-muted small">Already have an account?</span>
+                <a href="{{ uri('auth.sign-in.index') }}" class="small">Sign in</a>
             </div>
         </form>
     </section>
