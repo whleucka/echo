@@ -18,16 +18,10 @@ class Module extends Model
      */
     public function children(): array
     {
-        $result = Module::where('parent_id', $this->id)
+        return Module::where('parent_id', $this->id)
             ->andWhere('enabled', '1')
             ->orderBy('item_order')
-            ->get();
-
-        if (is_null($result)) {
-            return [];
-        }
-
-        return is_array($result) ? $result : [$result];
+            ->get() ?? [];
     }
 
     /**

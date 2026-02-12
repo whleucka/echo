@@ -31,8 +31,8 @@ class User extends Model
     {
         $permission = UserPermission::where("user_id", $this->id)
             ->andWhere("module_id", $module_id)
-            ->get();
-        return $permission ? true : false;
+            ->first();
+        return $permission !== null;
     }
 
     public function hasModePermission(int $module_id, string $mode): bool
@@ -40,8 +40,8 @@ class User extends Model
         $permission = UserPermission::where("user_id", $this->id)
             ->andWhere("module_id", $module_id)
             ->andWhere($mode, 1)
-            ->get();
-        return $permission ? true : false;
+            ->first();
+        return $permission !== null;
     }
 
     /**

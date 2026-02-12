@@ -82,10 +82,9 @@ abstract class Model implements ModelInterface
     public static function find(string $id): ?static
     {
         $class = get_called_class();
-        $model = new $class();
         try {
-            $result = new $model($id);
-            return $result;
+            $model = new $class($id);
+            return $model->id !== null ? $model : null;
         } catch (Exception) {
             return null;
         }
@@ -269,7 +268,7 @@ abstract class Model implements ModelInterface
         return $this;
     }
 
-    public function get(int $limit = 0): null|array|static
+    public function get(int $limit = 0): ?array
     {
         $results = $this->qb
             ->select($this->columns)
@@ -293,10 +292,6 @@ abstract class Model implements ModelInterface
         // Perform eager loading if specified
         if (!empty($this->eagerLoad)) {
             $this->loadRelations($models);
-        }
-
-        if (count($models) === 1) {
-            return $models[0];
         }
 
         return $models;
@@ -470,18 +465,29 @@ abstract class Model implements ModelInterface
 
     public function last(): ?static
     {
+        // Reverse each ORDER BY direction so LIMIT 1 gets the last row
+        $reversedOrder = array_map(function (string $clause): string {
+            if (str_ends_with($clause, ' ASC')) {
+                return substr($clause, 0, -4) . ' DESC';
+            } elseif (str_ends_with($clause, ' DESC')) {
+                return substr($clause, 0, -5) . ' ASC';
+            }
+            return $clause . ' DESC';
+        }, $this->orderBy);
+
         $results = $this->qb
             ->select($this->columns)
             ->from($this->tableName)
             ->where($this->where)
             ->orWhere($this->orWhere)
-            ->orderBy($this->orderBy)
+            ->orderBy($reversedOrder)
+            ->limit(1)
             ->params($this->params)
             ->execute()
             ->fetchAll(PDO::FETCH_OBJ);
 
         if ($results) {
-            return static::hydrate(end($results));
+            return static::hydrate($results[0]);
         }
         return null;
     }

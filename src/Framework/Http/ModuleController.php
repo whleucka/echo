@@ -29,6 +29,7 @@ abstract class ModuleController extends Controller
     protected string $moduleIcon = "";
     protected string $moduleLink = "";
     protected string $moduleTitle = "";
+    private array|false|null $cachedModule = null;
 
     /**
      * Subclasses define their table schema here.
@@ -1163,10 +1164,14 @@ abstract class ModuleController extends Controller
 
     private function getModule(): array|false
     {
+        if ($this->cachedModule !== null) {
+            return $this->cachedModule;
+        }
         $link = explode('.', request()->getAttribute("route")["name"])[0];
-        return db()->fetch("SELECT *
+        $this->cachedModule = db()->fetch("SELECT *
             FROM modules
             WHERE enabled = 1 AND link = ?", [$link]);
+        return $this->cachedModule;
     }
 
     private function init(): void

@@ -50,6 +50,8 @@ class Kernel implements KernelInterface
         $middleware = $route['middleware'];
         $api_error = false;
         $request_id = $request->getAttribute("request_id");
+        $controller = null;
+        $content = null;
 
         try {
             // Using the container will allow for DI
@@ -62,7 +64,7 @@ class Kernel implements KernelInterface
             // Set the application user
             $uuid = session()->get("user_uuid");
             if ($uuid) {
-                $user = User::where("uuid", $uuid)->get();
+                $user = User::where("uuid", $uuid)->first();
                 $controller->setUser($user);
             }
 

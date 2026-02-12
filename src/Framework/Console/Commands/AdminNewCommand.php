@@ -27,7 +27,7 @@ class AdminNewCommand extends Command
         $password = $input->getArgument('password');
 
         // Check for existing user
-        $user = User::where("email" , $email)->get();
+        $user = User::where("email", $email)->first();
         
         if ($user) {
             $output->writeln('<error>This admin user already exists</error>');

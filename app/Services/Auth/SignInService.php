@@ -10,7 +10,7 @@ class SignInService
     {
         $log = logger()->channel('auth');
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $user = User::where("email", $email_address)->get();
+        $user = User::where("email", $email_address)->first();
 
         if ($user && password_verify($password, $user->password)) {
             session()->regenerate();

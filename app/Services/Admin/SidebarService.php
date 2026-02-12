@@ -43,11 +43,10 @@ class SidebarService
 
         // Fetch root modules if not provided
         if (is_null($nodes)) {
-            $rootModules = Module::where('enabled', '1')
+            $nodes = Module::where('enabled', '1')
                 ->whereNull('parent_id')
                 ->orderBy('item_order')
-                ->get();
-            $nodes = is_array($rootModules) ? $rootModules : ($rootModules ? [$rootModules] : []);
+                ->get() ?? [];
         }
 
         $modules = [];

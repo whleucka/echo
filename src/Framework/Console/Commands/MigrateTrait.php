@@ -41,15 +41,13 @@ trait MigrateTrait
 
     private function getMigrationsFromBatch(int $batch): array
     {
-        $result = Migration::where('batch', (string)$batch)
+        $migrations = Migration::where('batch', (string)$batch)
             ->orderBy('id', 'DESC')
             ->get();
 
-        if (is_null($result)) {
+        if (!$migrations) {
             return [];
         }
-
-        $migrations = is_array($result) ? $result : [$result];
 
         // Convert to array format for compatibility
         return array_map(fn(Migration $m) => $m->getAttributes(), $migrations);
