@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\BlogPost;
-use Echo\Framework\Admin\Schema\{FormSchemaBuilder, TableSchemaBuilder};
+use Echo\Framework\Admin\Schema\{FormSchemaBuilder, ModalSize, TableSchemaBuilder};
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 
@@ -45,6 +45,8 @@ class BlogPostsController extends ModuleController
 
     protected function defineForm(FormSchemaBuilder $builder): void
     {
+        $builder->modalSize(ModalSize::ExtraLarge);
+
         $builder->field('cover', 'Cover')
             ->image()
             ->accept('image/*');

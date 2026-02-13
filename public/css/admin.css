@@ -313,7 +313,6 @@ nav#nav-sidebar header h4 {
   padding-left: 0 !important;
 }
 #modal .modal-dialog {
-  max-width: fit-content;
   margin-left: auto;
   margin-right: auto;
 }

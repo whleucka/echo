@@ -9,6 +9,7 @@ final class FormSchema
      */
     public function __construct(
         public readonly array $fields,
+        public readonly ModalSize $modalSize = ModalSize::Default,
     ) {}
 
     /**

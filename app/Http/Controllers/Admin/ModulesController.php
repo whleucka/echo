@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Echo\Framework\Admin\Schema\{FormSchemaBuilder, TableSchemaBuilder};
+use Echo\Framework\Admin\Schema\{FormSchemaBuilder, ModalSize, TableSchemaBuilder};
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 
@@ -38,6 +38,8 @@ class ModulesController extends ModuleController
 
     protected function defineForm(FormSchemaBuilder $builder): void
     {
+        $builder->modalSize(ModalSize::Small);
+
         $builder->field('enabled', 'Enabled')->checkbox();
 
         $builder->field('parent_id', 'Parent')

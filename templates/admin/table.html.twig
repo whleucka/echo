@@ -8,7 +8,7 @@
       {{ csrf()|raw }}
       {% for action in toolbarActions %}
         {% if action.name == 'create' and isToolbarActionAllowed('create') %}
-          <button class="btn btn-sm btn-success me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/create" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi {{ action.icon }} pe-1"></i> {{ action.label }}</button>
+          <button class="btn btn-sm btn-success me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/create" hx-target="#modal" hx-select=".modal-dialog" hx-swap="innerHTML"><i class="bi {{ action.icon }} pe-1"></i> {{ action.label }}</button>
         {% endif %}
       {% endfor %}
       {% for link in filters.filterLinks.links %}
@@ -23,7 +23,7 @@
         {% endif %}
       {% endfor %}
       {% if filters.show %}
-        <button class="btn btn-sm btn-primary me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/filter" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi bi-funnel pe-1"></i> Filter</button>
+        <button class="btn btn-sm btn-primary me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/filter" hx-target="#modal" hx-select=".modal-dialog" hx-swap="innerHTML"><i class="bi bi-funnel pe-1"></i> Filter</button>
       {% endif %}
       {% if filters.showClear %}
           <button hx-post="/admin/{{ module.link }}/modal/filter" type="submit" class="btn btn-sm btn-danger me-2" name="filter_clear"><i class="bi bi-trash pe-1"></i> Clear Filter</button>
@@ -78,9 +78,9 @@
                 <div class="d-flex justify-content-end">
                   {% for action in rowActions %}
                     {% if action.name == 'show' and hasShow(row.id) %}
-                      <button class="btn btn-sm" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/{{ row.id }}" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi {{ action.icon }}"></i></button>
+                      <button class="btn btn-sm" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/{{ row.id }}" hx-target="#modal" hx-select=".modal-dialog" hx-swap="innerHTML"><i class="bi {{ action.icon }}"></i></button>
                     {% elseif action.name == 'edit' and hasEdit(row.id) %}
-                      <button class="btn btn-sm ms-1" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/{{ row.id }}/edit" hx-target=".modal-dialog" hx-select=".modal-content"><i class="bi {{ action.icon }}"></i></button>
+                      <button class="btn btn-sm ms-1" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/{{ row.id }}/edit" hx-target="#modal" hx-select=".modal-dialog" hx-swap="innerHTML"><i class="bi {{ action.icon }}"></i></button>
                     {% elseif action.name == 'delete' and hasDelete(row.id) %}
                       <button class="btn btn-sm ms-1" hx-confirm="{{ action.confirm }}" hx-post="/admin/{{ module.link }}/{{ row.id }}/destroy"><i class="bi {{ action.icon }}"></i></button>
                     {% endif %}

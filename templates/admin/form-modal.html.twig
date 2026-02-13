@@ -1,27 +1,29 @@
-<div id="form" class="modal-content">
-  <form method="POST" hx-post="{{ post }}" enctype="multipart/form-data">
-    <div class="modal-header">
-      <h5 class="modal-title">{{ title }}</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-    </div>
-    <div class="modal-body">
-      <div class="mb-2">
-        {% include "components/flash.html.twig" %}
+<div class="modal-dialog {{ modalSize }}">
+  <div id="form" class="modal-content">
+    <form method="POST" hx-post="{{ post }}" enctype="multipart/form-data">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ title }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-        {{ csrf()|raw }}
-        {% for key,value in data %}
+      <div class="modal-body">
         <div class="mb-2">
-          <label for="{{ key }}" class="form-label m-0 p-0">{{ labels[loop.index0] }}</label>
-          {{ control(key, value)|raw }}
-          {% include 'components/validation.html.twig' with {'validate': key} %}
+          {% include "components/flash.html.twig" %}
         </div>
-        {% endfor %}
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      {% if not readonly and submit %}
-      <button type="submit" class="btn btn-primary">{{ submit }}</button>
-      {% endif %}
-    </div>
-  </form>
+          {{ csrf()|raw }}
+          {% for key,value in data %}
+          <div class="mb-2">
+            <label for="{{ key }}" class="form-label m-0 p-0">{{ labels[loop.index0] }}</label>
+            {{ control(key, value)|raw }}
+            {% include 'components/validation.html.twig' with {'validate': key} %}
+          </div>
+          {% endfor %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        {% if not readonly and submit %}
+        <button type="submit" class="btn btn-primary">{{ submit }}</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
 </div>

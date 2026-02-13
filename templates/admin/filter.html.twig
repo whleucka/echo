@@ -1,65 +1,67 @@
-<div id="form" class="modal-content">
-  <form method="POST" hx-post="{{ post }}">
-    <div class="modal-header">
-      <h5 class="modal-title">Filter</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-    </div>
-    <div class="modal-body">
-      <div class="mb-2">
-        {% include "components/flash.html.twig" %}
+<div class="modal-dialog">
+  <div id="form" class="modal-content">
+    <form method="POST" hx-post="{{ post }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Filter</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      {{ csrf()|raw }}
-      {% if dateFilter.show %}
-      <div id="datetime" class="row mb-2">
-        <div class="col-6">
-          <label class="form-label p-0 mb-1" for="filter-date-start">Start</label>
-          <input
-            type="datetime-local"
-            id="filter-date-start"
-            name="filter_date_start"
-            class="form-control {% if validationErrors.filter_search is defined %}is-invalid{% endif %}"
-            value="{{ dateFilter.start }}" />
-          {% include 'components/validation.html.twig' with {'validate': 'filter_date_start'} %}
-        </div>
-        <div class="col-6">
-          <label class="form-label p-0 mb-1" for="filter-date-end">End</label>
-          <input
-            type="datetime-local"
-            id="filter-date-end"
-            name="filter_date_end"
-            class="form-control {% if validationErrors.filter_search is defined %}is-invalid{% endif %}"
-            value="{{ dateFilter.end }}" />
-          {% include 'components/validation.html.twig' with {'validate': 'filter_date_end'} %}
-        </div>
-      </div>
-      {% endif %}
-      {% if dropdowns.show %}
-        {% for filter in dropdowns.filters %}
+      <div class="modal-body">
         <div class="mb-2">
-          <label class="form-label p-0 mb-1" for="">{{ filter.label }}</label>
-          <select class="form-select" name="filter_dropdowns[]">
-            <option value="NULL">Select an option</option>
-            {% for option in filter.options %}
-              <option value="{{ option.value }}" {% if filter.selected == option.value %}selected{% endif %}>{{ option.label }}</option>
-            {% endfor %}
-          </select>
+          {% include "components/flash.html.twig" %}
         </div>
-        {% endfor %}
-      {% endif %}
-      {% if search.show %}
-      <div id="search" class="mb-2"> 
-        <label class="form-label p-0 mb-1" for="filter-search">Search</label>
-        <input type="search" name="filter_search" id="filter-search" class="form-control {% if validationErrors.filter_search is defined %}is-invalid{% endif %}" value="{{ search.term }}" />
-        {% include 'components/validation.html.twig' with {'validate': 'filter_search'} %}
+        {{ csrf()|raw }}
+        {% if dateFilter.show %}
+        <div id="datetime" class="row mb-2">
+          <div class="col-6">
+            <label class="form-label p-0 mb-1" for="filter-date-start">Start</label>
+            <input
+              type="datetime-local"
+              id="filter-date-start"
+              name="filter_date_start"
+              class="form-control {% if validationErrors.filter_search is defined %}is-invalid{% endif %}"
+              value="{{ dateFilter.start }}" />
+            {% include 'components/validation.html.twig' with {'validate': 'filter_date_start'} %}
+          </div>
+          <div class="col-6">
+            <label class="form-label p-0 mb-1" for="filter-date-end">End</label>
+            <input
+              type="datetime-local"
+              id="filter-date-end"
+              name="filter_date_end"
+              class="form-control {% if validationErrors.filter_search is defined %}is-invalid{% endif %}"
+              value="{{ dateFilter.end }}" />
+            {% include 'components/validation.html.twig' with {'validate': 'filter_date_end'} %}
+          </div>
+        </div>
+        {% endif %}
+        {% if dropdowns.show %}
+          {% for filter in dropdowns.filters %}
+          <div class="mb-2">
+            <label class="form-label p-0 mb-1" for="">{{ filter.label }}</label>
+            <select class="form-select" name="filter_dropdowns[]">
+              <option value="NULL">Select an option</option>
+              {% for option in filter.options %}
+                <option value="{{ option.value }}" {% if filter.selected == option.value %}selected{% endif %}>{{ option.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endfor %}
+        {% endif %}
+        {% if search.show %}
+        <div id="search" class="mb-2">
+          <label class="form-label p-0 mb-1" for="filter-search">Search</label>
+          <input type="search" name="filter_search" id="filter-search" class="form-control {% if validationErrors.filter_search is defined %}is-invalid{% endif %}" value="{{ search.term }}" />
+          {% include 'components/validation.html.twig' with {'validate': 'filter_search'} %}
+        </div>
+        {% endif %}
       </div>
-      {% endif %}
-    </div>
-    <div class="modal-footer">
-      {% if showClear %}
-      <button type="submit" name="filter_clear" class="btn btn-danger">Clear</button>
-      {% endif %}
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      <button type="submit" class="btn btn-primary">Apply</button>
-    </div>
-  </form>
+      <div class="modal-footer">
+        {% if showClear %}
+        <button type="submit" name="filter_clear" class="btn btn-danger">Clear</button>
+        {% endif %}
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-primary">Apply</button>
+      </div>
+    </form>
+  </div>
 </div>

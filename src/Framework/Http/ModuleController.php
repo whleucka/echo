@@ -637,6 +637,7 @@ abstract class ModuleController extends Controller
             "readonly" => $readonly,
             "labels" => $this->formSchema->getLabels(),
             "data" => $data,
+            "modalSize" => $this->formSchema->modalSize->value,
         ]);
     }
 
