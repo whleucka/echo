@@ -713,6 +713,7 @@ abstract class ModuleController extends Controller
                 "class" => "form-select",
                 "options" => $field->resolveOptions(),
             ], $forceReadonly),
+            "textarea" => $this->renderControl("textarea", $field, $value, forceReadonly: $forceReadonly),
             "image", "file" => $this->renderFileControl($control, $field, $value, $forceReadonly),
             default => $value,
         };

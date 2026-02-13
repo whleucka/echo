@@ -12,6 +12,9 @@ class FormSchemaBuilder
      * Usage:
      *   $builder->field('email', 'Email')->email()->rules(['required', 'email'])
      *   $builder->field('password', 'Password', "'' as password")->password()
+     * 
+     * Hint: 
+     *   Missing a control type? Add control to FormFieldBuilder and ModuleController::control() 
      */
     public function field(string $name, ?string $label = null, ?string $expression = null): FormFieldBuilder
     {

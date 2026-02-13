@@ -18,7 +18,7 @@ class UsersController extends ModuleController
         $builder->defaultSort('id', 'DESC');
 
         $builder->column('id', 'ID')->sortable();
-        $builder->column('uuid', 'UUID');
+        $builder->column('uuid', 'UUID')->sortable();
         $builder->column('role', 'Role')->sortable();
         $builder->column('name', 'Name', "CONCAT(first_name, ' ', surname)")
                 ->sortable()

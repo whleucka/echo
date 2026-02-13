@@ -1,0 +1,15 @@
+<textarea
+  class="{{ class }} {{ v_class }}" 
+  id="{{ id }}" 
+  name="{{ name }}" 
+  {% if rows %}rows="{{ rows }}"{% endif %}
+  {% if cols %}cols="{{ cols }}"{% endif %}
+  {% if title %}title="{{ title }}"{% endif %}
+  {% if wrap %}wrap="{{ wrap }}"{% endif %}
+  {% if minlength %}minlength="{{ minlength }}"{% endif %}
+  {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+  {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+  {% if autofocus %}autofocus{% endif %}
+  {% if readonly or disabled %}disabled{% endif %}
+  {% if required %}required{% endif %}
+>{{ old(name, value) }}</textarea>

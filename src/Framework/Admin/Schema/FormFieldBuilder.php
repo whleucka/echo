@@ -73,6 +73,12 @@ class FormFieldBuilder
         return $this;
     }
 
+    public function textarea(): self
+    {
+        $this->control = 'textarea';
+        return $this;
+    }
+
     // Property setters
 
     public function rules(array $rules): self
