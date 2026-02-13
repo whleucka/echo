@@ -8,7 +8,21 @@ All PHP code must strictly comply with PSR-12, including camelCase methods and v
 
 ## Project Overview
 
-Echo is a custom PHP 8.2+ MVC framework using attribute-based routing, PHP-DI for dependency injection, and Twig for templating. It runs in Docker (PHP 8.3-FPM, Nginx, MariaDB 11, Redis 7).
+Echo is a custom PHP 8.2+ MVC framework using attribute-based routing, PHP-DI for dependency injection, and Twig for templating. It runs in Docker (PHP 8.4-FPM, Nginx, MariaDB 11, Redis 7).
+
+### Development vs Production Environments
+
+**Development mode** (default, `APP_DEBUG=true` in `.env`):
+- OPcache disabled for instant code changes (no container restarts needed)
+- Xdebug enabled for debugging (port 9003, trigger mode)
+- Verbose error display and logging
+- Higher memory limits
+
+**Production mode** (`docker-compose.prod.yml`):
+- OPcache enabled with aggressive caching and no timestamp validation
+- No Xdebug (not installed)
+- Errors logged only, not displayed
+- Optimized memory limits
 
 ## Commands
 
@@ -22,10 +36,13 @@ All PHP commands run inside the Docker container. Bin helpers wrap `docker-compo
 composer test                              # alternative (inside container)
 
 # Development
-docker-compose up -d                       # start containers
+docker-compose up -d --build               # start containers (rebuilds if needed)
 ./bin/php composer install                 # install dependencies
 ./bin/console migrate:run                  # run database migrations
 composer clear-cache                       # clear Twig template cache
+
+# Production deployment
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 # Release
 ./bin/release v0.x.x                       # create release (updates version, tags)

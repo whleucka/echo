@@ -1,10 +1,15 @@
 services:
   php:
-    build: ./php
+    build:
+      context: ./php
+      args:
+        # dev if APP_DEBUG=true, prod otherwise
+        BUILD_MODE: ${BUILD_MODE:-dev}
     container_name: php
     volumes:
       - ./:/var/www/html
-      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+      # Mount dev.ini in development (default)
+      - ./php/dev.ini:/usr/local/etc/php/conf.d/zz-env.ini:ro
     networks:
       - net
 

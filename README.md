@@ -2,7 +2,7 @@
 
 <a href='https://github.com/whleucka/echo/actions/workflows/php.yml'><img src='https://github.com/whleucka/echo/actions/workflows/php.yml/badge.svg' alt='github badge'></a>
 
-A modern PHP 8.4+ MVC framework with attribute-based routing, PHP-DI, and Twig. Runs in Docker (PHP 8.3-FPM, Nginx, MariaDB 11, Redis 7).
+A modern PHP 8.4+ MVC framework with attribute-based routing, PHP-DI, and Twig. Runs in Docker (PHP 8.4-FPM, Nginx, MariaDB 11, Redis 7).
 
 > **Work in Progress** — APIs and internals may change. This project will
 > eventually serve as a backend to my personal website.
@@ -12,12 +12,29 @@ A modern PHP 8.4+ MVC framework with attribute-based routing, PHP-DI, and Twig. 
 ```bash
 git clone https://github.com/whleucka/echo.git && cd echo
 cp .env.example .env                              # configure credentials
-docker-compose up -d                              # php, nginx, db, redis
+docker-compose up -d --build                      # php, nginx, db, redis
 docker-compose exec -it php composer install
 docker-compose exec -it php ./bin/console migrate:run
 ```
 
 Open `http://localhost`.
+
+### Development vs Production
+
+**Development** (default, `APP_DEBUG=true`):
+- OPcache disabled — code changes take effect instantly, no container restarts
+- Xdebug enabled (port 9003, trigger mode with `XDEBUG_SESSION` cookie or query param)
+- Verbose errors displayed
+
+**Production** (`docker-compose.prod.yml`):
+- OPcache enabled with aggressive caching
+- No Xdebug
+- Errors logged only
+
+```bash
+# Production deployment
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
 
 ## Common Commands
 

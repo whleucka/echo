@@ -13,7 +13,7 @@ class ModulesController extends ModuleController
 
     protected function defineTable(TableSchemaBuilder $builder): void
     {
-        $builder->defaultSort('item_order', 'ASC');
+        $builder->defaultSort('id', 'ASC');
 
         $builder->column('id', 'ID')->sortable();
         $builder->column('enabled', 'Enabled')->format('check');
