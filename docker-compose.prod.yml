@@ -1,0 +1,13 @@
+# Production overrides
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  php:
+    build:
+      context: ./php
+      args:
+        BUILD_MODE: prod
+    volumes:
+      - ./:/var/www/html
+      # Override: mount prod.ini instead of dev.ini
+      - ./php/prod.ini:/usr/local/etc/php/conf.d/zz-env.ini:ro
