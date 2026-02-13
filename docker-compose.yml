@@ -16,6 +16,8 @@ services:
   nginx:
     image: nginx:alpine
     container_name: nginx
+    sysctls:
+      - net.ipv4.tcp_tw_reuse=1
     ports:
       - "80:80"
       - "443:443"

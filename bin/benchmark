@@ -18,6 +18,7 @@ BOLD='\033[1m'
 BASE_URL="${1:-http://localhost}"
 DURATION="${2:-10}"
 CONNECTIONS="${3:-100}"
+COOLDOWN="${4:-10}"
 THREADS=4
 
 # Detect available tool
@@ -42,6 +43,7 @@ echo "  Base URL:    $BASE_URL"
 echo "  Tool:        $BENCH_TOOL"
 echo "  Duration:    ${DURATION}s"
 echo "  Connections: $CONNECTIONS"
+echo "  Cooldown:    ${COOLDOWN}s"
 echo ""
 
 # Endpoints to test
@@ -171,9 +173,18 @@ echo -e "${BOLD}${BLUE}                     Running Benchmarks                  
 echo -e "${BOLD}${BLUE}═══════════════════════════════════════════════════════════════${NC}"
 echo ""
 
+FIRST=true
 for endpoint_data in "${ENDPOINTS[@]}"; do
     IFS=':' read -r endpoint name <<< "$endpoint_data"
     url="${BASE_URL}${endpoint}"
+
+    # Cooldown between tests to let TCP TIME_WAIT connections expire
+    if [ "$FIRST" = true ]; then
+        FIRST=false
+    elif [ "$COOLDOWN" -gt 0 ]; then
+        echo -e "${BLUE}Cooldown ${COOLDOWN}s...${NC}"
+        sleep "$COOLDOWN"
+    fi
 
     if [ "$BENCH_TOOL" = "wrk" ]; then
         run_wrk "$url" "$name"
