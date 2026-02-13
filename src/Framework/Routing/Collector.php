@@ -49,6 +49,7 @@ class Collector
                 $pathPrefix = '';
                 $namePrefix = '';
                 $groupMiddleware = [];
+                $groupSubdomain = null;
 
                 foreach (array_reverse($groupStack) as $group) {
                     if (!$group) continue;
@@ -60,6 +61,10 @@ class Collector
                         $namePrefix .= ($namePrefix ? '.' : '') . trim($group->namePrefix, '.');
                     }
                     $groupMiddleware = array_merge($groupMiddleware, $group->middleware);
+                    // Most specific (child) subdomain wins
+                    if ($group->subdomain !== null) {
+                        $groupSubdomain = $group->subdomain;
+                    }
                 }
 
 
@@ -87,11 +92,15 @@ class Collector
 
                 $mergedMiddleware = array_merge($groupMiddleware, $instance->middleware);
 
+                // Route-level subdomain overrides group-level
+                $subdomain = $instance->subdomain ?? $groupSubdomain;
+
                 $this->routes[$fullPath][$httpMethod] = [
                     'controller' => $controller,
                     'method' => $method->getName(),
                     'middleware' => $mergedMiddleware,
-                    'name' => $fullName
+                    'name' => $fullName,
+                    'subdomain' => $subdomain,
                 ];
             }
         }

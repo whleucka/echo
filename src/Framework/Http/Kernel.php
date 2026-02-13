@@ -18,7 +18,7 @@ class Kernel implements KernelInterface
     public function handle(RequestInterface $request): void
     {
         // Dispatch the route
-        $route = router()->dispatch($request->getUri(), $request->getMethod());
+        $route = router()->dispatch($request->getUri(), $request->getMethod(), $request->getHost());
 
         // If there is no route, then 404
         if (is_null($route)) {

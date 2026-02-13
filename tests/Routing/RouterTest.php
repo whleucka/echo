@@ -6,6 +6,7 @@ namespace Tests\Routing;
 
 use Echo\Framework\Http\Controller;
 use Echo\Framework\Routing\Collector;
+use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;
 use Echo\Framework\Routing\Router;
 use PHPUnit\Framework\TestCase;
@@ -152,6 +153,107 @@ class RouterTest extends TestCase
         $uri = $this->router()->searchUri('routes.user', '29aa8ed5-bf51-49b2-88db-a5664e3b437c', 'a97ba656-b4d0-4976-b31e-413ac4ffe61b');
         $this->assertSame('/user/29aa8ed5-bf51-49b2-88db-a5664e3b437c/a97ba656-b4d0-4976-b31e-413ac4ffe61b', $uri);
     }
+
+    public function testSubdomainMatchesCorrectHost()
+    {
+        $router = $this->router([ApiRoutes::class]);
+        $route = $router->dispatch('/v1/status', 'GET', 'api.example.com');
+        $this->assertNotNull($route);
+        $this->assertSame('status', $route['method']);
+    }
+
+    public function testSubdomainRejectsWrongHost()
+    {
+        $router = $this->router([ApiRoutes::class]);
+        $route = $router->dispatch('/v1/status', 'GET', 'example.com');
+        $this->assertNull($route);
+    }
+
+    public function testSubdomainRejectsSingleLabelHost()
+    {
+        $router = $this->router([ApiRoutes::class]);
+        $route = $router->dispatch('/v1/status', 'GET', 'localhost');
+        $this->assertNull($route);
+    }
+
+    public function testNoSubdomainMatchesAnyHost()
+    {
+        $route = $this->dispatchRoute('/', 'GET');
+        $this->assertNotNull($route);
+
+        $router = $this->router();
+        $route = $router->dispatch('/', 'GET', 'anything.example.com');
+        $this->assertNotNull($route);
+
+        $route = $router->dispatch('/', 'GET', 'example.com');
+        $this->assertNotNull($route);
+    }
+
+    public function testWildcardSubdomainCapturesValue()
+    {
+        $router = $this->router([TenantRoutes::class]);
+        $route = $router->dispatch('/dashboard', 'GET', 'acme.example.com');
+        $this->assertNotNull($route);
+        $this->assertSame('dashboard', $route['method']);
+        $this->assertSame(['acme'], $route['params']);
+    }
+
+    public function testWildcardSubdomainWithUriParams()
+    {
+        $router = $this->router([TenantRoutes::class]);
+        $route = $router->dispatch('/project/42', 'GET', 'acme.example.com');
+        $this->assertNotNull($route);
+        $this->assertSame('project', $route['method']);
+        $this->assertSame(['acme', '42'], $route['params']);
+    }
+
+    public function testGroupSubdomainAppliesToAllRoutes()
+    {
+        $router = $this->router([ApiRoutes::class]);
+
+        $route = $router->dispatch('/v1/status', 'GET', 'api.example.com');
+        $this->assertNotNull($route);
+
+        $route = $router->dispatch('/v1/health', 'GET', 'api.example.com');
+        $this->assertNotNull($route);
+
+        // Both should fail on wrong subdomain
+        $route = $router->dispatch('/v1/status', 'GET', 'www.example.com');
+        $this->assertNull($route);
+
+        $route = $router->dispatch('/v1/health', 'GET', 'www.example.com');
+        $this->assertNull($route);
+    }
+
+    public function testRouteSubdomainOverridesGroup()
+    {
+        $router = $this->router([OverrideRoutes::class]);
+
+        // Route-level subdomain "hooks" overrides group-level "api"
+        $route = $router->dispatch('/api/webhook', 'GET', 'hooks.example.com');
+        $this->assertNotNull($route);
+        $this->assertSame('webhook', $route['method']);
+
+        // Group subdomain "api" should NOT match this route
+        $route = $router->dispatch('/api/webhook', 'GET', 'api.example.com');
+        $this->assertNull($route);
+    }
+
+    public function testSubdomainStripsPort()
+    {
+        $router = $this->router([ApiRoutes::class]);
+        $route = $router->dispatch('/v1/status', 'GET', 'api.example.com:8080');
+        $this->assertNotNull($route);
+        $this->assertSame('status', $route['method']);
+    }
+
+    public function testSubdomainWithNullHost()
+    {
+        // Route with subdomain constraint should not match when host is null
+        $router = $this->router([ApiRoutes::class]);
+        $route = $router->dispatch('/v1/status', 'GET', null);
+        $this->assertNull($route);
+    }
 }
 
 class Routes extends Controller
@@ -212,5 +314,47 @@ class DuplicateName extends Controller
     public function duplicat_name()
     {
         return 'index';
+    }
+}
+
+#[Group(pathPrefix: "/v1", subdomain: "api")]
+class ApiRoutes extends Controller
+{
+    #[Get("/status", "api.status")]
+    public function status()
+    {
+        return 'status';
+    }
+
+    #[Get("/health", "api.health")]
+    public function health()
+    {
+        return 'health';
+    }
+}
+
+#[Group(subdomain: "{tenant}")]
+class TenantRoutes extends Controller
+{
+    #[Get("/dashboard", "tenant.dashboard")]
+    public function dashboard()
+    {
+        return 'dashboard';
+    }
+
+    #[Get("/project/{id}", "tenant.project")]
+    public function project(string $tenant, string $id)
+    {
+        return $tenant . ':' . $id;
+    }
+}
+
+#[Group(pathPrefix: "/api", subdomain: "api")]
+class OverrideRoutes extends Controller
+{
+    #[Get("/webhook", "override.webhook", subdomain: "hooks")]
+    public function webhook()
+    {
+        return 'webhook';
     }
 }

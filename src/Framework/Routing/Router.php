@@ -41,16 +41,20 @@ class Router implements RouterInterface
     /**
      * Dispatch a new route
      */
-    public function dispatch(string $uri, string $method): ?array
+    public function dispatch(string $uri, string $method, ?string $host = null): ?array
     {
         $method = strtolower($method);
         $routes = $this->collector->getRoutes();
 
         // Check for an exact match first
         if (isset($routes[$uri][$method])) {
-            // There are no params
-            $routes[$uri][$method]['params'] = [];
-            return $routes[$uri][$method];
+            $route = $routes[$uri][$method];
+            if (!$this->matchesSubdomain($route, $host)) {
+                // Fall through to parameterized route check
+            } else {
+                $route['params'] = $this->getSubdomainParams($route, $host);
+                return $route;
+            }
         }
 
         // Check for parameterized routes
@@ -62,11 +66,11 @@ class Router implements RouterInterface
                 // Check if route has parameters or regex patterns
                 $hasParams = str_contains($route, '{');
                 $hasRegex = str_contains($route, '[') || str_contains($route, '(');
-                
+
                 if (!$hasParams && !$hasRegex) {
                     continue;
                 }
-                
+
                 if ($hasParams) {
                     // Replace {param} placeholders with regex
                     $compiled = preg_replace('/\{(\w+)\}/', '([A-Za-z0-9_.-]+)', $route);
@@ -83,14 +87,78 @@ class Router implements RouterInterface
                     return null;
                 }
 
+                // Check subdomain constraint
+                if (!$this->matchesSubdomain($methods[$method], $host)) {
+                    continue;
+                }
+
                 // Remove the full match
                 array_shift($matches);
-                // Add available params
-                $methods[$method]['params'] = $matches;
+                // Add subdomain params before URI params
+                $subdomainParams = $this->getSubdomainParams($methods[$method], $host);
+                $methods[$method]['params'] = array_merge($subdomainParams, $matches);
                 return $methods[$method];
             }
         }
 
         return null;
+    }
+
+    /**
+     * Check if a route's subdomain constraint matches the given host
+     */
+    private function matchesSubdomain(array $route, ?string $host): bool
+    {
+        $subdomain = $route['subdomain'] ?? null;
+
+        // No constraint — matches any host
+        if ($subdomain === null) {
+            return true;
+        }
+
+        if ($host === null) {
+            return false;
+        }
+
+        // Strip port from host
+        $host = strtok($host, ':');
+
+        // Extract the leftmost label as the subdomain
+        $parts = explode('.', $host);
+        if (count($parts) < 2) {
+            // Host has no subdomain (e.g. "localhost")
+            return false;
+        }
+
+        $hostSubdomain = $parts[0];
+
+        // Wildcard subdomain: {param} captures the value
+        if (preg_match('/^\{(\w+)\}$/', $subdomain)) {
+            return true;
+        }
+
+        // Exact match
+        return $hostSubdomain === $subdomain;
+    }
+
+    /**
+     * Get wildcard subdomain parameters from host
+     */
+    private function getSubdomainParams(array $route, ?string $host): array
+    {
+        $subdomain = $route['subdomain'] ?? null;
+        if ($subdomain === null || $host === null) {
+            return [];
+        }
+
+        if (preg_match('/^\{(\w+)\}$/', $subdomain)) {
+            $host = strtok($host, ':');
+            $parts = explode('.', $host);
+            if (count($parts) >= 2) {
+                return [$parts[0]];
+            }
+        }
+
+        return [];
     }
 }

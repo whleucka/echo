@@ -10,6 +10,7 @@ class Group
     public function __construct(
         public string $pathPrefix = '',
         public string $namePrefix = '',
-        public array $middleware = []
+        public array $middleware = [],
+        public ?string $subdomain = null
     ) {}
 }

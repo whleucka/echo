@@ -95,6 +95,11 @@ class Request implements RequestInterface
         return $this->headers->get("Hx-History-Restore-Request") === 'true';
     }
 
+    public function getHost(): string
+    {
+        return $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
+    }
+
     public function getUri(): string
     {
         return strtok($_SERVER["REQUEST_URI"], '?');

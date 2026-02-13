@@ -80,6 +80,34 @@ class UserController extends Controller
 
 Controllers in `app/Http/Controllers/` are auto-discovered. Middleware is applied via the third attribute argument or the `Group` attribute.
 
+### Subdomain Routing
+
+Routes can be constrained to specific subdomains using the `subdomain` parameter on `Group` or individual route attributes:
+
+```php
+// API base controller - all routes only match api.example.com
+#[Group(pathPrefix: '/v1', namePrefix: 'api', subdomain: 'api', middleware: ['api'])]
+abstract class ApiController extends Controller { }
+
+// Wildcard subdomain for multi-tenancy - captures subdomain as first param
+#[Group(subdomain: '{tenant}')]
+class TenantController extends Controller
+{
+    #[Get('/dashboard', 'dashboard')]
+    public function dashboard(string $tenant): string
+    {
+        return $this->render('tenant/dashboard.html.twig', ['tenant' => $tenant]);
+    }
+}
+```
+
+For local Docker testing, add subdomains to `/etc/hosts`:
+```bash
+127.0.0.1 localhost api.localhost tenant1.localhost
+```
+
+Then access `http://api.localhost/v1/status` to hit subdomain-constrained routes.
+
 ## Database / ORM
 
 ```php
