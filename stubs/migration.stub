@@ -1,7 +1,6 @@
 <?php
 
-use Echo\Interface\Database\Migration;
-use Echo\Framework\Database\{Schema, Blueprint};
+use Echo\Framework\Database\{Schema, Blueprint, MigrationInterface};
 
 return new class implements Migration
 {
