@@ -8,7 +8,6 @@ final class ColumnDefinition
         public readonly string $name,
         public readonly string $label,
         public readonly ?string $expression,
-        public readonly bool $sortable,
         public readonly bool $searchable,
         public readonly ?string $format,
         public readonly ?\Closure $formatter,

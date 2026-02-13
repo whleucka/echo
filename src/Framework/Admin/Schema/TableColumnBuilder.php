@@ -4,7 +4,6 @@ namespace Echo\Framework\Admin\Schema;
 
 class TableColumnBuilder
 {
-    private bool $sortable = false;
     private bool $searchable = false;
     private ?string $format = null;
     private ?\Closure $formatter = null;
@@ -16,12 +15,6 @@ class TableColumnBuilder
         private ?string $expression = null,
     ) {
         $this->label = $label ?? ucfirst(str_replace('_', ' ', $name));
-    }
-
-    public function sortable(): self
-    {
-        $this->sortable = true;
-        return $this;
     }
 
     public function searchable(): self
@@ -63,7 +56,6 @@ class TableColumnBuilder
             name: $this->name,
             label: $this->label,
             expression: $this->expression,
-            sortable: $this->sortable,
             searchable: $this->searchable,
             format: $this->format,
             formatter: $this->formatter,

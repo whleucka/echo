@@ -20,7 +20,7 @@ class AuditController extends ModuleController
                 ->dateColumn('audits.created_at')
                 ->defaultSort('audits.id', 'DESC');
 
-        $builder->column('id', 'ID', 'audits.id')->sortable();
+        $builder->column('id', 'ID', 'audits.id');
         $builder->column('user_name', 'User', "COALESCE(CONCAT(users.first_name, ' ', users.surname), 'System')")
                 ->searchable();
         $builder->column('auditable_type', 'Type', 'audits.auditable_type')
@@ -28,10 +28,9 @@ class AuditController extends ModuleController
                 ->formatUsing(fn($col, $val) => $this->formatType($val));
         $builder->column('auditable_id', 'Record ID', 'audits.auditable_id');
         $builder->column('event', 'Event', 'audits.event')
-                ->sortable()
                 ->formatUsing(fn($col, $val) => $this->formatEvent($val));
         $builder->column('ip_address', 'IP', 'audits.ip_address')->searchable();
-        $builder->column('created_at', 'Created', 'audits.created_at')->sortable();
+        $builder->column('created_at', 'Created', 'audits.created_at');
 
         $builder->filter('event', 'audits.event')
                 ->label('Event')

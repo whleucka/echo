@@ -17,16 +17,14 @@ class UsersController extends ModuleController
     {
         $builder->defaultSort('id', 'DESC');
 
-        $builder->column('id', 'ID')->sortable();
-        $builder->column('uuid', 'UUID')->sortable();
-        $builder->column('role', 'Role')->sortable();
+        $builder->column('id', 'ID');
+        $builder->column('uuid', 'UUID');
+        $builder->column('role', 'Role');
         $builder->column('name', 'Name', "CONCAT(first_name, ' ', surname)")
-                ->sortable()
                 ->searchable();
         $builder->column('email', 'Email')
-                ->sortable()
                 ->searchable();
-        $builder->column('created_at', 'Created')->sortable();
+        $builder->column('created_at', 'Created');
 
         $builder->filter('role', 'role')
                 ->label('Role')

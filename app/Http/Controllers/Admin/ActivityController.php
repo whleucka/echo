@@ -17,11 +17,11 @@ class ActivityController extends ModuleController
                 ->join('LEFT JOIN users ON users.id = activity.user_id')
                 ->defaultSort('activity.id', 'DESC');
 
-        $builder->column('id', 'ID', 'activity.id')->sortable();
+        $builder->column('id', 'ID', 'activity.id');
         $builder->column('email', 'User', 'users.email')->searchable();
         $builder->column('ip', 'IP', 'INET_NTOA(activity.ip)');
         $builder->column('uri', 'URI', 'activity.uri')->searchable();
-        $builder->column('created_at', 'Created', 'activity.created_at')->sortable();
+        $builder->column('created_at', 'Created', 'activity.created_at');
 
         $builder->filter('email', 'users.email')
                 ->label('User')

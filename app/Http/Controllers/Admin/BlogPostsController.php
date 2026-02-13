@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\BlogPost;
 use Echo\Framework\Admin\Schema\{FormSchemaBuilder, ModalSize, TableSchemaBuilder};
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
@@ -14,13 +13,12 @@ class BlogPostsController extends ModuleController
 
     protected function defineTable(TableSchemaBuilder $builder): void
     {
-        $builder->column('id', 'ID')->sortable();
-        $builder->column('status', 'Status')->sortable();
+        $builder->column('id', 'ID');
+        $builder->column('status', 'Status');
         $builder->column('title', 'Title')
-            ->sortable()
             ->searchable();
-        $builder->column('publish_at', 'Published Date')->sortable();
-        $builder->column('created_at', 'Created')->sortable();
+        $builder->column('published_at', 'Published Date');
+        $builder->column('created_at', 'Created');
 
         $builder->filter('status', 'status')->label('Status')
             ->options([

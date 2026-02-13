@@ -20,14 +20,14 @@ class UserPermissionsController extends ModuleController
                 ->join('INNER JOIN users ON users.id = user_permissions.user_id')
                 ->defaultSort('user_permissions.id', 'DESC');
 
-        $builder->column('id', 'ID', 'user_permissions.id')->sortable();
+        $builder->column('id', 'ID', 'user_permissions.id');
         $builder->column('title', 'Module', 'modules.title');
         $builder->column('user_id', 'User', "CONCAT(users.first_name, ' ', users.surname)");
         $builder->column('has_create', 'Create', 'user_permissions.has_create')->format('check');
         $builder->column('has_edit', 'Edit', 'user_permissions.has_edit')->format('check');
         $builder->column('has_delete', 'Delete', 'user_permissions.has_delete')->format('check');
         $builder->column('has_export', 'Export CSV', 'user_permissions.has_export')->format('check');
-        $builder->column('created_at', 'Created', 'user_permissions.created_at')->sortable();
+        $builder->column('created_at', 'Created', 'user_permissions.created_at');
 
         $builder->filter('module', 'modules.title')
                 ->label('Module')

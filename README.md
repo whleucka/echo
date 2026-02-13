@@ -159,9 +159,9 @@ class ProductsController extends ModuleController
     protected function defineTable(TableSchemaBuilder $builder): void
     {
         $builder->defaultSort('id', 'DESC')->perPage(10);
-        $builder->column('id', 'ID')->sortable();
-        $builder->column('name', 'Name')->sortable()->searchable();
-        $builder->column('price', 'Price')->sortable();
+        $builder->column('id', 'ID');
+        $builder->column('name', 'Name')->searchable();
+        $builder->column('price', 'Price');
     }
 
     protected function defineForm(FormSchemaBuilder $builder): void

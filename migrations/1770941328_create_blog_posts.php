@@ -12,17 +12,17 @@ return new class implements MigrationInterface
             $table->id();
             $table->timestamps();
             $table->unsignedBigInteger("cover")->nullable();
-            $table->enum("status", ["draft", "published", "archived"]);
+            $table->enum("status", ["draft", "published", "archived"])->default("'draft'");
             $table->varchar("slug");
             $table->unsignedBigInteger("user_id");
             $table->varchar("title");
-            $table->varchar("subtitle");
+            $table->varchar("subtitle")->nullable();
             $table->longText("content")->nullable();
             $table->unique("slug");
-            $table->index(["slug"]);
-            $table->timestamp("publish_at")->nullable();
+            $table->timestamp("published_at")->nullable();
             $table->primaryKey("id");
             $table->foreignKey("user_id")->references("users", "id");
+            $table->foreignKey("cover")->references("file_info", "id")->onDelete("SET NULL");
         });
     }
 

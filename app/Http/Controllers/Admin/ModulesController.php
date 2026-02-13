@@ -15,13 +15,13 @@ class ModulesController extends ModuleController
     {
         $builder->defaultSort('id', 'ASC');
 
-        $builder->column('id', 'ID')->sortable();
+        $builder->column('id', 'ID');
         $builder->column('enabled', 'Enabled')->format('check');
         $builder->column('link', 'Link');
-        $builder->column('title', 'Title')->sortable()->searchable();
+        $builder->column('title', 'Title')->searchable();
         $builder->column('icon', 'Icon')
                 ->formatUsing(fn($col, $val) => "<i class='bi bi-$val' />");
-        $builder->column('created_at', 'Created')->sortable();
+        $builder->column('created_at', 'Created');
 
         $builder->filterLink('Parents', 'parent_id IS NULL');
         $builder->filterLink('Children', 'parent_id IS NOT NULL');
