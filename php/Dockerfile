@@ -30,15 +30,13 @@ RUN apt-get update && apt-get install -y \
        opcache \
     && docker-php-ext-enable pdo_mysql
 
-# Install PCOV for code coverage
-RUN pecl install pcov && docker-php-ext-enable pcov
-
 # Install Redis extension
 RUN pecl install redis && docker-php-ext-enable redis
 
-# Install Xdebug only in dev mode
+# Install Xdebug and PCOV only in dev mode
 RUN if [ "$BUILD_MODE" = "dev" ]; then \
-        pecl install xdebug && docker-php-ext-enable xdebug; \
+        pecl install xdebug && docker-php-ext-enable xdebug && \
+        pecl install pcov && docker-php-ext-enable pcov; \
     fi
 
 # Install Composer

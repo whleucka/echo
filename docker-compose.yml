@@ -3,7 +3,7 @@ services:
     build:
       context: ./php
       args:
-        # dev if APP_DEBUG=true, prod otherwise
+        # Default to dev; docker-compose.prod.yml overrides to prod
         BUILD_MODE: ${BUILD_MODE:-dev}
     container_name: php
     volumes:

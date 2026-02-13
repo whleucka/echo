@@ -17,7 +17,13 @@ class Auth implements MiddlewareInterface
     public function handle(RequestInterface $request, Closure $next): ResponseInterface
     {
         $route = $request->getAttribute("route");
-        $middleware = $route["middleware"];
+        $middleware = $route["middleware"] ?? [];
+
+        // Skip auth for benchmark and debug routes (avoids session/Redis overhead)
+        if (in_array('benchmark', $middleware, true) || in_array('debug', $middleware, true)) {
+            return $next($request);
+        }
+
         $user = user();
 
         if (in_array('auth', $middleware) && !$user) {

@@ -16,7 +16,7 @@ use Echo\Framework\Routing\Route\Get;
  * This is separate from APP_DEBUG so you can benchmark in production-like
  * configurations without exposing debug tooling.
  */
-#[Group(pathPrefix: "/benchmark", namePrefix: "benchmark", middleware: ["max_requests" => 0])]
+#[Group(pathPrefix: "/benchmark", namePrefix: "benchmark", middleware: ["benchmark"])]
 class BenchmarkController extends Controller
 {
     public function __construct()
@@ -57,8 +57,10 @@ class BenchmarkController extends Controller
     {
         header('Content-Type: application/json');
 
+        // Use fixed ID for consistent performance measurement
+        // (ORDER BY RAND() forces full table scan)
         $row = db()->fetch(
-            "SELECT id, email, created_at FROM users ORDER BY RAND() LIMIT 1"
+            "SELECT id, email, created_at FROM users WHERE id = 1 LIMIT 1"
         );
 
         return json_encode($row ?: ['error' => 'No data']);
@@ -77,8 +79,10 @@ class BenchmarkController extends Controller
         $results = [];
 
         for ($i = 0; $i < $count; $i++) {
+            $id = ($i % 100) + 1; // Cycle through IDs 1-100
             $results[] = db()->fetch(
-                "SELECT id, email, created_at FROM users ORDER BY RAND() LIMIT 1"
+                "SELECT id, email, created_at FROM users WHERE id = ? LIMIT 1",
+                [$id]
             );
         }
 

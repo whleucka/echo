@@ -15,17 +15,16 @@ class BlogPostsController extends ModuleController
     {
         $builder->column('id', 'ID');
         $builder->column('status', 'Status');
-        $builder->column('title', 'Title')
-            ->searchable();
+        $builder->column('title', 'Title')->searchable();
         $builder->column('published_at', 'Published Date');
         $builder->column('created_at', 'Created');
 
         $builder->filter('status', 'status')->label('Status')
-            ->options([
-                ['value' => 'draft', 'label' => 'Draft'],
-                ['value' => 'published', 'label' => 'Published'],
-                ['value' => 'archived', 'label' => 'Archived'],
-            ]);
+                ->options([
+                    ['value' => 'draft', 'label' => 'Draft'],
+                    ['value' => 'published', 'label' => 'Published'],
+                    ['value' => 'archived', 'label' => 'Archived'],
+                ]);
 
         $builder->filterLink('Draft', "status = 'draft'");
         $builder->filterLink('Published', "status = 'published'");
@@ -46,24 +45,24 @@ class BlogPostsController extends ModuleController
         $builder->modalSize(ModalSize::ExtraLarge);
 
         $builder->field('cover', 'Cover')
-            ->image()
-            ->accept('image/*');
+                ->image()
+                ->accept('image/*');
         $builder->field('status', 'Status')
-            ->dropdown()
-            ->options([
-                ['value' => 'draft', 'label' => 'Draft'],
-                ['value' => 'published', 'label' => 'Published'],
-                ['value' => 'archived', 'label' => 'Archived'],
-            ]);
+                ->dropdown()
+                ->options([
+                    ['value' => 'draft', 'label' => 'Draft'],
+                    ['value' => 'published', 'label' => 'Published'],
+                    ['value' => 'archived', 'label' => 'Archived'],
+                ]);
         $builder->field('slug', 'URL Slug')
-            ->input()
-            ->rules(['required']);
+                ->input()
+                ->rules(['required']);
         $builder->field('title', 'Title')
-            ->input()
-            ->rules(['required']);
+                ->input()
+                ->rules(['required']);
         $builder->field('subtitle', 'Subtitle')
-            ->input();
+                ->input();
         $builder->field('content', 'Content')
-            ->textarea();
+                ->textarea();
     }
 }

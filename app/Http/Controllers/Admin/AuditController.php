@@ -24,8 +24,7 @@ class AuditController extends ModuleController
         $builder->column('user_name', 'User', "COALESCE(CONCAT(users.first_name, ' ', users.surname), 'System')")
                 ->searchable();
         $builder->column('auditable_type', 'Type', 'audits.auditable_type')
-                ->searchable()
-                ->formatUsing(fn($col, $val) => $this->formatType($val));
+                ->searchable();
         $builder->column('auditable_id', 'Record ID', 'audits.auditable_id');
         $builder->column('event', 'Event', 'audits.event')
                 ->formatUsing(fn($col, $val) => $this->formatEvent($val));
@@ -72,7 +71,7 @@ class AuditController extends ModuleController
             "audit" => [
                 "id" => $audit->id,
                 "event" => $audit->event,
-                "auditable_type" => $this->formatType($audit->auditable_type),
+                "auditable_type" => $audit->auditable_type,
                 "auditable_id" => $audit->auditable_id,
                 "user" => $user ? $user->fullName() : 'System',
                 "ip_address" => $audit->ip_address,
@@ -83,14 +82,6 @@ class AuditController extends ModuleController
             "old_values" => $audit->getOldValues(),
             "new_values" => $audit->getNewValues(),
         ]);
-    }
-
-    /**
-     * Format the auditable type (table name)
-     */
-    private function formatType(?string $type): string
-    {
-        return $type ?? '';
     }
 
     /**

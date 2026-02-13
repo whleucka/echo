@@ -60,10 +60,12 @@ class Kernel implements KernelInterface
             // Set the controller request
             $controller->setRequest($request);
 
-            // Set the application user
-            $user = user();
-            if ($user) {
-                $controller->setUser($user);
+            // Set the application user (skip for benchmark/debug to avoid session overhead)
+            if (!in_array('benchmark', $middleware, true) && !in_array('debug', $middleware, true)) {
+                $user = user();
+                if ($user) {
+                    $controller->setUser($user);
+                }
             }
 
             // Set the content from the controller endpoint

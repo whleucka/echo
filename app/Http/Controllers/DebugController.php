@@ -11,7 +11,7 @@ use Echo\Framework\Routing\Route\Get;
  * Debug Controller - Serves profiler data for the debug toolbar
  * Only active when APP_DEBUG=true
  */
-#[Group(pathPrefix: "/_debug/profiler", namePrefix: "debug.profiler", middleware: ["max_requests" => 0])]
+#[Group(pathPrefix: "/_debug/profiler", namePrefix: "debug.profiler", middleware: ["debug"])]
 class DebugController extends Controller
 {
     #[Get("{id}", "profiler")]

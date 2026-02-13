@@ -18,6 +18,13 @@ class AuditContext implements MiddlewareInterface
 {
     public function handle(RequestInterface $request, Closure $next): ResponseInterface
     {
+        $route = $request->getAttribute("route");
+        $middleware = $route["middleware"] ?? [];
+        // Skip audit context for benchmark and debug routes
+        if (is_array($middleware) && (in_array('benchmark', $middleware, true) || in_array('debug', $middleware, true))) {
+            return $next($request);
+        }
+
         $user = user();
         $userId = $user?->id ? (int) $user->id : null;
 

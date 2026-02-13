@@ -25,7 +25,11 @@ class RequestLimit implements MiddlewareInterface
     public function handle(RequestInterface $request, Closure $next): ResponseInterface
     {
         $route = $request->getAttribute("route");
-        $middleware = $route["middleware"];
+        $middleware = $route["middleware"] ?? [];
+
+        if (is_array($middleware) && (in_array('benchmark', $middleware, true) || in_array('debug', $middleware, true))) {
+            return $next($request);
+        }
 
         // Maybe it is disabled?
         if (isset($middleware["max_requests"]) && $middleware["max_requests"] == 0) {

@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ENV_FILE="$(dirname "$0")/../.env"
+
+usage() {
+    echo "Usage: bin/docker-mode <dev|prod>"
+    echo ""
+    echo "Switch Docker environment and rebuild containers."
+    echo ""
+    echo "  dev   OPcache off, Xdebug enabled, verbose errors"
+    echo "  prod  OPcache + JIT on, no Xdebug, errors logged only"
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+MODE="$1"
+
+if [[ "$MODE" != "dev" && "$MODE" != "prod" ]]; then
+    usage
+fi
+
+# Update BUILD_MODE in .env
+if grep -q "^BUILD_MODE=" "$ENV_FILE"; then
+    sed -i "s/^BUILD_MODE=.*/BUILD_MODE=$MODE/" "$ENV_FILE"
+else
+    echo "BUILD_MODE=$MODE" >> "$ENV_FILE"
+fi
+
+echo "Switching to $MODE mode..."
+
+if [ "$MODE" = "prod" ]; then
+    docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+else
+    docker-compose up -d --build
+fi
+
+echo "Done. Running in $MODE mode."
