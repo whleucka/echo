@@ -12,9 +12,6 @@ class Kernel extends ConsoleKernel
         Commands\VersionCommand::class,
         Commands\ServerCommand::class,
         
-        // Admin
-        Commands\AdminNewCommand::class,
-
         // Security
         Commands\KeyGenerateCommand::class,
         
@@ -38,6 +35,7 @@ class Kernel extends ConsoleKernel
         Commands\MigrateDownCommand::class,
 
         // Generators
+        Commands\MakeUserCommand::class,
         Commands\MakeMigrationCommand::class,
         Commands\MakeControllerCommand::class,
         Commands\MakeModelCommand::class,

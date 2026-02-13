@@ -237,11 +237,10 @@ docker-compose exec -it php ./bin/console <command>
 
 | Group | Commands |
 |---|---|
-| `admin:` | `new` |
 | `audit:` | `list`, `stats`, `purge` |
 | `db:` | `backup`, `restore`, `list`, `cleanup` |
 | `mail:` | `queue`, `status`, `purge` |
-| `make:` | `command`, `controller`, `middleware`, `migration`, `model`, `provider`, `service` |
+| `make:` | `command`, `controller`, `middleware`, `migration`, `model`, `provider`, `service`, `user` |
 | `migrate:` | `run`, `rollback`, `status`, `fresh`, `up`, `down` |
 | `route:` | `list`, `cache`, `clear` |
 | `session:` | `stats`, `cleanup` |
