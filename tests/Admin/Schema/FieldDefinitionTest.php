@@ -24,6 +24,7 @@ class FieldDefinitionTest extends TestCase
             default: $overrides['default'] ?? null,
             readonly: $overrides['readonly'] ?? false,
             disabled: $overrides['disabled'] ?? false,
+            requiredOnCreate: $overrides['requiredOnCreate'] ?? false,
             controlRenderer: $overrides['controlRenderer'] ?? null,
         );
     }
@@ -44,6 +45,7 @@ class FieldDefinitionTest extends TestCase
             default: 'admin',
             readonly: true,
             disabled: false,
+            requiredOnCreate: false,
             controlRenderer: $renderer,
         );
 
@@ -59,6 +61,7 @@ class FieldDefinitionTest extends TestCase
         $this->assertSame('admin', $field->default);
         $this->assertTrue($field->readonly);
         $this->assertFalse($field->disabled);
+        $this->assertFalse($field->requiredOnCreate);
         $this->assertSame($renderer, $field->controlRenderer);
     }
 
@@ -97,6 +100,44 @@ class FieldDefinitionTest extends TestCase
     {
         $field = $this->makeField(['rules' => []]);
         $this->assertFalse($field->isRequired());
+    }
+
+    // --- isRequired with requiredOnCreate ---
+
+    public function testIsRequiredOnCreateReturnsRequiredForCreateFormType(): void
+    {
+        $field = $this->makeField([
+            'rules' => ['required', 'min_length:4'],
+            'requiredOnCreate' => true,
+        ]);
+        $this->assertTrue($field->isRequired('create'));
+    }
+
+    public function testIsRequiredOnCreateReturnsFalseForEditFormType(): void
+    {
+        $field = $this->makeField([
+            'rules' => ['required', 'min_length:4'],
+            'requiredOnCreate' => true,
+        ]);
+        $this->assertFalse($field->isRequired('edit'));
+    }
+
+    public function testIsRequiredOnCreateReturnsFalseForShowFormType(): void
+    {
+        $field = $this->makeField([
+            'rules' => ['required', 'min_length:4'],
+            'requiredOnCreate' => true,
+        ]);
+        $this->assertFalse($field->isRequired('show'));
+    }
+
+    public function testIsRequiredWithoutFlagRespectsFormTypeDefault(): void
+    {
+        $field = $this->makeField([
+            'rules' => ['required'],
+            'requiredOnCreate' => false,
+        ]);
+        $this->assertTrue($field->isRequired('edit'));
     }
 
     // --- hasRule ---

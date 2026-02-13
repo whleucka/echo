@@ -72,10 +72,12 @@ class UsersController extends ModuleController
 
         $builder->field('password', 'Password', "'' as password")
                 ->password()
+                ->requiredOnCreate()
                 ->rules(['required', 'min_length:4']);
 
         $builder->field('password_match', 'Password (again)', "'' as password_match")
                 ->password()
+                ->requiredOnCreate()
                 ->rules(['required', 'match:password']);
     }
 
@@ -111,9 +113,13 @@ class UsersController extends ModuleController
 
     protected function handleUpdate(int $id, array $request): bool
     {
-        $service = container()->get(AuthService::class);
         unset($request["password_match"]);
-        $request["password"] = $service->hashPassword($request['password']);
+        if (!empty($request["password"])) {
+            $service = container()->get(AuthService::class);
+            $request["password"] = $service->hashPassword($request['password']);
+        } else {
+            unset($request["password"]);
+        }
         return parent::handleUpdate($id, $request);
     }
 }

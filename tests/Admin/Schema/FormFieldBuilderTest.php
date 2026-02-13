@@ -29,6 +29,7 @@ class FormFieldBuilderTest extends TestCase
         $this->assertNull($field->default);
         $this->assertFalse($field->readonly);
         $this->assertFalse($field->disabled);
+        $this->assertFalse($field->requiredOnCreate);
         $this->assertNull($field->controlRenderer);
     }
 
@@ -227,6 +228,29 @@ class FormFieldBuilderTest extends TestCase
         $this->assertTrue($field->disabled);
     }
 
+    // --- RequiredOnCreate ---
+
+    public function testRequiredOnCreate(): void
+    {
+        $field = (new FormFieldBuilder('password'))
+            ->password()
+            ->requiredOnCreate()
+            ->rules(['required', 'min_length:4'])
+            ->build();
+
+        $this->assertTrue($field->requiredOnCreate);
+    }
+
+    public function testRequiredOnCreateDefaultsFalse(): void
+    {
+        $field = (new FormFieldBuilder('email'))
+            ->email()
+            ->rules(['required', 'email'])
+            ->build();
+
+        $this->assertFalse($field->requiredOnCreate);
+    }
+
     // --- Custom renderer ---
 
     public function testRenderUsing(): void
@@ -280,6 +304,7 @@ class FormFieldBuilderTest extends TestCase
         $this->assertSame($builder, $builder->default(null));
         $this->assertSame($builder, $builder->readonly());
         $this->assertSame($builder, $builder->disabled());
+        $this->assertSame($builder, $builder->requiredOnCreate());
         $this->assertSame($builder, $builder->renderUsing(fn() => ''));
     }
 }

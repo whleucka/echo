@@ -271,7 +271,7 @@ abstract class ModuleController extends Controller
         if (!$this->hasEdit($id)) {
             return $this->permissionDenied();
         }
-        $valid = $this->validate($this->formSchema->getValidationRules(), $id);
+        $valid = $this->validate($this->formSchema->getValidationRules('edit'), $id);
         if ($valid) {
             $request = $this->massageRequest($id, (array) $valid);
             $result = $this->handleUpdate($id, $request);
@@ -623,7 +623,7 @@ abstract class ModuleController extends Controller
             $submit = "Create";
         }
 
-        $this->registerFunctions($readonly);
+        $this->registerFunctions($readonly, $type);
 
         return $this->render("admin/form-modal.html.twig", [
             ...$this->getCommonData(),
@@ -662,14 +662,14 @@ abstract class ModuleController extends Controller
     // Twig function registration
     // =========================================================================
 
-    private function registerFunctions(bool $forceReadonly = false): void
+    private function registerFunctions(bool $forceReadonly = false, string $formType = 'create'): void
     {
         $twig = twig();
         $twig->addFunction(new TwigFunction("hasShow", fn(int $id) => $this->hasShow($id)));
         $twig->addFunction(new TwigFunction("hasEdit", fn(int $id) => $this->hasEdit($id)));
         $twig->addFunction(new TwigFunction("hasDelete", fn(int $id) => $this->hasDelete($id)));
         $twig->addFunction(new TwigFunction("isToolbarActionAllowed", fn(string $name) => $this->isToolbarActionAllowed($name)));
-        $twig->addFunction(new TwigFunction("control", fn(string $column, ?string $value) => $this->control($column, $value, $forceReadonly)));
+        $twig->addFunction(new TwigFunction("control", fn(string $column, ?string $value) => $this->control($column, $value, $forceReadonly, $formType)));
         $twig->addFunction(new TwigFunction("format", fn(string $column, ?string $value) => $this->formatValue($column, $value)));
     }
 
@@ -677,7 +677,7 @@ abstract class ModuleController extends Controller
     // Form controls (schema-driven)
     // =========================================================================
 
-    private function control(string $column, ?string $value, bool $forceReadonly = false)
+    private function control(string $column, ?string $value, bool $forceReadonly = false, string $formType = 'create')
     {
         $field = $this->formSchema->getField($column);
         if (!$field) {
@@ -692,35 +692,35 @@ abstract class ModuleController extends Controller
         $control = $field->control;
 
         return match ($control) {
-            "input" => $this->renderControl("input", $field, $value, forceReadonly: $forceReadonly),
+            "input" => $this->renderControl("input", $field, $value, forceReadonly: $forceReadonly, formType: $formType),
             "number" => $this->renderControl("input", $field, $value, [
                 "type" => "number",
-            ], $forceReadonly),
+            ], $forceReadonly, $formType),
             "checkbox" => $this->renderControl("input", $field, $value, [
                 "value" => 1,
                 "type" => "checkbox",
                 "class" => "form-check-input ms-1",
                 "checked" => $value != false,
-            ], $forceReadonly),
+            ], $forceReadonly, $formType),
             "email" => $this->renderControl("input", $field, $value, [
                 "type" => "email",
                 "autocomplete" => "email",
-            ], $forceReadonly),
+            ], $forceReadonly, $formType),
             "password" => $this->renderControl("input", $field, $value, [
                 "type" => "password",
                 "autocomplete" => "current-password",
-            ], $forceReadonly),
+            ], $forceReadonly, $formType),
             "dropdown" => $this->renderControl("dropdown", $field, $value, [
                 "class" => "form-select",
                 "options" => $field->resolveOptions(),
-            ], $forceReadonly),
-            "textarea" => $this->renderControl("textarea", $field, $value, forceReadonly: $forceReadonly),
-            "image", "file" => $this->renderFileControl($control, $field, $value, $forceReadonly),
+            ], $forceReadonly, $formType),
+            "textarea" => $this->renderControl("textarea", $field, $value, forceReadonly: $forceReadonly, formType: $formType),
+            "image", "file" => $this->renderFileControl($control, $field, $value, $forceReadonly, $formType),
             default => $value,
         };
     }
 
-    private function renderFileControl(string $control, FieldDefinition $field, ?string $value, bool $forceReadonly): string
+    private function renderFileControl(string $control, FieldDefinition $field, ?string $value, bool $forceReadonly, string $formType = 'create'): string
     {
         $fi = new FileInfo($value);
         $data = [
@@ -731,12 +731,12 @@ abstract class ModuleController extends Controller
         if ($control === 'image') {
             $data["stored_name"] = $fi ? $fi->stored_name : false;
         }
-        return $this->renderControl($control, $field, $value, $data, $forceReadonly);
+        return $this->renderControl($control, $field, $value, $data, $forceReadonly, $formType);
     }
 
-    private function renderControl(string $type, FieldDefinition $field, ?string $value, array $data = [], bool $forceReadonly = false)
+    private function renderControl(string $type, FieldDefinition $field, ?string $value, array $data = [], bool $forceReadonly = false, string $formType = 'create')
     {
-        $required = $field->isRequired();
+        $required = $field->isRequired($formType);
         $column = $field->name;
         $default = [
             "type" => "input",

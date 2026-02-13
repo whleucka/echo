@@ -30,11 +30,18 @@ final class FormSchema
      *
      * @return array<string, string[]>
      */
-    public function getValidationRules(): array
+    public function getValidationRules(string $formType = 'create'): array
     {
         $rules = [];
         foreach ($this->fields as $field) {
-            $rules[$field->name] = $field->rules;
+            $fieldRules = $field->rules;
+            if ($field->requiredOnCreate && $formType !== 'create') {
+                $fieldRules = array_values(array_filter(
+                    $fieldRules,
+                    fn(string $rule) => $rule !== 'required'
+                ));
+            }
+            $rules[$field->name] = $fieldRules;
         }
         return $rules;
     }

@@ -97,6 +97,13 @@ class Controller implements ControllerInterface
         foreach ($ruleset as $field => $set) {
             if (empty($set)) {
                 $data[$field] = $request[$field] ?? null;
+                continue;
+            }
+            $isRequired = in_array('required', $set);
+            $fieldValue = $request[$field] ?? null;
+            if (!$isRequired && ($fieldValue === null || $fieldValue === '')) {
+                $data[$field] = $fieldValue;
+                continue;
             }
             foreach ($set as $rule) {
                 $r = explode(":", $rule);

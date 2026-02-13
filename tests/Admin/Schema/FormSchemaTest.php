@@ -25,6 +25,7 @@ class FormSchemaTest extends TestCase
             default: $overrides['default'] ?? null,
             readonly: $overrides['readonly'] ?? false,
             disabled: $overrides['disabled'] ?? false,
+            requiredOnCreate: $overrides['requiredOnCreate'] ?? false,
             controlRenderer: $overrides['controlRenderer'] ?? null,
         );
     }
@@ -112,6 +113,50 @@ class FormSchemaTest extends TestCase
             'avatar' => [],
         ];
         $this->assertSame($expected, $schema->getValidationRules());
+    }
+
+    public function testGetValidationRulesStripsRequiredOnEditForRequiredOnCreateFields(): void
+    {
+        $schema = $this->makeSchema([
+            $this->makeField(['name' => 'email', 'rules' => ['required', 'email']]),
+            $this->makeField([
+                'name' => 'password',
+                'rules' => ['required', 'min_length:4'],
+                'requiredOnCreate' => true,
+            ]),
+        ]);
+
+        $editRules = $schema->getValidationRules('edit');
+        $this->assertSame(['required', 'email'], $editRules['email']);
+        $this->assertSame(['min_length:4'], $editRules['password']);
+    }
+
+    public function testGetValidationRulesKeepsRequiredOnCreateForCreateFormType(): void
+    {
+        $schema = $this->makeSchema([
+            $this->makeField([
+                'name' => 'password',
+                'rules' => ['required', 'min_length:4'],
+                'requiredOnCreate' => true,
+            ]),
+        ]);
+
+        $createRules = $schema->getValidationRules('create');
+        $this->assertSame(['required', 'min_length:4'], $createRules['password']);
+    }
+
+    public function testGetValidationRulesDefaultsToCreate(): void
+    {
+        $schema = $this->makeSchema([
+            $this->makeField([
+                'name' => 'password',
+                'rules' => ['required', 'min_length:4'],
+                'requiredOnCreate' => true,
+            ]),
+        ]);
+
+        $rules = $schema->getValidationRules();
+        $this->assertSame(['required', 'min_length:4'], $rules['password']);
     }
 
     // --- getSelectExpressions ---

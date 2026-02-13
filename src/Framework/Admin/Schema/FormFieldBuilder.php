@@ -13,6 +13,7 @@ class FormFieldBuilder
     private mixed $default = null;
     private bool $readonly = false;
     private bool $disabled = false;
+    private bool $requiredOnCreate = false;
     private ?\Closure $controlRenderer = null;
 
     public function __construct(
@@ -129,6 +130,15 @@ class FormFieldBuilder
         return $this;
     }
 
+    /**
+     * Mark field as required only when creating (optional on edit).
+     */
+    public function requiredOnCreate(): self
+    {
+        $this->requiredOnCreate = true;
+        return $this;
+    }
+
     public function renderUsing(\Closure $fn): self
     {
         $this->controlRenderer = $fn;
@@ -153,6 +163,7 @@ class FormFieldBuilder
             default: $this->default,
             readonly: $this->readonly,
             disabled: $this->disabled,
+            requiredOnCreate: $this->requiredOnCreate,
             controlRenderer: $this->controlRenderer,
         );
     }

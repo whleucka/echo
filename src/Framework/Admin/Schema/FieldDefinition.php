@@ -17,6 +17,7 @@ final class FieldDefinition
         public readonly mixed $default,
         public readonly bool $readonly,
         public readonly bool $disabled,
+        public readonly bool $requiredOnCreate,
         public readonly ?\Closure $controlRenderer,
     ) {}
 
@@ -46,10 +47,13 @@ final class FieldDefinition
     }
 
     /**
-     * Check if this field is required.
+     * Check if this field is required for the given form type.
      */
-    public function isRequired(): bool
+    public function isRequired(string $formType = 'create'): bool
     {
+        if ($this->requiredOnCreate && $formType !== 'create') {
+            return false;
+        }
         return in_array('required', $this->rules);
     }
 
