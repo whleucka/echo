@@ -19,8 +19,7 @@ services:
     sysctls:
       - net.ipv4.tcp_tw_reuse=1
     ports:
-      - "80:80"
-      - "443:443"
+      - "${NGINX_PORT:-80}:80"
     volumes:
       - ./:/var/www/html
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
