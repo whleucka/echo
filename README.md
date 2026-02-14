@@ -173,6 +173,7 @@ All defined in `app/Helpers/Functions.php`:
 | `crypto()` | Crypto instance |
 | `mailer()` | Mailer instance |
 | `config($key)` | Config value (e.g. `config('app.debug')`) |
+| `format_bytes($bytes, $precision)` | Human-readable file size (e.g. `1.5 MB`) |
 
 ## Admin Modules
 
