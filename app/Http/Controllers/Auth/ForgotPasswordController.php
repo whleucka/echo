@@ -30,9 +30,8 @@ class ForgotPasswordController extends Controller
 
         if ($valid) {
             $this->service->requestReset($valid->email);
+            Flash::add("success", "If an account exists with that email, a password reset link has been sent");
         }
-
-        Flash::add("success", "If an account exists with that email, a password reset link has been sent");
 
         return $this->index();
     }

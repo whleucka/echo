@@ -22,8 +22,8 @@
     <section id="register" class="container d-flex justify-content-center align-items-center h-100">
         <form class="bg-light rounded shadow-sm p-4 pt-5 pb-4" method="POST" hx-post="{{ uri('auth.register.post') }}" hx-swap="outerHTML" hx-target="#register" hx-select="#register">
             {{ csrf()|raw }}
-            <h4 class="mb-1">Create Your Account</h4>
-            <p class="auth-subtext mb-4">Let's get you set up — just a few quick steps!</p>
+            <h4 class="mb-1">Sign Up</h4>
+            <p class="auth-subtext mb-4">Create your account — just a few quick steps!</p>
             {% include "components/flash.html.twig" %}
             <div class="row">
                 <div class="col-6">
@@ -57,7 +57,7 @@
                  {% include 'components/validation.html.twig' with {'validate': 'password_match'} %}
             </div>
             <div class="d-grid mb-3">
-                <button type="submit" class="btn btn-success">Sign up</button>
+                <button type="submit" class="btn btn-success">Sign Up</button>
             </div>
             <div class="text-center mt-3">
                 <span class="text-muted small">Already have an account?</span>
