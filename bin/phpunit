@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-docker-compose exec -it php ./vendor/phpunit/phpunit/phpunit tests
+docker compose exec php ./vendor/phpunit/phpunit/phpunit tests

@@ -4,4 +4,4 @@ set -a
 source "$(dirname "$0")/../.env"
 set +a
 
-docker-compose exec -it db mariadb -u root -p"$DB_ROOT_PASSWORD" "$DB_NAME"
+docker compose exec -it db mariadb -u root -p"$DB_ROOT_PASSWORD" "$DB_NAME"

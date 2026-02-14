@@ -34,9 +34,9 @@ fi
 echo "Switching to $MODE mode..."
 
 if [ "$MODE" = "prod" ]; then
-    docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+    docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 else
-    docker-compose up -d --build
+    docker compose up -d --build
 fi
 
 echo "Done. Running in $MODE mode."
