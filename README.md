@@ -13,8 +13,10 @@ A modern PHP 8.4+ MVC framework with attribute-based routing, PHP-DI, and Twig. 
 git clone https://github.com/whleucka/echo.git && cd echo
 cp .env.example .env                              # configure credentials
 docker-compose up -d --build                      # php, nginx, db, redis
-docker-compose exec -it php composer install
-docker-compose exec -it php ./bin/console migrate:run
+./bin/php                                         # enter php container
+composer install                                  # install framework dependencies
+./bin/console migrate:fresh                       # migrate database
+./bin/console storage:fix                         # fix permissions on storage and cache directories
 ```
 
 Open `http://localhost`.
