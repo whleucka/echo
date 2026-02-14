@@ -59,7 +59,7 @@ class DashboardService
 
     public function getModulesCount(): int
     {
-        return Module::where('parent_id', 'is not', null)->count();
+        return (new Module())->whereNotNull('parent_id')->count();
     }
 
     public function getTotalRequests(): int
@@ -432,16 +432,22 @@ class DashboardService
      */
     public function getDatabaseStats(): array
     {
-        $tables = db()->fetchAll(
-            "SELECT
-                table_name,
-                table_rows,
-                ROUND(data_length / 1024 / 1024, 2) AS data_size_mb,
-                ROUND(index_length / 1024 / 1024, 2) AS index_size_mb
-            FROM information_schema.tables
-            WHERE table_schema = DATABASE()
-            ORDER BY table_rows DESC"
-        );
+        try {
+            $tables = db()->fetchAll(
+                "SELECT
+                    table_name,
+                    COALESCE(table_rows, 0) AS table_rows,
+                    ROUND(COALESCE(data_length, 0) / 1024 / 1024, 2) AS data_size_mb,
+                    ROUND(COALESCE(index_length, 0) / 1024 / 1024, 2) AS index_size_mb
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+                    AND table_type = 'BASE TABLE'
+                ORDER BY table_rows DESC"
+            );
+        } catch (\Throwable $e) {
+            error_log('getDatabaseStats failed: ' . $e->getMessage());
+            $tables = [];
+        }
 
         $totalRows = 0;
         $totalSize = 0;

@@ -23,8 +23,6 @@ abstract class Widget
      */
     public function render(): string
     {
-        $data = $this->getData();
-
         if ($this->cacheTtl > 0) {
             $cacheKey = 'widget_' . $this->id;
             $cached = $this->getCache($cacheKey);
@@ -32,6 +30,8 @@ abstract class Widget
                 return $cached;
             }
         }
+
+        $data = $this->getData();
 
         $html = twig()->render($this->template, [
             'widget' => [

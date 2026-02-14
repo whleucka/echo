@@ -13,12 +13,37 @@ services:
       - ./:/var/www/html
       # Override: mount prod.ini instead of dev.ini
       - ./php/prod.ini:/usr/local/etc/php/conf.d/zz-env.ini:ro
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
 
   nginx:
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
 
   db:
     restart: unless-stopped
+    volumes:
+      - ./db_data:/var/lib/mysql
+      - ./db/my.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    deploy:
+      resources:
+        limits:
+          memory: 768M
 
   redis:
     restart: unless-stopped
+    command: >
+      redis-server
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+    deploy:
+      resources:
+        limits:
+          memory: 192M
