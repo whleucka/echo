@@ -1,5 +1,6 @@
 # Production overrides
 # Use with: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Host-level reverse proxy (e.g. Caddy) handles TLS on ports 80/443
 
 services:
   php:
@@ -7,7 +8,17 @@ services:
       context: ./php
       args:
         BUILD_MODE: prod
+    restart: unless-stopped
     volumes:
       - ./:/var/www/html
       # Override: mount prod.ini instead of dev.ini
       - ./php/prod.ini:/usr/local/etc/php/conf.d/zz-env.ini:ro
+
+  nginx:
+    restart: unless-stopped
+
+  db:
+    restart: unless-stopped
+
+  redis:
+    restart: unless-stopped
