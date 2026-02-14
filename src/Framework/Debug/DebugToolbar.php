@@ -37,6 +37,7 @@ class DebugToolbar
             'timestamp' => date('H:i:s'),
             'url' => $_SERVER['REQUEST_URI'] ?? '/',
             'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET',
+            'status_code' => http_response_code() ?: 200,
             'time_ms' => round($request['total_time_ms'] ?? 0, 2),
             'memory' => $request['memory_usage_formatted'] ?? '0 B',
             'memory_bytes' => $request['memory_usage'] ?? 0,
@@ -59,6 +60,7 @@ class DebugToolbar
             'X-Echo-Debug-Time' => round($request['total_time_ms'] ?? 0, 2),
             'X-Echo-Debug-Memory' => $request['memory_usage_formatted'] ?? '0 B',
             'X-Echo-Debug-Queries' => $queries['summary']['count'] ?? 0,
+            'X-Echo-Debug-Status' => http_response_code() ?: 200,
         ];
     }
 
@@ -87,6 +89,7 @@ class DebugToolbar
             'timestamp' => date('H:i:s'),
             'url' => $_SERVER['REQUEST_URI'] ?? '/',
             'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET',
+            'status_code' => http_response_code() ?: 200,
             'time_ms' => round($request['total_time_ms'] ?? 0, 2),
             'memory' => $request['memory_usage_formatted'] ?? '0 B',
             'memory_bytes' => $request['memory_usage'] ?? 0,
@@ -293,11 +296,29 @@ class DebugToolbar
 .echo-debug-request-item.active .echo-debug-time {
     color: azure;
 }
+.echo-debug-request-item.active .echo-debug-status {
+    color: #1a1a2e;
+}
 .echo-debug-request-item.initial {
     border: 1px solid #4ecca3;
 }
 .echo-debug-request-item.loading {
     opacity: 0.6;
+}
+.echo-debug-status {
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 3px;
+    padding: 0 4px;
+}
+.echo-debug-status-ok {
+    color: #4ecca3;
+}
+.echo-debug-status-warning {
+    color: #f0ad4e;
+}
+.echo-debug-status-error {
+    color: #e74c3c;
 }
 .echo-debug-request-method {
     font-weight: 600;
@@ -453,6 +474,7 @@ class DebugToolbar
         timestamp: initialProfile.timestamp,
         url: initialProfile.url,
         method: initialProfile.method,
+        status_code: initialProfile.status_code,
         time_ms: initialProfile.time_ms,
         memory: initialProfile.memory,
         query_count: initialProfile.query_count,
@@ -526,6 +548,7 @@ class DebugToolbar
                 timestamp: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                 url: evt.detail.pathInfo?.requestPath || evt.detail.elt?.getAttribute('hx-get') || evt.detail.elt?.getAttribute('hx-post') || '?',
                 method: evt.detail.verb?.toUpperCase() || 'GET',
+                status_code: xhr.status,
                 time_ms: parseFloat(xhr.getResponseHeader('X-Echo-Debug-Time')) || 0,
                 memory: xhr.getResponseHeader('X-Echo-Debug-Memory') || '0 B',
                 query_count: parseInt(xhr.getResponseHeader('X-Echo-Debug-Queries')) || 0,
@@ -611,8 +634,10 @@ class DebugToolbar
             if (!r.loaded) classes.push('loading');
 
             const url = r.url.length > 30 ? '...' + r.url.slice(-27) : r.url;
+            const statusClass = r.status_code >= 500 ? 'error' : r.status_code >= 400 ? 'warning' : 'ok';
             return '<div class="' + classes.join(' ') + '" data-id="' + r.id + '">' +
                 '<span class="echo-debug-request-method">' + r.method + '</span>' +
+                '<span class="echo-debug-status echo-debug-status-' + statusClass + '">' + r.status_code + '</span>' +
                 '<span class="echo-debug-request-url" title="' + escapeHtml(r.url) + '">' + escapeHtml(url) + '</span>' +
                 '<span class="echo-debug-time">' + r.time_ms + 'ms</span>' +
                 (r.slow_count > 0 ? '<span class="echo-debug-badge echo-debug-badge-warning">' + r.slow_count + '</span>' : '') +
