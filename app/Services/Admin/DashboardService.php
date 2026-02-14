@@ -5,6 +5,7 @@ namespace App\Services\Admin;
 use App\Models\Activity;
 use App\Models\Audit;
 use App\Models\EmailJob;
+use App\Models\FileInfo;
 use App\Models\Module;
 use App\Models\User;
 
@@ -717,5 +718,75 @@ class DashboardService
     {
         $uptime = $this->healthService->getCheck('uptime');
         return $uptime['uptime_formatted'] ?? null;
+    }
+
+    /**
+     * Get file info statistics for dashboard widget
+     */
+    public function getFileInfoStats(): array
+    {
+        return $this->cached('file_info_stats', function () {
+            $today = $this->now()->format('Y-m-d');
+
+            // Today's uploads count
+            $todayCount = FileInfo::where('created_at', '>=', $today . ' 00:00:00')
+                ->andWhere('created_at', '<=', $today . ' 23:59:59')
+                ->count();
+
+            // Today's total size (raw SQL for SUM)
+            $todaySize = db()->fetch(
+                "SELECT COALESCE(SUM(size), 0) as total_size
+                 FROM file_info
+                 WHERE created_at >= ? AND created_at <= ?",
+                [$today . ' 00:00:00', $today . ' 23:59:59']
+            );
+
+            // File type breakdown (images, documents, other)
+            $typeBreakdown = db()->fetchAll(
+                "SELECT
+                    CASE
+                        WHEN mime_type LIKE 'image/%' THEN 'images'
+                        WHEN mime_type LIKE 'application/pdf'
+                             OR mime_type LIKE 'application/msword%'
+                             OR mime_type LIKE 'application/vnd.openxmlformats%'
+                             OR mime_type LIKE 'text/%' THEN 'documents'
+                        ELSE 'other'
+                    END as file_type,
+                    COUNT(*) as count
+                 FROM file_info
+                 WHERE created_at >= ? AND created_at <= ?
+                 GROUP BY file_type",
+                [$today . ' 00:00:00', $today . ' 23:59:59']
+            );
+
+            $types = ['images' => 0, 'documents' => 0, 'other' => 0];
+            foreach ($typeBreakdown as $row) {
+                $types[$row['file_type']] = (int)$row['count'];
+            }
+
+            // Recent uploads (last 5)
+            $recentFiles = FileInfo::where('id', '>', '0')
+                ->orderBy('created_at', 'DESC')
+                ->get(5);
+
+            $recent = [];
+            $files = is_array($recentFiles) ? $recentFiles : ($recentFiles ? [$recentFiles] : []);
+            foreach ($files as $file) {
+                $recent[] = [
+                    'id' => $file->id,
+                    'name' => $file->original_name,
+                    'size' => format_bytes((int)$file->size),
+                    'mime_type' => $file->mime_type,
+                    'time_ago' => $this->timeAgo($file->created_at),
+                ];
+            }
+
+            return [
+                'today_count' => (int)$todayCount,
+                'today_size' => format_bytes((int)($todaySize['total_size'] ?? 0)),
+                'by_type' => $types,
+                'recent' => $recent,
+            ];
+        });
     }
 }

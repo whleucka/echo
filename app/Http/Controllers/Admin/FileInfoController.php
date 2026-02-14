@@ -23,7 +23,7 @@ class FileInfoController extends ModuleController
         $builder->column('mime_type', 'MIME Type')
             ->searchable();
         $builder->column('size', 'Size')
-            ->formatUsing(fn($col, $val) => $this->formatFileSize((int) $val));
+            ->formatUsing(fn($col, $val) => format_bytes((int) $val));
         $builder->column('created_at', 'Uploaded');
 
         $builder->filter('mime_type', 'mime_type')
@@ -104,28 +104,12 @@ class FileInfoController extends ModuleController
     }
 
     /**
-     * Format file size in human-readable format.
-     */
-    private function formatFileSize(int $bytes): string
-    {
-        if ($bytes === 0) {
-            return '0 B';
-        }
-
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $factor = floor(log($bytes, 1024));
-        $factor = min($factor, count($units) - 1);
-
-        return sprintf('%.2f %s', $bytes / pow(1024, $factor), $units[$factor]);
-    }
-
-    /**
      * Override form data to format file size for display.
      */
     protected function formOverride(?int $id, array $form): array
     {
         if (isset($form['size'])) {
-            $form['size'] = $this->formatFileSize((int) $form['size']);
+            $form['size'] = format_bytes((int) $form['size']);
         }
         return $form;
     }

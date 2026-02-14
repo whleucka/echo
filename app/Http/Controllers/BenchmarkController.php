@@ -132,17 +132,8 @@ class BenchmarkController extends Controller
         return json_encode([
             'memory_usage' => memory_get_usage(true),
             'memory_peak' => memory_get_peak_usage(true),
-            'memory_usage_formatted' => $this->formatBytes(memory_get_usage(true)),
-            'memory_peak_formatted' => $this->formatBytes(memory_get_peak_usage(true)),
+            'memory_usage_formatted' => format_bytes(memory_get_usage(true)),
+            'memory_peak_formatted' => format_bytes(memory_get_peak_usage(true)),
         ]);
-    }
-
-    private function formatBytes(int $bytes): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB'];
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
-        return round($bytes / pow(1024, $pow), 2) . ' ' . $units[$pow];
     }
 }

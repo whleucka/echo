@@ -49,7 +49,7 @@ class SystemHealthWidget extends Widget
             $checks['disk'] = [
                 'label' => 'Disk Space',
                 'value' => isset($results['disk']['free'])
-                    ? $this->formatBytes($results['disk']['free']) . ' free'
+                    ? format_bytes($results['disk']['free']) . ' free'
                     : ($results['disk']['message'] ?? ''),
                 'status' => $results['disk']['status'],
                 'percent' => $results['disk']['percent'] ?? 0,
@@ -114,16 +114,5 @@ class SystemHealthWidget extends Widget
             'checks' => $checks,
             'overall_status' => $overallStatus,
         ];
-    }
-
-    private function formatBytes(int $bytes, int $precision = 2): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
-        $bytes /= pow(1024, $pow);
-
-        return round($bytes, $precision) . ' ' . $units[$pow];
     }
 }

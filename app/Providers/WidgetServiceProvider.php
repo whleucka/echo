@@ -7,6 +7,7 @@ use Echo\Framework\Admin\Widgets\ActivityHeatmapWidget;
 use Echo\Framework\Admin\Widgets\AuditSummaryWidget;
 use Echo\Framework\Admin\Widgets\DatabaseWidget;
 use Echo\Framework\Admin\Widgets\EmailQueueWidget;
+use Echo\Framework\Admin\Widgets\FileInfoWidget;
 use Echo\Framework\Admin\Widgets\RedisWidget;
 use Echo\Framework\Admin\Widgets\StatsWidget;
 use Echo\Framework\Admin\Widgets\SystemHealthWidget;
@@ -27,6 +28,7 @@ class WidgetServiceProvider extends ServiceProvider
     {
         // Register dashboard widgets (ordered by priority in each widget class)
         WidgetRegistry::register('activity-heatmap', ActivityHeatmapWidget::class);
+        WidgetRegistry::register('file-info', FileInfoWidget::class);
         WidgetRegistry::register('stats', StatsWidget::class);
         WidgetRegistry::register('system-health', SystemHealthWidget::class);
         WidgetRegistry::register('redis', RedisWidget::class);

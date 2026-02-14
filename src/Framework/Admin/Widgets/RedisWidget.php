@@ -58,7 +58,7 @@ class RedisWidget extends Widget
             $memoryPercent = $maxMemory > 0 ? round(($usedMemory / $maxMemory) * 100, 1) : 0;
             $stats['memory'] = [
                 'label' => 'Memory Usage',
-                'value' => $this->formatBytes($usedMemory) . ($maxMemory > 0 ? ' / ' . $this->formatBytes($maxMemory) : ''),
+                'value' => format_bytes($usedMemory) . ($maxMemory > 0 ? ' / ' . format_bytes($maxMemory) : ''),
                 'icon' => 'memory',
                 'percent' => $memoryPercent,
                 'status' => $memoryPercent < 70 ? 'ok' : ($memoryPercent < 90 ? 'warning' : 'error'),
@@ -117,17 +117,6 @@ class RedisWidget extends Widget
             'stats' => $stats,
             'message' => null,
         ];
-    }
-
-    private function formatBytes(int $bytes, int $precision = 2): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
-        $bytes /= pow(1024, $pow);
-
-        return round($bytes, $precision) . ' ' . $units[$pow];
     }
 
     private function formatUptime(int $seconds): string

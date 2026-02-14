@@ -45,13 +45,7 @@ trait DbTrait
 
     private function formatSize(int $bytes): string
     {
-        $units = ['B', 'KB', 'MB', 'GB'];
-        $i = 0;
-        while ($bytes >= 1024 && $i < count($units) - 1) {
-            $bytes /= 1024;
-            $i++;
-        }
-        return round($bytes, 2) . ' ' . $units[$i];
+        return format_bytes($bytes);
     }
 
     private function cleanupOldBackups(int $keep, OutputInterface $output): void

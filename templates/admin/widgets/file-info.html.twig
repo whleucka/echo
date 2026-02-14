@@ -1,0 +1,90 @@
+<div class="col-12 col-lg-{{ widget.width }} mb-4" id="widget-{{ widget.id }}"
+  {% if widget.refresh_interval > 0 %}
+  hx-get="/admin/dashboard/widgets/{{ widget.id }}"
+  hx-trigger="every {{ widget.refresh_interval }}s"
+  hx-swap="outerHTML"
+  {% endif %}>
+  <div class="card shad border-0 h-100">
+    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-{{ widget.icon }} me-2"></i>{{ widget.title }}</span>
+      <button class="btn btn-sm btn-outline-secondary"
+        hx-get="/admin/dashboard/widgets/{{ widget.id }}"
+        hx-swap="outerHTML"
+        hx-target="#widget-{{ widget.id }}">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
+    <div class="card-body">
+      <div class="row g-3 mb-3">
+        <div class="col-6">
+          <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+            <span class="text-muted">Uploads</span>
+            <strong class="fs-4">{{ data.today_count }}</strong>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+            <span class="text-muted">Size</span>
+            <strong class="fs-4">{{ data.today_size }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-4">
+          <div class="text-center p-2 border rounded">
+            <i class="bi bi-image text-primary mb-1 d-block"></i>
+            <div class="fs-5 fw-bold">{{ data.by_type.images }}</div>
+            <small class="text-muted">Images</small>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="text-center p-2 border rounded">
+            <i class="bi bi-file-earmark-text text-success mb-1 d-block"></i>
+            <div class="fs-5 fw-bold">{{ data.by_type.documents }}</div>
+            <small class="text-muted">Documents</small>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="text-center p-2 border rounded">
+            <i class="bi bi-file-earmark text-secondary mb-1 d-block"></i>
+            <div class="fs-5 fw-bold">{{ data.by_type.other }}</div>
+            <small class="text-muted">Other</small>
+          </div>
+        </div>
+      </div>
+
+      {% if data.recent|length > 0 %}
+      <div class="small text-muted mb-2">Recent Uploads</div>
+      {% for file in data.recent %}
+      <div class="d-flex align-items-center py-1 border-bottom">
+        {% if file.mime_type starts with 'image/' %}
+          <i class="bi bi-image text-primary me-2"></i>
+        {% elseif file.mime_type == 'application/pdf' %}
+          <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
+        {% elseif file.mime_type starts with 'text/' %}
+          <i class="bi bi-file-earmark-text text-success me-2"></i>
+        {% else %}
+          <i class="bi bi-file-earmark text-secondary me-2"></i>
+        {% endif %}
+        <div class="flex-grow-1 text-truncate small" title="{{ file.name }}">
+          {{ file.name }}
+        </div>
+        <span class="badge bg-light text-dark me-2">{{ file.size }}</span>
+        <small class="text-muted text-nowrap">{{ file.time_ago }}</small>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="text-center text-muted py-3">
+        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+        No uploads today
+      </div>
+      {% endif %}
+    </div>
+    <div class="card-footer bg-white border-0">
+      <a href="/admin/file-info" class="text-muted small">
+        <i class="bi bi-arrow-right me-1"></i>View all files
+      </a>
+    </div>
+  </div>
+</div>

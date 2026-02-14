@@ -243,6 +243,22 @@ function mailer(): \Echo\Framework\Mail\Mailer
 }
 
 /**
+ * Format bytes to human-readable format (KB, MB, GB, etc.)
+ */
+function format_bytes(int $bytes, int $precision = 2): string
+{
+    if ($bytes === 0) {
+        return '0 B';
+    }
+
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    $pow = floor(log($bytes) / log(1024));
+    $pow = min($pow, count($units) - 1);
+
+    return round($bytes / pow(1024, $pow), $precision) . ' ' . $units[$pow];
+}
+
+/**
  * Get application config
  */
 function config(string $name): mixed
