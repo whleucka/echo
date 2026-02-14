@@ -33,7 +33,7 @@
       <div class="row g-2 mb-3">
         <div class="col-4">
           <div class="text-center p-2 border rounded">
-            <i class="bi bi-image text-primary mb-1 d-block"></i>
+            <i class="bi bi-image text-secondary mb-1 d-block"></i>
             <div class="fs-5 fw-bold">{{ data.by_type.images }}</div>
             <small class="text-muted">Images</small>
           </div>
@@ -59,7 +59,7 @@
       {% for file in data.recent %}
       <div class="d-flex align-items-center py-1 border-bottom">
         {% if file.mime_type starts with 'image/' %}
-          <i class="bi bi-image text-primary me-2"></i>
+          <i class="bi bi-image text-secondary me-2"></i>
         {% elseif file.mime_type == 'application/pdf' %}
           <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
         {% elseif file.mime_type starts with 'text/' %}
