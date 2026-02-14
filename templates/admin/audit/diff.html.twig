@@ -1,4 +1,5 @@
-<div class="modal-content" style="min-width: min(750px, 95vw);">
+<div class="modal-dialog {{ modalSize }}">
+<div class="modal-content">
   <div class="modal-header">
     <h5 class="modal-title">
       <i class="bi bi-journal-text me-2"></i>
@@ -11,44 +12,32 @@
     {% if error %}
       <div class="alert alert-danger">{{ error }}</div>
     {% else %}
-      <div class="row mb-3">
-        <div class="col-md-6">
-          <table class="table table-sm">
-            <tr>
-              <th class="text-muted">Event</th>
-              <td>
-                {% set badge_class = audit.event == 'created' ? 'bg-success' : (audit.event == 'updated' ? 'bg-warning text-dark' : 'bg-danger') %}
-                <span class="badge {{ badge_class }}">{{ audit.event|capitalize }}</span>
-              </td>
-            </tr>
-            <tr>
-              <th class="text-muted">Model</th>
-              <td>{{ audit.auditable_type }} #{{ audit.auditable_id }}</td>
-            </tr>
-            <tr>
-              <th class="text-muted">User</th>
-              <td>{{ audit.user }}</td>
-            </tr>
-          </table>
-        </div>
-        <div class="col-md-6">
-          <table class="table table-sm">
-            <tr>
-              <th class="text-muted">IP Address</th>
-              <td>{{ audit.ip_address ?? 'N/A' }}</td>
-            </tr>
-            <tr>
-              <th class="text-muted">User Agent</th>
-              <td class="text-truncate" style="max-width: 200px;" title="{{ audit.user_agent }}">
-                {{ audit.user_agent|length > 50 ? audit.user_agent|slice(0, 50) ~ '...' : audit.user_agent ?? 'N/A' }}
-              </td>
-            </tr>
-            <tr>
-              <th class="text-muted">Date</th>
-              <td>{{ audit.created_at }}</td>
-            </tr>
-          </table>
-        </div>
+      <div class="table-responsive mb-3">
+        <table class="table table-sm mb-0">
+          <tr>
+            <th class="text-muted text-nowrap">Event</th>
+            <td>
+              {% set badge_class = audit.event == 'created' ? 'bg-success' : (audit.event == 'updated' ? 'bg-warning text-dark' : 'bg-danger') %}
+              <span class="badge {{ badge_class }}">{{ audit.event|capitalize }}</span>
+            </td>
+            <th class="text-muted text-nowrap">Date</th>
+            <td>{{ audit.created_at }}</td>
+          </tr>
+          <tr>
+            <th class="text-muted text-nowrap">Model</th>
+            <td>{{ audit.auditable_type }} #{{ audit.auditable_id }}</td>
+            <th class="text-muted text-nowrap">User</th>
+            <td>{{ audit.user }}</td>
+          </tr>
+          <tr>
+            <th class="text-muted text-nowrap">IP Address</th>
+            <td>{{ audit.ip_address ?? 'N/A' }}</td>
+            <th class="text-muted text-nowrap">User Agent</th>
+            <td title="{{ audit.user_agent }}">
+              <span class="d-inline-block text-truncate" style="max-width: 100%;">{{ audit.user_agent ?? 'N/A' }}</span>
+            </td>
+          </tr>
+        </table>
       </div>
 
       {% if audit.event == 'created' %}
@@ -158,4 +147,5 @@
   <div class="modal-footer">
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
   </div>
+</div>
 </div>

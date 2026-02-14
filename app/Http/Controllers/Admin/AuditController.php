@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Audit;
-use Echo\Framework\Admin\Schema\TableSchemaBuilder;
+use Echo\Framework\Admin\Schema\{ModalSize, TableSchemaBuilder};
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;
@@ -68,6 +68,7 @@ class AuditController extends ModuleController
         $user = $audit->user();
 
         return $this->render("admin/audit/diff.html.twig", [
+            "modalSize" => ModalSize::ExtraLarge->value,
             "audit" => [
                 "id" => $audit->id,
                 "event" => $audit->event,
