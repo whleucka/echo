@@ -265,7 +265,7 @@ nav#nav-sidebar header h4 {
 #dashboard #widget-activity-heatmap .table {
   table-layout: fixed;
   width: 100%;
-  font-size: 0.6rem;
+  font-size: 0.5rem;
   border-collapse: separate;
   border-spacing: 4px;
 }

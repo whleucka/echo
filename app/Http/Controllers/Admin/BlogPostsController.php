@@ -6,7 +6,7 @@ use Echo\Framework\Admin\Schema\{FormSchemaBuilder, ModalSize, TableSchemaBuilde
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
 
-#[Group(pathPrefix: "/blog-posts", namePrefix: "blog-posts")]
+#[Group(pathPrefix: "/blog/posts", namePrefix: "blog.posts")]
 class BlogPostsController extends ModuleController
 {
     protected string $tableName = "blog_posts";
@@ -44,6 +44,12 @@ class BlogPostsController extends ModuleController
     {
         $builder->modalSize(ModalSize::ExtraLarge);
 
+        $builder->field('user_id', 'Author')
+                ->dropdown()
+                ->optionsFrom("SELECT id as value, CONCAT(first_name, ' ', surname) as label 
+                    FROM users
+                    ORDER BY label")
+                ->default(user()->id);
         $builder->field('cover', 'Cover')
                 ->image()
                 ->accept('image/*');
@@ -53,7 +59,8 @@ class BlogPostsController extends ModuleController
                     ['value' => 'draft', 'label' => 'Draft'],
                     ['value' => 'published', 'label' => 'Published'],
                     ['value' => 'archived', 'label' => 'Archived'],
-                ]);
+                ])
+                ->default('draft');
         $builder->field('slug', 'URL Slug')
                 ->input()
                 ->rules(['required']);

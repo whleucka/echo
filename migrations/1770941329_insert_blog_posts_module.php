@@ -8,7 +8,7 @@ return new class implements MigrationInterface
     {
         return "INSERT INTO modules (id, link, title, icon, item_order, parent_id) VALUES 
             (11, null, 'Blog', null, 40, null),
-            (12, 'blog-posts', 'Blog Posts', 'pencil', 0, 11)";
+            (12, 'blog/posts', 'Blog Posts', 'pencil', 0, 11)";
     }
 
     public function down(): string

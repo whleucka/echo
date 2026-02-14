@@ -1171,11 +1171,24 @@ abstract class ModuleController extends Controller
         if ($this->cachedModule !== null) {
             return $this->cachedModule;
         }
-        $link = explode('.', request()->getAttribute("route")["name"])[0];
+        $link = $this->getModuleLink();
         $this->cachedModule = db()->fetch("SELECT *
             FROM modules
             WHERE enabled = 1 AND link = ?", [$link]);
         return $this->cachedModule;
+    }
+
+    /**
+     * Derive the module link from the child controller's #[Group] pathPrefix.
+     */
+    private function getModuleLink(): string
+    {
+        $reflection = new \ReflectionClass(static::class);
+        $attrs = $reflection->getAttributes(Group::class);
+        if (!empty($attrs)) {
+            return trim($attrs[0]->newInstance()->pathPrefix, '/');
+        }
+        return '';
     }
 
     private function init(): void
