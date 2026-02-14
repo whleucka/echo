@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Echo\Framework\Admin\Schema\{FormSchemaBuilder, ModalSize, TableSchemaBuilder};
 use Echo\Framework\Http\ModuleController;
 use Echo\Framework\Routing\Group;
+use Echo\Framework\Routing\Route\Post;
 
 #[Group(pathPrefix: "/blog/posts", namePrefix: "blog.posts")]
 class BlogPostsController extends ModuleController
@@ -46,7 +47,7 @@ class BlogPostsController extends ModuleController
 
         $builder->field('user_id', 'Author')
                 ->dropdown()
-                ->optionsFrom("SELECT id as value, CONCAT(first_name, ' ', surname) as label 
+                ->optionsFrom("SELECT id as value, CONCAT(first_name, ' ', surname) as label
                     FROM users
                     ORDER BY label")
                 ->default(user()->id);
@@ -70,6 +71,36 @@ class BlogPostsController extends ModuleController
         $builder->field('subtitle', 'Subtitle')
                 ->input();
         $builder->field('content', 'Content')
-                ->textarea();
+                ->editor();
+    }
+
+    #[Post("/upload-image", "blog.posts.upload-image")]
+    public function uploadImage(): void
+    {
+        $file = $this->request->files->image ?? null;
+        if (!$file) {
+            echo json_encode(['success' => 0, 'message' => 'No file uploaded']);
+            exit;
+        }
+
+        try {
+            $fileInfoId = $this->handleFileUpload($file);
+            if ($fileInfoId) {
+                $fileInfo = db()->fetch(
+                    "SELECT path FROM file_info WHERE id = ?",
+                    [$fileInfoId]
+                );
+                echo json_encode([
+                    'success' => 1,
+                    'file' => ['url' => $fileInfo['path'] ?? '']
+                ]);
+            } else {
+                echo json_encode(['success' => 0, 'message' => 'Upload failed']);
+            }
+        } catch (\Throwable $e) {
+            error_log($e->getMessage());
+            echo json_encode(['success' => 0, 'message' => 'Upload error']);
+        }
+        exit;
     }
 }

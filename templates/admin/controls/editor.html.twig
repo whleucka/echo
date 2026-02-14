@@ -1,0 +1,199 @@
+{% if readonly or disabled %}
+{# ── Show / readonly mode: render Editor.js JSON as static HTML ── #}
+<div class="editorjs-readonly">
+  {% set parsed = null %}
+  {% set is_json = false %}
+  {% if value starts with '{' or value starts with '[' %}
+    {% set is_json = true %}
+  {% endif %}
+
+  {% if is_json %}
+    <div class="editorjs-content" data-editorjs-json="{{ value|e('html_attr') }}"></div>
+    <script>
+    (function() {
+      var container = document.currentScript.previousElementSibling;
+      try {
+        var data = JSON.parse(container.dataset.editorjsJson);
+        var blocks = data.blocks || [];
+        var html = '';
+        blocks.forEach(function(block) {
+          switch (block.type) {
+            case 'paragraph':
+              html += '<p>' + (block.data.text || '') + '</p>';
+              break;
+            case 'header':
+              var lvl = block.data.level || 2;
+              html += '<h' + lvl + '>' + (block.data.text || '') + '</h' + lvl + '>';
+              break;
+            case 'list':
+              var tag = block.data.style === 'ordered' ? 'ol' : 'ul';
+              html += '<' + tag + '>';
+              (block.data.items || []).forEach(function(item) {
+                html += '<li>' + item + '</li>';
+              });
+              html += '</' + tag + '>';
+              break;
+            case 'code':
+              html += '<pre><code>' + (block.data.code || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code></pre>';
+              break;
+            case 'image':
+              var src = (block.data.file && block.data.file.url) || '';
+              var caption = block.data.caption || '';
+              html += '<figure class="editorjs-image">';
+              html += '<img src="' + src + '" alt="' + caption.replace(/"/g, '&quot;') + '">';
+              if (caption) html += '<figcaption>' + caption + '</figcaption>';
+              html += '</figure>';
+              break;
+            case 'quote':
+              html += '<blockquote>';
+              html += '<p>' + (block.data.text || '') + '</p>';
+              if (block.data.caption) html += '<cite>' + block.data.caption + '</cite>';
+              html += '</blockquote>';
+              break;
+            case 'delimiter':
+              html += '<hr>';
+              break;
+            case 'raw':
+              html += (block.data.html || '');
+              break;
+            case 'embed':
+              html += '<div class="editorjs-embed"><iframe src="' + (block.data.embed || '') + '" width="' + (block.data.width || 600) + '" height="' + (block.data.height || 300) + '" frameborder="0" allowfullscreen></iframe>';
+              if (block.data.caption) html += '<p>' + block.data.caption + '</p>';
+              html += '</div>';
+              break;
+            default:
+              html += '<p>' + JSON.stringify(block.data) + '</p>';
+          }
+        });
+        container.innerHTML = html;
+      } catch(e) {
+        container.innerHTML = '<p>' + container.dataset.editorjsJson + '</p>';
+      }
+    })();
+    </script>
+  {% else %}
+    <div class="editorjs-content">
+      <p>{{ value }}</p>
+    </div>
+  {% endif %}
+</div>
+
+{% else %}
+{# ── Edit / create mode: full Editor.js integration ── #}
+<textarea
+  class="{{ class }} {{ v_class }}"
+  name="{{ name }}"
+  {% if required %}required{% endif %}
+  style="display:none;"
+>{{ old(name, value) }}</textarea>
+
+<div class="editorjs-container border rounded" data-editor-field="{{ id }}"></div>
+
+<script>
+(function() {
+  var scriptEl = document.currentScript;
+  var container = scriptEl.previousElementSibling;
+  var textarea = container.previousElementSibling;
+  var containerId = 'editorjs-' + {{ id|json_encode|raw }};
+  container.id = containerId;
+
+  // Destroy any previous Editor.js instance on this container (HTMX re-opens)
+  if (window._editorInstances && window._editorInstances[containerId]) {
+    try { window._editorInstances[containerId].destroy(); } catch(e) {}
+    delete window._editorInstances[containerId];
+  }
+
+  // Parse existing data from textarea
+  var initialData = null;
+  var raw = (textarea.value || '').trim();
+  if (raw) {
+    try {
+      initialData = JSON.parse(raw);
+    } catch(e) {
+      // Legacy plain text — wrap in paragraph block
+      initialData = {
+        time: Date.now(),
+        blocks: [{ type: 'paragraph', data: { text: raw } }]
+      };
+    }
+  }
+
+  // Get CSRF token from form
+  var csrfInput = textarea.closest('form').querySelector('input[name="csrf_token"]');
+  var csrfToken = csrfInput ? csrfInput.value : '';
+
+  // Dynamic script loader with dedup
+  function loadScript(src) {
+    return new Promise(function(resolve, reject) {
+      if (document.querySelector('script[src="' + src + '"]')) {
+        resolve();
+        return;
+      }
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  // Determine upload endpoint from the module URL
+  var moduleLink = {{ module.link|json_encode|raw }};
+  var uploadUrl = '/admin/' + moduleLink + '/upload-image';
+
+  // Load all Editor.js scripts, then initialize
+  var scripts = [
+    '/js/editorjs/editor.js',
+    '/js/editorjs/header.js',
+    '/js/editorjs/list.js',
+    '/js/editorjs/code.js',
+    '/js/editorjs/image.js',
+    '/js/editorjs/raw.js',
+    '/js/editorjs/quote.js',
+    '/js/editorjs/delimiter.js',
+    '/js/editorjs/inline-code.js',
+    '/js/editorjs/embed.js'
+  ];
+
+  Promise.all(scripts.map(loadScript)).then(function() {
+    var editorConfig = {
+      holder: containerId,
+      data: initialData || undefined,
+      placeholder: 'Start writing...',
+      tools: {
+        header: { class: Header, config: { levels: [2, 3, 4], defaultLevel: 2 } },
+        list: { class: List },
+        code: { class: CodeTool },
+        quote: { class: Quote },
+        delimiter: { class: Delimiter },
+        inlineCode: { class: InlineCode },
+        raw: { class: RawTool },
+        embed: { class: Embed }
+      },
+      onChange: function(api) {
+        api.saver.save().then(function(outputData) {
+          textarea.value = JSON.stringify(outputData);
+        });
+      }
+    };
+
+    // Only add image tool if an upload endpoint exists for this module
+    if (moduleLink) {
+      editorConfig.tools.image = {
+        class: ImageTool,
+        config: {
+          endpoints: { byFile: uploadUrl },
+          additionalRequestHeaders: { 'X-CSRF-Token': csrfToken }
+        }
+      };
+    }
+
+    var editor = new EditorJS(editorConfig);
+
+    // Store instance for cleanup
+    if (!window._editorInstances) window._editorInstances = {};
+    window._editorInstances[containerId] = editor;
+  });
+})();
+</script>
+{% endif %}

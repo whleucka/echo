@@ -80,6 +80,12 @@ class FormFieldBuilder
         return $this;
     }
 
+    public function editor(): self
+    {
+        $this->control = 'editor';
+        return $this;
+    }
+
     // Property setters
 
     public function rules(array $rules): self

@@ -30,8 +30,7 @@ class ActivityController extends ModuleController
                     FROM users 
                     ORDER BY label");
 
-        $builder->filterLink('/', "LEFT(activity.uri, 6) != '/admin'");
-        $builder->filterLink('/admin', "LEFT(activity.uri, 6) = '/admin'");
+        $builder->filterLink('All', "1=1");
         $builder->filterLink('Me', sprintf("user_id = %s", user()->id));
 
         $builder->toolbarAction('export');

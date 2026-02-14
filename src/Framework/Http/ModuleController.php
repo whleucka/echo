@@ -715,6 +715,9 @@ abstract class ModuleController extends Controller
                 "options" => $field->resolveOptions(),
             ], $forceReadonly, $formType),
             "textarea" => $this->renderControl("textarea", $field, $value, forceReadonly: $forceReadonly, formType: $formType),
+            "editor" => $this->renderControl("editor", $field, $value, [
+                "module" => ["link" => $this->moduleLink],
+            ], $forceReadonly, $formType),
             "image", "file" => $this->renderFileControl($control, $field, $value, $forceReadonly, $formType),
             default => $value,
         };

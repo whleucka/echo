@@ -307,6 +307,83 @@ nav#nav-sidebar header h4 {
 }
 
 /**
+ * Editor.js
+ */
+.editorjs-container {
+  min-height: 300px;
+  padding: 0 10px;
+  background: #fff;
+}
+.editorjs-container .codex-editor {
+  width: 100%;
+}
+.editorjs-container .ce-block__content,
+.editorjs-container .ce-toolbar__content {
+  max-width: 100%;
+}
+.editorjs-container .ce-block__content {
+  margin: 0;
+}
+.editorjs-container .ce-toolbar__actions {
+  right: 0;
+}
+.editorjs-container .ce-code__textarea {
+  background: #f4f4f4;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: "Ubuntu Mono", monospace;
+  font-size: 0.9rem;
+  min-height: 100px;
+}
+.editorjs-container .cdx-quote {
+  border-left: 3px solid #324554;
+  padding-left: 1rem;
+}
+.editorjs-container .image-tool__image {
+  max-width: 100%;
+  border-radius: 4px;
+}
+.editorjs-readonly .editorjs-content pre {
+  background: #f4f4f4;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 1rem;
+  font-family: "Ubuntu Mono", monospace;
+  font-size: 0.9rem;
+  overflow-x: auto;
+}
+.editorjs-readonly .editorjs-content blockquote {
+  border-left: 3px solid #324554;
+  padding-left: 1rem;
+  color: #555;
+  margin: 1rem 0;
+}
+.editorjs-readonly .editorjs-content blockquote cite {
+  display: block;
+  font-style: italic;
+  margin-top: 0.5rem;
+  color: #888;
+}
+.editorjs-readonly .editorjs-content figure.editorjs-image {
+  margin: 1rem 0;
+}
+.editorjs-readonly .editorjs-content figure.editorjs-image img {
+  max-width: 100%;
+  border-radius: 4px;
+}
+.editorjs-readonly .editorjs-content figure.editorjs-image figcaption {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+.editorjs-readonly .editorjs-content hr {
+  border: none;
+  border-top: 2px solid #ddd;
+  margin: 1.5rem 0;
+}
+
+/**
  * Modal
  */
 #modal {
