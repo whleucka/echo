@@ -14,7 +14,7 @@ class FileInfoWidget extends Widget
     protected int $width = 6;
     protected int $refreshInterval = 60;
     protected int $cacheTtl = 30;
-    protected int $priority = 101; // Right after Activity Heatmap (100)
+    protected int $priority = 70;
 
     public function __construct(private DashboardService $dashboardService)
     {

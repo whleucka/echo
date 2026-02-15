@@ -17,37 +17,48 @@
     <div class="card-body">
       <div class="row g-3 mb-3">
         <div class="col-6">
-          <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
-            <span class="text-muted">Uploads</span>
-            <strong class="fs-4">{{ data.today_count }}</strong>
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="bi bi-cloud-arrow-up text-primary fs-4"></i>
+              </div>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <div class="small text-muted">Uploads</div>
+              <div class="fs-4 fw-bold">{{ data.today_count }}</div>
+            </div>
           </div>
         </div>
         <div class="col-6">
-          <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
-            <span class="text-muted">Size</span>
-            <strong class="fs-4">{{ data.today_size }}</strong>
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-info bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="bi bi-hdd text-info fs-4"></i>
+              </div>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <div class="small text-muted">Size</div>
+              <div class="fs-4 fw-bold">{{ data.today_size }}</div>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="row g-2 mb-3">
         <div class="col-4">
-          <div class="text-center p-2 border rounded">
-            <i class="bi bi-image text-secondary mb-1 d-block"></i>
+          <div class="text-center p-2 bg-secondary bg-opacity-10 rounded">
             <div class="fs-5 fw-bold">{{ data.by_type.images }}</div>
             <small class="text-muted">Images</small>
           </div>
         </div>
         <div class="col-4">
-          <div class="text-center p-2 border rounded">
-            <i class="bi bi-file-earmark-text text-success mb-1 d-block"></i>
+          <div class="text-center p-2 bg-success bg-opacity-10 rounded">
             <div class="fs-5 fw-bold">{{ data.by_type.documents }}</div>
             <small class="text-muted">Documents</small>
           </div>
         </div>
         <div class="col-4">
-          <div class="text-center p-2 border rounded">
-            <i class="bi bi-file-earmark text-secondary mb-1 d-block"></i>
+          <div class="text-center p-2 bg-secondary bg-opacity-10 rounded">
             <div class="fs-5 fw-bold">{{ data.by_type.other }}</div>
             <small class="text-muted">Other</small>
           </div>

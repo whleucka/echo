@@ -14,7 +14,7 @@ class DatabaseWidget extends Widget
     protected int $width = 6;
     protected int $refreshInterval = 120;
     protected int $cacheTtl = 60;
-    protected int $priority = 50;
+    protected int $priority = 80;
 
     public function __construct(private DashboardService $dashboardService)
     {

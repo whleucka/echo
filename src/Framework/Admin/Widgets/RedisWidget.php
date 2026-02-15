@@ -14,7 +14,7 @@ class RedisWidget extends Widget
     protected int $width = 6;
     protected int $refreshInterval = 30;
     protected int $cacheTtl = 0; // Don't cache Redis stats
-    protected int $priority = 60;
+    protected int $priority = 90;
 
     public function getData(): array
     {

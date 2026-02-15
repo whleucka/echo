@@ -14,7 +14,7 @@ class ActivityHeatmapWidget extends Widget
     protected int $width = 6;
     protected int $refreshInterval = 300; // 5 minutes
     protected int $cacheTtl = 60;
-    protected int $priority = 100;
+    protected int $priority = 30;
 
     public function __construct(private DashboardService $dashboardService)
     {

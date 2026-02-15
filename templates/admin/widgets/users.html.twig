@@ -16,21 +16,45 @@
     </div>
     <div class="card-body">
       <div class="row g-3 mb-3">
-        <div class="col-3 text-center text-truncate">
-          <div class="small text-muted text-truncate">Total</div>
-          <strong class="fs-4">{{ data.total }}</strong>
+        <div class="col-6">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="bi bi-people text-primary fs-4"></i>
+              </div>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <div class="small text-muted">Total Users</div>
+              <div class="fs-4 fw-bold">{{ data.total }}</div>
+            </div>
+          </div>
         </div>
-        <div class="col-3 text-center text-truncate">
-          <div class="small text-muted text-truncate">Active</div>
-          <strong class="fs-4 text-success">{{ data.active }}</strong>
+        <div class="col-6">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-success bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="bi bi-person-check text-success fs-4"></i>
+              </div>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <div class="small text-muted">Active Now</div>
+              <div class="fs-4 fw-bold">{{ data.active }}</div>
+            </div>
+          </div>
         </div>
-        <div class="col-3 text-center text-truncate">
-          <div class="small text-muted text-truncate">New (7d)</div>
-          <strong class="fs-4 text-primary">{{ data.new_week }}</strong>
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <div class="text-center p-2 bg-info bg-opacity-10 rounded">
+            <div class="fs-5 fw-bold">{{ data.new_week }}</div>
+            <small class="text-muted">New (7d)</small>
+          </div>
         </div>
-        <div class="col-3 text-center text-truncate">
-          <div class="small text-muted text-truncate">Today</div>
-          <strong class="fs-4 text-info">{{ data.new_today }}</strong>
+        <div class="col-6">
+          <div class="text-center p-2 bg-warning bg-opacity-10 rounded">
+            <div class="fs-5 fw-bold">{{ data.new_today }}</div>
+            <small class="text-muted">Today</small>
+          </div>
         </div>
       </div>
 

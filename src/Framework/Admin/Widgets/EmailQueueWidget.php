@@ -14,7 +14,7 @@ class EmailQueueWidget extends Widget
     protected int $width = 6;
     protected int $refreshInterval = 60;
     protected int $cacheTtl = 30;
-    protected int $priority = 70;
+    protected int $priority = 60;
 
     public function __construct(private DashboardService $dashboardService)
     {

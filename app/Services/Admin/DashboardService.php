@@ -642,11 +642,13 @@ class DashboardService
         }
 
         $maxCount = 1;
+        $totalRequests = 0;
         foreach ($data as $row) {
             $dow = (int)$row['dow'];
             $hour = (int)$row['hour'];
             $count = (int)$row['count'];
             $matrix[$dow][$hour] = $count;
+            $totalRequests += $count;
             if ($count > $maxCount) {
                 $maxCount = $count;
             }
@@ -657,6 +659,7 @@ class DashboardService
             'days' => $days,
             'hours' => range(0, 23),
             'max' => $maxCount,
+            'total_requests' => $totalRequests,
         ];
     }
 

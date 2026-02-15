@@ -14,7 +14,7 @@ class AuditSummaryWidget extends Widget
     protected int $width = 6;
     protected int $refreshInterval = 60;
     protected int $cacheTtl = 30;
-    protected int $priority = 90;
+    protected int $priority = 50;
 
     public function __construct(private DashboardService $dashboardService)
     {

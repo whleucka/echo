@@ -17,30 +17,37 @@
     <div class="card-body">
       <div class="row g-3 mb-3">
         <div class="col-12">
-          <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
-            <span class="text-muted">Today's Events</span>
-            <strong class="fs-4">{{ data.today }}</strong>
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-info bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="bi bi-calendar-check text-info fs-4"></i>
+              </div>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <div class="small text-muted">Today's Events</div>
+              <div class="fs-4 fw-bold">{{ data.today }}</div>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="row g-2 mb-3">
         <div class="col-4">
-          <div class="text-center p-2 border rounded">
-            <span class="badge bg-success mb-1">Created</span>
+          <div class="text-center p-2 bg-success bg-opacity-10 rounded">
             <div class="fs-5 fw-bold">{{ data.by_event.created }}</div>
+            <small class="text-muted">Created</small>
           </div>
         </div>
         <div class="col-4">
-          <div class="text-center p-2 border rounded">
-            <span class="badge bg-warning text-dark mb-1">Updated</span>
+          <div class="text-center p-2 bg-warning bg-opacity-10 rounded">
             <div class="fs-5 fw-bold">{{ data.by_event.updated }}</div>
+            <small class="text-muted">Updated</small>
           </div>
         </div>
         <div class="col-4">
-          <div class="text-center p-2 border rounded">
-            <span class="badge bg-danger mb-1">Deleted</span>
+          <div class="text-center p-2 bg-danger bg-opacity-10 rounded">
             <div class="fs-5 fw-bold">{{ data.by_event.deleted }}</div>
+            <small class="text-muted">Deleted</small>
           </div>
         </div>
       </div>
