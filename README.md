@@ -13,10 +13,9 @@ A modern PHP 8.4+ MVC framework with attribute-based routing, PHP-DI, and Twig. 
 git clone https://github.com/whleucka/echo.git && cd echo
 cp .env.example .env                              # configure credentials
 docker-compose up -d --build                      # php, nginx, db, redis
-./bin/php                                         # enter php container
-composer install                                  # install framework dependencies
-./bin/console migrate:fresh                       # migrate database
-./bin/console storage:fix                         # fix permissions on storage and cache directories
+./bin/php composer install                        # enter php container
+./echo migrate:fresh                              # migrate database
+./echo storage:fix                                # fix permissions on storage and cache directories
 ```
 
 Open `http://localhost`.
@@ -38,12 +37,10 @@ Open `http://localhost`.
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
-## Common Commands
+## Common Docker Commands
 
 ```bash
-docker-compose exec -it php composer test          # run tests
-docker-compose exec -it php composer clear-cache   # clear Twig cache
-docker-compose exec -it php ./bin/console migrate:run
+docker-compose exec -it php bash                   # PHP container
 docker-compose exec -it db mariadb -u root -p      # database CLI
 docker-compose exec -it redis redis-cli            # Redis CLI
 ```
@@ -203,7 +200,7 @@ class ProductsController extends ModuleController
 }
 ```
 
-Built-in modules: Users, Activity, Audits, Health, Modules, User Permissions.
+Built-in modules: Users, Activity, Audits, Health, Modules, User Permissions, Blog Posts, Blog Tags, Blog Comments, File Info.
 
 ## Email
 
