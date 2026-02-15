@@ -1,0 +1,5 @@
+<select id="{{ id }}" class="{{ class }} {{ v_class }}" name="{{ name }}[]" multiple {% if readonly or disabled %}disabled{% endif %}>
+  {% for option in options %} 
+  <option value="{{ option.value }}" {% if option.value in selected %}selected{% endif %}>{{ option.label }}</option>
+  {% endfor %}
+</select>

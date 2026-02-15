@@ -31,6 +31,12 @@ abstract class ModuleController extends Controller
     protected string $moduleTitle = "";
     private array|false|null $cachedModule = null;
 
+    // --- Current form context ---
+    private ?int $currentFormId = null;
+
+    // --- Pivot data to sync after store/update ---
+    private array $pendingPivotData = [];
+
     /**
      * Subclasses define their table schema here.
      * OR they can use NoTableTrait
@@ -605,17 +611,20 @@ abstract class ModuleController extends Controller
             return '';
         }
 
+        $this->currentFormId = $id;
         $data = $this->runFormQuery($id);
         $readonly = false;
 
         if ($type === "edit") {
             $data = $data->fetch();
+            $data = $this->addPivotFieldPlaceholders($data);
             $data = $this->formOverride($id, $data);
             $title = "Edit $id";
             $submit = "Save Changes";
         } elseif ($type === "show") {
             $submit = false;
             $data = $data->fetch();
+            $data = $this->addPivotFieldPlaceholders($data);
             $title = "View $id";
             $readonly = true;
         } elseif ($type === "create") {
@@ -656,6 +665,25 @@ abstract class ModuleController extends Controller
     protected function formOverride(?int $id, array $form): array
     {
         return $form;
+    }
+
+    /**
+     * Add placeholder entries for pivot fields so form template renders them.
+     * The actual values are fetched by getPivotValues() in the control renderer.
+     */
+    private function addPivotFieldPlaceholders(array $data): array
+    {
+        $result = [];
+        foreach ($this->formSchema->fields as $field) {
+            if ($field->hasPivot()) {
+                $result[$field->name] = null;
+            } elseif (array_key_exists($field->name, $data)) {
+                $result[$field->name] = $data[$field->name];
+            } else {
+                $result[$field->name] = null;
+            }
+        }
+        return $result;
     }
 
     // =========================================================================
@@ -713,6 +741,11 @@ abstract class ModuleController extends Controller
             "dropdown" => $this->renderControl("dropdown", $field, $value, [
                 "class" => "form-select",
                 "options" => $field->resolveOptions(),
+            ], $forceReadonly, $formType),
+            "multiselect" => $this->renderControl("multiselect", $field, $value, [
+                "class" => "form-select",
+                "options" => $field->resolveOptions(),
+                "selected" => $this->getPivotValues($field),
             ], $forceReadonly, $formType),
             "textarea" => $this->renderControl("textarea", $field, $value, forceReadonly: $forceReadonly, formType: $formType),
             "editor" => $this->renderControl("editor", $field, $value, [
@@ -789,12 +822,31 @@ abstract class ModuleController extends Controller
         return implode(" ", $classname);
     }
 
+    /**
+     * Get the current pivot values for a multiselect field.
+     */
+    private function getPivotValues(FieldDefinition $field): array
+    {
+        if (!$field->hasPivot() || $this->currentFormId === null) {
+            return [];
+        }
+
+        $rows = db()->fetchAll(
+            "SELECT {$field->pivotForeignKey} FROM {$field->pivotTable} WHERE {$field->pivotLocalKey} = ?",
+            [$this->currentFormId]
+        );
+
+        return array_column($rows, $field->pivotForeignKey);
+    }
+
     // =========================================================================
     // Request handling
     // =========================================================================
 
     private function massageRequest(?int $id, array $request): array
     {
+        $this->pendingPivotData = [];
+
         foreach ($this->formSchema->fields as $field) {
             $column = $field->name;
             $control = $field->control;
@@ -804,6 +856,14 @@ abstract class ModuleController extends Controller
             }
             if ($control == "checkbox") {
                 $request[$column] = $value ? 1 : 0;
+            }
+            if ($control == "multiselect" && $field->hasPivot()) {
+                // Store pivot data for later sync, remove from main request
+                $this->pendingPivotData[] = [
+                    'field' => $field,
+                    'values' => is_array($value) ? $value : [],
+                ];
+                unset($request[$column]);
             }
             if (in_array($control, ["file", "image"])) {
                 $delete_file = $this->request->request->delete_file;
@@ -870,6 +930,7 @@ abstract class ModuleController extends Controller
                 ->execute();
             if ($result) {
                 $id = db()->lastInsertId();
+                $this->syncPivotTables($id);
                 $newValues = db()->fetch(
                     "SELECT * FROM {$this->tableName} WHERE {$this->tableSchema->primaryKey} = ?",
                     [$id]
@@ -899,6 +960,7 @@ abstract class ModuleController extends Controller
                 ->where(["$pk = ?"], $id)
                 ->execute();
             if ($result) {
+                $this->syncPivotTables($id);
                 $newValues = db()->fetch(
                     "SELECT * FROM {$this->tableName} WHERE {$pk} = ?",
                     [$id]
@@ -956,6 +1018,37 @@ abstract class ModuleController extends Controller
         if (is_callable($exec)) {
             $exec($id);
         }
+    }
+
+    /**
+     * Sync pivot tables for multiselect fields.
+     * Deletes existing relations and inserts new ones.
+     */
+    private function syncPivotTables(int $id): void
+    {
+        foreach ($this->pendingPivotData as $pivot) {
+            $field = $pivot['field'];
+            $values = $pivot['values'];
+
+            // Delete existing relations
+            db()->execute(
+                "DELETE FROM {$field->pivotTable} WHERE {$field->pivotLocalKey} = ?",
+                [$id]
+            );
+
+            // Insert new relations
+            foreach ($values as $foreignId) {
+                if ($foreignId) {
+                    db()->execute(
+                        "INSERT INTO {$field->pivotTable} ({$field->pivotLocalKey}, {$field->pivotForeignKey}) VALUES (?, ?)",
+                        [$id, $foreignId]
+                    );
+                }
+            }
+        }
+
+        // Clear pending data
+        $this->pendingPivotData = [];
     }
 
     // =========================================================================

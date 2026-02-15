@@ -15,6 +15,9 @@ class FormFieldBuilder
     private bool $disabled = false;
     private bool $requiredOnCreate = false;
     private ?\Closure $controlRenderer = null;
+    private ?string $pivotTable = null;
+    private ?string $pivotLocalKey = null;
+    private ?string $pivotForeignKey = null;
 
     public function __construct(
         private string $name,
@@ -83,6 +86,27 @@ class FormFieldBuilder
     public function editor(): self
     {
         $this->control = 'editor';
+        return $this;
+    }
+
+    public function multiselect(): self
+    {
+        $this->control = 'multiselect';
+        return $this;
+    }
+
+    /**
+     * Configure pivot table for multiselect fields.
+     * 
+     * @param string $table The pivot table name (e.g., 'blog_post_tags')
+     * @param string $localKey The local key column (e.g., 'blog_post_id')
+     * @param string $foreignKey The foreign key column (e.g., 'blog_tag_id')
+     */
+    public function pivot(string $table, string $localKey, string $foreignKey): self
+    {
+        $this->pivotTable = $table;
+        $this->pivotLocalKey = $localKey;
+        $this->pivotForeignKey = $foreignKey;
         return $this;
     }
 
@@ -171,6 +195,9 @@ class FormFieldBuilder
             disabled: $this->disabled,
             requiredOnCreate: $this->requiredOnCreate,
             controlRenderer: $this->controlRenderer,
+            pivotTable: $this->pivotTable,
+            pivotLocalKey: $this->pivotLocalKey,
+            pivotForeignKey: $this->pivotForeignKey,
         );
     }
 }

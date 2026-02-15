@@ -19,7 +19,18 @@ final class FieldDefinition
         public readonly bool $disabled,
         public readonly bool $requiredOnCreate,
         public readonly ?\Closure $controlRenderer,
+        public readonly ?string $pivotTable = null,
+        public readonly ?string $pivotLocalKey = null,
+        public readonly ?string $pivotForeignKey = null,
     ) {}
+
+    /**
+     * Check if this field uses a pivot table relationship.
+     */
+    public function hasPivot(): bool
+    {
+        return $this->pivotTable !== null;
+    }
 
     /**
      * Get the SELECT expression for this field.

@@ -70,6 +70,12 @@ class BlogPostsController extends ModuleController
                 ->rules(['required']);
         $builder->field('subtitle', 'Subtitle')
                 ->input();
+        $builder->field('tags', 'Tags')
+                ->multiselect()
+                ->optionsFrom("SELECT id as value, name as label 
+                    FROM blog_tags 
+                    ORDER BY name")
+                ->pivot('blog_post_tags', 'blog_post_id', 'blog_tag_id');
         $builder->field('content', 'Content')
                 ->editor();
     }

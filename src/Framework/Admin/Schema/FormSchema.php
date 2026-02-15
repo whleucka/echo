@@ -48,15 +48,16 @@ final class FormSchema
 
     /**
      * Get SELECT expressions for form query.
+     * Excludes pivot fields as they don't exist in the main table.
      *
      * @return string[]
      */
     public function getSelectExpressions(): array
     {
-        return array_map(
+        return array_values(array_map(
             fn(FieldDefinition $field) => $field->getSelectExpression(),
-            $this->fields
-        );
+            array_filter($this->fields, fn(FieldDefinition $field) => !$field->hasPivot())
+        ));
     }
 
     /**
