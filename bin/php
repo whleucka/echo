@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+if [ $# -eq 0 ]; then
+    # No args = interactive shell
+    docker compose exec -it php bash
+else
+    # With args = execute command
+    docker compose exec -it php "$@"
+fi
