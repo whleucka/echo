@@ -83,6 +83,8 @@
                       <button class="btn btn-sm ms-1" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/{{ row.id }}/edit" hx-target="#modal" hx-select=".modal-dialog" hx-swap="innerHTML"><i class="bi {{ action.icon }}"></i></button>
                     {% elseif action.name == 'delete' and hasDelete(row.id) %}
                       <button class="btn btn-sm ms-1" hx-confirm="{{ action.confirm }}" hx-post="/admin/{{ module.link }}/{{ row.id }}/destroy"><i class="bi {{ action.icon }}"></i></button>
+                    {% elseif action.name not in ['show', 'edit', 'delete'] %}
+                      <button class="btn btn-sm ms-1" title="{{ action.label }}" {% if action.confirm %}hx-confirm="{{ action.confirm }}"{% endif %} hx-post="/admin/{{ module.link }}/table-action" hx-vals='{"table_action": "{{ action.name }}", "table_selection[]": "{{ row.id }}"}' hx-target="#module" hx-select="#module" hx-swap="outerHTML"><i class="bi {{ action.icon }}"></i></button>
                     {% endif %}
                   {% endfor %}
                 </div>
