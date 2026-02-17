@@ -4,7 +4,7 @@
 
 A modern PHP 8.4+ MVC framework with attribute-based routing, PHP-DI, and Twig. Runs in Docker (PHP 8.4-FPM, Nginx, MariaDB 11, Redis 7).
 
-> **Work in Progress** — APIs and internals may change. This project will
+> **Work in Progress**: APIs and internals may change. This project will
 > eventually serve as a backend to my personal website.
 
 ## Quick Start
@@ -23,7 +23,7 @@ Open `http://localhost`.
 ### Development vs Production
 
 **Development** (default, `APP_DEBUG=true`):
-- OPcache disabled — code changes take effect instantly, no container restarts
+- OPcache disabled: code changes take effect instantly, no container restarts
 - Xdebug enabled (port 9003, trigger mode with `XDEBUG_SESSION` cookie or query param)
 - Verbose errors displayed
 
@@ -228,7 +228,7 @@ Configure SMTP in `.env` (`MAIL_HOST`, `MAIL_PORT`, etc.). Queue commands: `mail
 
 ## Redis & Caching
 
-Redis is optional — everything falls back to file-based alternatives.
+Redis is optional: everything falls back to file-based alternatives.
 
 ```php
 // Cache (auto-selects Redis or file driver)
@@ -300,4 +300,4 @@ docker-compose exec -it php composer test
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT: see [LICENSE](LICENSE).
