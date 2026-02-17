@@ -181,6 +181,7 @@ class Controller implements ControllerInterface
     {
         return [
             "app" => config("app"),
+            "framework" => config("framework"),
             "flash" => Flash::get(),
             "validationErrors" => $this->validationErrors,
         ];
