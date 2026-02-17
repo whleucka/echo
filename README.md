@@ -200,7 +200,7 @@ class ProductsController extends ModuleController
 }
 ```
 
-Built-in modules: Users, Activity, Audits, Health, Modules, User Permissions, Blog Posts, Blog Tags, Blog Comments, File Info.
+Built-in modules: Users, Activity, Audits, Health, Modules, User Permissions, File Info.
 
 ## Email
 
