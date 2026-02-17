@@ -131,6 +131,11 @@ class Request implements RequestInterface
 
         $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
+          // Fall back to configured trusted proxies                                                  
+        if (empty($trustedProxies)) {                                                               
+            $trustedProxies = config('security.trusted_proxies', []);
+        }
+
         // Only trust proxy headers if request comes from a known proxy
         if (!empty($trustedProxies) && in_array($remoteAddr, $trustedProxies)) {
             if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
