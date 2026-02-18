@@ -11,7 +11,7 @@ class ForgotPasswordService
     public function requestReset(string $email): void
     {
         $log = logger()->channel('auth');
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $ip = request()->getClientIp();
 
         $user = User::where("email", $email)->first();
 

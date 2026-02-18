@@ -9,7 +9,7 @@ class SignInService
     public function signIn(string $email_address, string $password): bool
     {
         $log = logger()->channel('auth');
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $ip = request()->getClientIp();
         $user = User::where("email", $email_address)->first();
         $service = container()->get(AuthService::class);
 
@@ -40,7 +40,7 @@ class SignInService
         $log->info('Logout', [
             'user_id' => $currentUser?->id,
             'email' => $currentUser?->email,
-            'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+            'ip' => request()->getClientIp(),
         ]);
         session()->destroy();
     }

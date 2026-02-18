@@ -30,7 +30,7 @@ class PasswordResetService
     public function resetPassword(User $user, string $newPassword): bool
     {
         $log = logger()->channel('auth');
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $ip = request()->getClientIp();
 
         $authService = container()->get(AuthService::class);
         $hashedPassword = $authService->hashPassword($newPassword);
