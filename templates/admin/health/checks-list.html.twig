@@ -8,7 +8,7 @@
             {% set icon_class = check.status == 'ok' ? 'text-success' : (check.status == 'warning' ? 'text-warning' : 'text-danger') %}
             {% set check_icon = check.status == 'ok' ? 'check-circle-fill' : (check.status == 'warning' ? 'exclamation-triangle-fill' : 'x-circle-fill') %}
             <i class="bi bi-{{ check_icon }} {{ icon_class }} me-2"></i>
-            {{ name|replace({'_': ' '})|title }}
+            {{ name|replace({'_': ' '})|upper }}
           </h6>
           <span class="badge {% if check.status == 'ok' %}bg-success{% elseif check.status == 'warning' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
             {{ check.status|upper }}
