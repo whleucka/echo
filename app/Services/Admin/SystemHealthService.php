@@ -18,6 +18,7 @@ class SystemHealthService
      */
     private function registerDefaultChecks(): void
     {
+        $this->registerCheck('framework_version', fn() => $this->checkFrameworkVersion());
         $this->registerCheck('database', fn() => $this->checkDatabase());
         $this->registerCheck('redis', fn() => $this->checkRedis());
         $this->registerCheck('php_version', fn() => $this->checkPhpVersion());
@@ -112,6 +113,20 @@ class SystemHealthService
             'status' => $overall,
             'timestamp' => date('c'),
             'checks' => $checks,
+        ];
+    }
+
+    /**
+     * Framework version check
+     */
+    private function checkFrameworkVersion(): array
+    {
+        $version = config('framework.version') ?? 'unknown';
+
+        return [
+            'status' => 'ok',
+            'message' => "Echo Framework $version",
+            'version' => $version,
         ];
     }
 

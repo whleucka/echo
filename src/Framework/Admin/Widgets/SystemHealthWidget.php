@@ -25,6 +25,15 @@ class SystemHealthWidget extends Widget
         $results = $this->healthService->runAllChecks();
         $checks = [];
 
+        // Framework Version
+        if (isset($results['framework_version'])) {
+            $checks['framework'] = [
+                'label' => 'Framework Version',
+                'value' => $results['framework_version']['version'] ?? 'unknown',
+                'status' => $results['framework_version']['status'],
+            ];
+        }
+
         // PHP Version
         if (isset($results['php_version'])) {
             $checks['php'] = [

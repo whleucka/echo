@@ -13,6 +13,7 @@ class TwigExtension extends AbstractExtension
             new TwigFunction("csrf", [$this, "csrf"], ["is_safe" => ["html"]]),
             new TwigFunction("uri", [$this, "uri"]),
             new TwigFunction("old", [$this, "old"]),
+            new TwigFunction("config", [$this, "config"]),
             new TwigFunction("php_ini", [$this, "phpIni"]),
             new TwigFunction("php_extensions", [$this, "phpExtensions"]),
         ];
@@ -32,6 +33,11 @@ class TwigExtension extends AbstractExtension
     public function old(string $name, mixed $default = null)
     {
         return request()->request->get($name) ?? $default;
+    }
+
+    public function config(string $key, mixed $default = null): mixed
+    {
+        return config($key) ?? $default;
     }
 
     public function phpIni(string $name): ?string

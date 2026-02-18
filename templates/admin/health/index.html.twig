@@ -33,6 +33,10 @@
       <div class="card-body">
         <table class="table table-sm mb-0">
           <tr>
+            <th class="text-muted">Framework Version</th>
+            <td>{{ config('framework.version') }}</td>
+          </tr>
+          <tr>
             <th class="text-muted">PHP Version</th>
             <td>{{ constant('PHP_VERSION') }}</td>
           </tr>
