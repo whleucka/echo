@@ -120,7 +120,8 @@ nav#nav-sidebar header h4 {
 
 #nav-top .navbar-brand {
   font-size: 1.3rem;
-  padding: 12px; 
+  padding: 12px;
+  color: #095555;
 }
 
 #nav-top .avatar {
