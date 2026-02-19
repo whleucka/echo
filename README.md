@@ -176,6 +176,10 @@ All defined in `app/Helpers/Functions.php`:
 
 ## Admin Modules
 
+<img width="1273" height="1156" alt="image" src="https://github.com/user-attachments/assets/f1c4ff2e-5a04-4b9c-aaf0-077e6bdd69a4" />
+
+---
+
 Extend `ModuleController` for instant CRUD with HTMX tables, modals, sorting, filtering, pagination, CSV export, and per-user permissions.
 
 ```php
