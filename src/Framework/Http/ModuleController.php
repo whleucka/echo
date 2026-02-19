@@ -255,13 +255,28 @@ abstract class ModuleController extends Controller
         $valid = $this->validate($this->formSchema->getValidationRules());
         if ($valid) {
             $request = $this->massageRequest(null, (array) $valid);
-            $id = $this->handleStore($request);
-            if ($id) {
-                Flash::add("success", "Successfully created record");
-                header("HX-Retarget: #module");
-                header("HX-Reselect: #module");
-                header("HX-Reswap: outerHTML");
-                return $this->index();
+            db()->beginTransaction();
+            try {
+                $id = $this->handleStore($request);
+                if ($id) {
+                    $this->syncPivotTables($id);
+                    $newValues = db()->fetch(
+                        "SELECT * FROM {$this->tableName} WHERE {$this->tableSchema->primaryKey} = ?",
+                        [$id]
+                    );
+                    AuditLogger::logCreated($this->tableName, $id, $newValues ?: []);
+                    db()->commit();
+                    Flash::add("success", "Successfully created record");
+                    header("HX-Retarget: #module");
+                    header("HX-Reselect: #module");
+                    header("HX-Reswap: outerHTML");
+                    return $this->index();
+                }
+                db()->rollback();
+            } catch (Throwable $ex) {
+                db()->rollback();
+                error_log($ex->getMessage());
+                Flash::add("danger", "Create record failed. Check logs.");
             }
         }
 
@@ -280,13 +295,33 @@ abstract class ModuleController extends Controller
         $valid = $this->validate($this->formSchema->getValidationRules('edit'), $id);
         if ($valid) {
             $request = $this->massageRequest($id, (array) $valid);
-            $result = $this->handleUpdate($id, $request);
-            if ($result) {
-                Flash::add("success", "Successfully updated record");
-                header("HX-Retarget: #module");
-                header("HX-Reselect: #module");
-                header("HX-Reswap: outerHTML");
-                return $this->index();
+            db()->beginTransaction();
+            try {
+                $pk = $this->tableSchema->primaryKey;
+                $oldValues = db()->fetch(
+                    "SELECT * FROM {$this->tableName} WHERE {$pk} = ?",
+                    [$id]
+                );
+                $result = $this->handleUpdate($id, $request);
+                if ($result) {
+                    $this->syncPivotTables($id);
+                    $newValues = db()->fetch(
+                        "SELECT * FROM {$this->tableName} WHERE {$pk} = ?",
+                        [$id]
+                    );
+                    AuditLogger::logUpdated($this->tableName, $id, $oldValues ?: [], $newValues ?: []);
+                    db()->commit();
+                    Flash::add("success", "Successfully updated record");
+                    header("HX-Retarget: #module");
+                    header("HX-Reselect: #module");
+                    header("HX-Reswap: outerHTML");
+                    return $this->index();
+                }
+                db()->rollback();
+            } catch (Throwable $ex) {
+                db()->rollback();
+                error_log($ex->getMessage());
+                Flash::add("danger", "Update record failed. Check logs.");
             }
         }
 
@@ -302,9 +337,25 @@ abstract class ModuleController extends Controller
         if (!$this->hasDelete($id)) {
             return $this->permissionDenied();
         }
-        $result = $this->handleDestroy($id);
-        if ($result) {
-            Flash::add("success", "Successfully deleted record");
+        db()->beginTransaction();
+        try {
+            $pk = $this->tableSchema->primaryKey;
+            $oldValues = db()->fetch(
+                "SELECT * FROM {$this->tableName} WHERE {$pk} = ?",
+                [$id]
+            );
+            $result = $this->handleDestroy($id);
+            if ($result) {
+                AuditLogger::logDeleted($this->tableName, $id, $oldValues ?: []);
+                db()->commit();
+                Flash::add("success", "Successfully deleted record");
+            } else {
+                db()->rollback();
+            }
+        } catch (Throwable $ex) {
+            db()->rollback();
+            error_log($ex->getMessage());
+            Flash::add("danger", "Delete record failed. Check logs.");
         }
         header("HX-Retarget: #module");
         header("HX-Reselect: #module");
@@ -923,81 +974,35 @@ abstract class ModuleController extends Controller
 
     protected function handleStore(array $request): mixed
     {
-        try {
-            $result = qb()->insert($request)
-                ->into($this->tableName)
-                ->params(array_values($request))
-                ->execute();
-            if ($result) {
-                $id = db()->lastInsertId();
-                $this->syncPivotTables($id);
-                $newValues = db()->fetch(
-                    "SELECT * FROM {$this->tableName} WHERE {$this->tableSchema->primaryKey} = ?",
-                    [$id]
-                );
-                AuditLogger::logCreated($this->tableName, $id, $newValues ?: []);
-                return $id;
-            }
-            return false;
-        } catch (Throwable $ex) {
-            error_log($ex->getMessage());
-            Flash::add("danger", "Create record failed. Check logs.");
-            return false;
+        $result = qb()->insert($request)
+            ->into($this->tableName)
+            ->params(array_values($request))
+            ->execute();
+        if ($result) {
+            return db()->lastInsertId();
         }
+        return false;
     }
 
     protected function handleUpdate(int $id, array $request): bool
     {
-        try {
-            $pk = $this->tableSchema->primaryKey;
-            $oldValues = db()->fetch(
-                "SELECT * FROM {$this->tableName} WHERE {$pk} = ?",
-                [$id]
-            );
-            $result = qb()->update($request)
-                ->params(array_values($request))
-                ->table($this->tableName)
-                ->where(["$pk = ?"], $id)
-                ->execute();
-            if ($result) {
-                $this->syncPivotTables($id);
-                $newValues = db()->fetch(
-                    "SELECT * FROM {$this->tableName} WHERE {$pk} = ?",
-                    [$id]
-                );
-                AuditLogger::logUpdated($this->tableName, $id, $oldValues ?: [], $newValues ?: []);
-                return true;
-            }
-            return false;
-        } catch (Throwable $ex) {
-            error_log($ex->getMessage());
-            Flash::add("danger", "Update record failed. Check logs.");
-            return false;
-        }
+        $pk = $this->tableSchema->primaryKey;
+        $result = qb()->update($request)
+            ->params(array_values($request))
+            ->table($this->tableName)
+            ->where(["$pk = ?"], $id)
+            ->execute();
+        return (bool) $result;
     }
 
     protected function handleDestroy(int $id): bool
     {
-        try {
-            $pk = $this->tableSchema->primaryKey;
-            $oldValues = db()->fetch(
-                "SELECT * FROM {$this->tableName} WHERE {$pk} = ?",
-                [$id]
-            );
-            $result = qb()->delete()
-                ->from($this->tableName)
-                ->where(["$pk = ?"], $id)
-                ->execute();
-            if ($result) {
-                AuditLogger::logDeleted($this->tableName, $id, $oldValues ?: []);
-                return true;
-            }
-            return false;
-        } catch (Throwable $ex) {
-            error_log($ex->getMessage());
-            Flash::add("danger", "Delete record failed. Check logs.");
-            return false;
-        }
+        $pk = $this->tableSchema->primaryKey;
+        $result = qb()->delete()
+            ->from($this->tableName)
+            ->where(["$pk = ?"], $id)
+            ->execute();
+        return (bool) $result;
     }
 
     protected function handleTableAction(int $id, string $action)
@@ -1023,6 +1028,8 @@ abstract class ModuleController extends Controller
     /**
      * Sync pivot tables for multiselect fields.
      * Deletes existing relations and inserts new ones.
+     *
+     * @throws RuntimeException if pivot sync fails
      */
     private function syncPivotTables(int $id): void
     {
@@ -1031,18 +1038,24 @@ abstract class ModuleController extends Controller
             $values = $pivot['values'];
 
             // Delete existing relations
-            db()->execute(
+            $deleted = db()->execute(
                 "DELETE FROM {$field->pivotTable} WHERE {$field->pivotLocalKey} = ?",
                 [$id]
             );
+            if ($deleted === false) {
+                throw new RuntimeException("Failed to delete existing pivot relations from {$field->pivotTable}");
+            }
 
             // Insert new relations
             foreach ($values as $foreignId) {
                 if ($foreignId) {
-                    db()->execute(
+                    $inserted = db()->execute(
                         "INSERT INTO {$field->pivotTable} ({$field->pivotLocalKey}, {$field->pivotForeignKey}) VALUES (?, ?)",
                         [$id, $foreignId]
                     );
+                    if ($inserted === false) {
+                        throw new RuntimeException("Failed to insert pivot relation into {$field->pivotTable}");
+                    }
                 }
             }
         }
