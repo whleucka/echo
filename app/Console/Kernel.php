@@ -63,5 +63,8 @@ class Kernel extends ConsoleKernel
         Commands\MailQueueCommand::class,
         Commands\MailStatusCommand::class,
         Commands\MailPurgeCommand::class,
+
+        // Files
+        Commands\FileCleanupCommand::class,
     ];
 }

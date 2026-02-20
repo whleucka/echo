@@ -90,14 +90,6 @@ class RequestProfiler
     }
 
     /**
-     * Format bytes to human readable string
-     */
-    public function formatBytes(int $bytes, int $precision = 2): string
-    {
-        return format_bytes($bytes, $precision);
-    }
-
-    /**
      * Get all section timings
      */
     public function getSections(): array
@@ -114,9 +106,9 @@ class RequestProfiler
             'start_time' => $this->startTime,
             'total_time_ms' => round($this->getTotalTime(), 2),
             'memory_usage' => $this->getMemoryUsage(),
-            'memory_usage_formatted' => $this->formatBytes($this->getMemoryUsage()),
+            'memory_usage_formatted' => format_bytes($this->getMemoryUsage()),
             'peak_memory' => $this->getPeakMemoryUsage(),
-            'peak_memory_formatted' => $this->formatBytes($this->getPeakMemoryUsage()),
+            'peak_memory_formatted' => format_bytes($this->getPeakMemoryUsage()),
             'sections' => $this->getSectionsSummary(),
         ];
     }

@@ -236,7 +236,7 @@ class SystemHealthService
 
         return [
             'status' => $status,
-            'message' => $this->formatBytes($usage) . ' / ' . ini_get('memory_limit') . " ($percent%)",
+            'message' => format_bytes($usage) . ' / ' . ini_get('memory_limit') . " ($percent%)",
             'usage' => $usage,
             'limit' => $limit,
             'percent' => $percent,
@@ -263,7 +263,7 @@ class SystemHealthService
 
         return [
             'status' => $status,
-            'message' => $this->formatBytes($free) . ' free of ' . $this->formatBytes($total) . " ($percent% used)",
+            'message' => format_bytes($free) . ' free of ' . format_bytes($total) . " ($percent% used)",
             'free' => $free,
             'total' => $total,
             'used' => $used,
@@ -390,14 +390,6 @@ class SystemHealthService
                 'message' => 'Could not check migrations: ' . $e->getMessage(),
             ];
         }
-    }
-
-    /**
-     * Format bytes to human readable
-     */
-    private function formatBytes(int $bytes, int $precision = 2): string
-    {
-        return format_bytes($bytes, $precision);
     }
 
     /**
