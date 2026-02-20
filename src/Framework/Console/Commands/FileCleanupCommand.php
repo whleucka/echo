@@ -43,7 +43,8 @@ class FileCleanupCommand extends Command
 
             $files = scandir($uploadDir);
             foreach ($files as $file) {
-                if ($file === '.' || $file === '..') {
+                // Skip dot files and hidden files
+                if ($file[0] === '.') {
                     continue;
                 }
 
