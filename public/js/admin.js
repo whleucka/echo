@@ -35,6 +35,13 @@ function initActivityMap() {
   if (!el || el.dataset.init === '1') return;
   if (typeof jsVectorMap === 'undefined') return;
 
+  // On mobile, layout may not be complete yet when htmx:afterSettle fires.
+  // Defer one animation frame to ensure the container has a real width.
+  if (el.offsetWidth === 0) {
+    requestAnimationFrame(initActivityMap);
+    return;
+  }
+
   var countryData = JSON.parse(el.dataset.countries || '{}');
   var maxVal = parseInt(el.dataset.max, 10) || 1;
 
