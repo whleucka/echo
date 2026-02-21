@@ -723,7 +723,7 @@ class DashboardService
     /**
      * Get activity counts grouped by country code for a given time range
      */
-    public function getCountryActivity(string $range = '7d'): array
+    public function getCountryActivity(string $range = 'today'): array
     {
         $now = $this->now();
 

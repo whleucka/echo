@@ -22,10 +22,10 @@ class ActivityMapWidget extends Widget
 
     public function getData(): array
     {
-        $range = request()->get->get('range') ?? '7d';
+        $range = request()->get->get('range') ?? 'today';
         $validRanges = ['today', '7d', '30d', 'year'];
         if (!in_array($range, $validRanges, true)) {
-            $range = '7d';
+            $range = 'today';
         }
 
         $data = $this->dashboardService->getCountryActivity($range);

@@ -61,7 +61,7 @@ function initActivityMap() {
         cursor: 'pointer',
       },
     },
-    onRegionTooltipShow: function(event, tooltip, code) {
+    onRegionTooltipShow: function(_event, tooltip, code) {
       var count = countryData[code] || 0;
       var name = tooltip.text();
       tooltip.text(name + ': ' + count.toLocaleString() + ' requests');
