@@ -25,7 +25,7 @@ function initActivityMap() {
 
   el.dataset.init = '1';
 
-  new jsVectorMap({
+  el._mapObject = new jsVectorMap({
     selector: '#activity-world-map',
     map: 'world',
     backgroundColor: 'transparent',
@@ -58,7 +58,7 @@ function initActivityMap() {
         ratio = Math.max(0, Math.min(1, ratio));
         var color = lerpColor('#dcfce7', '#16a34a', ratio);
         var path = el.querySelector('[data-code="' + code + '"]');
-        if (path) path.setAttribute('fill', color);
+        if (path) path.style.fill = color;
       });
     },
   });
@@ -72,4 +72,12 @@ document.addEventListener('htmx:afterSettle', function() {
 // Initialize on regular page load (non-HTMX)
 document.addEventListener('DOMContentLoaded', function() {
   initActivityMap();
+});
+
+// Resize the map when the window size changes
+window.addEventListener('resize', function() {
+  var el = document.getElementById('activity-world-map');
+  if (el && el._mapObject) {
+    el._mapObject.updateSize();
+  }
 });
