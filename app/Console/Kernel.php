@@ -47,6 +47,10 @@ class Kernel extends ConsoleKernel
         // Activity
         Commands\ActivityCleanupCommand::class,
         Commands\ActivityStatsCommand::class,
+        Commands\ActivityGeocodeCommand::class,
+
+        // GeoIP
+        Commands\GeoIpUpdateCommand::class,
         
         // Audits
         Commands\AuditListCommand::class,

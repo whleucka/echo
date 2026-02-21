@@ -6,10 +6,13 @@ composer.phar
 # PHPUnit
 .phpunit.cache/
 
-# Storage (logs, profiler data)
+# Storage (logs, profiler data, geoip db)
 /storage/logs/*.log
 /storage/profiler/*.json
 /storage/cache/*
+/storage/geoip/*.mmdb
+/storage/geoip/*.tar.gz
+/storage/geoip/*.tar
 
 CLAUDE.local.md
 

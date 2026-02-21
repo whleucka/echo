@@ -3,6 +3,7 @@
 namespace Echo\Framework\Http\Middleware;
 
 use App\Models\Activity;
+use App\Services\GeoIpService;
 use Closure;
 use Echo\Framework\Http\RequestInterface;
 use Echo\Framework\Http\ResponseInterface;
@@ -25,10 +26,22 @@ class LogActivity implements MiddlewareInterface
 
         try {
             $user = user();
+            $clientIp = $request->getClientIp();
+
+            // Resolve country code from IP
+            $countryCode = null;
+            try {
+                $geoIp = container()->get(GeoIpService::class);
+                $countryCode = $geoIp->getCountryCode($clientIp);
+            } catch (\Exception) {
+                // GeoIP lookup is best-effort
+            }
+
             Activity::createBulk([[
                 "user_id" => $user ? $user->id : null,
                 "uri" => $request->getUri(),
-                "ip" => ip2long($request->getClientIp())
+                "ip" => ip2long($clientIp),
+                "country_code" => $countryCode,
             ]]);
         } catch (\Exception|\Error|\PDOException $e) {
             error_log("-- Skipping session insert --");
