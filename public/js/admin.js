@@ -1,4 +1,18 @@
 /**
+ * Interpolate between two hex colors by ratio (0–1).
+ */
+function lerpColor(a, b, t) {
+  var ah = parseInt(a.slice(1), 16);
+  var bh = parseInt(b.slice(1), 16);
+  var ar = (ah >> 16) & 0xff, ag = (ah >> 8) & 0xff, ab = ah & 0xff;
+  var br = (bh >> 16) & 0xff, bg = (bh >> 8) & 0xff, bb = bh & 0xff;
+  var r = Math.round(ar + (br - ar) * t);
+  var g = Math.round(ag + (bg - ag) * t);
+  var b2 = Math.round(ab + (bb - ab) * t);
+  return 'rgb(' + r + ',' + g + ',' + b2 + ')';
+}
+
+/**
  * Initialize the activity world map widget
  */
 function initActivityMap() {
@@ -8,13 +22,6 @@ function initActivityMap() {
 
   var countryData = JSON.parse(el.dataset.countries || '{}');
   var maxVal = parseInt(el.dataset.max, 10) || 1;
-
-  // Only pass countries with activity to the series so that countries with
-  // no data fall back to the regionStyle initial fill instead of SVG black.
-  var seriesData = {};
-  Object.keys(countryData).forEach(function(k) {
-    if (countryData[k] > 0) seriesData[k] = countryData[k];
-  });
 
   el.dataset.init = '1';
 
@@ -36,19 +43,23 @@ function initActivityMap() {
         cursor: 'pointer',
       },
     },
-    series: {
-      regions: [{
-        attribute: 'fill',
-        scale: ['#dcfce7', '#16a34a'],
-        values: seriesData,
-        min: 1,
-        max: maxVal,
-      }]
-    },
     onRegionTooltipShow: function(event, tooltip, code) {
       var count = countryData[code] || 0;
       var name = tooltip.text();
       tooltip.text(name + ': ' + count.toLocaleString() + ' requests');
+    },
+    onLoaded: function() {
+      // Apply gradient fills directly to SVG paths — bypasses jsvectormap's
+      // series scale which mishandles large value ranges.
+      Object.keys(countryData).forEach(function(code) {
+        var count = countryData[code];
+        if (!count) return;
+        var ratio = maxVal > 1 ? (count - 1) / (maxVal - 1) : 1;
+        ratio = Math.max(0, Math.min(1, ratio));
+        var color = lerpColor('#dcfce7', '#16a34a', ratio);
+        var path = el.querySelector('[data-code="' + code + '"]');
+        if (path) path.setAttribute('fill', color);
+      });
     },
   });
 }
