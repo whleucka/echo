@@ -15,64 +15,23 @@
       </button>
     </div>
     <div class="card-body">
-      <div class="row g-3 mb-3">
-        <div class="col-6">
-          <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <div class="bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                <i class="bi bi-envelope-check text-primary fs-4"></i>
-              </div>
-            </div>
-            <div class="flex-grow-1 ms-3">
-              <div class="small text-muted">Total Jobs</div>
-              <div class="fs-4 fw-bold">{{ data.total }}</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-6">
-          <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <div class="bg-success bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                <i class="bi bi-send-check text-success fs-4"></i>
-              </div>
-            </div>
-            <div class="flex-grow-1 ms-3">
-              <div class="small text-muted">Sent Today</div>
-              <div class="fs-4 fw-bold">{{ data.sent_today }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="row g-2 mb-3">
-        <div class="col">
+        <div class="col-4">
+          <div class="text-center p-2 bg-success bg-opacity-10 rounded">
+            <div class="fs-5 fw-bold">{{ data.sent_today }}</div>
+            <small class="text-muted">Sent Today</small>
+          </div>
+        </div>
+        <div class="col-4">
           <div class="text-center p-2 bg-secondary bg-opacity-10 rounded">
             <div class="fs-5 fw-bold">{{ data.statuses.pending }}</div>
             <small class="text-muted">Pending</small>
           </div>
         </div>
-        <div class="col">
-          <div class="text-center p-2 bg-info bg-opacity-10 rounded">
-            <div class="fs-5 fw-bold">{{ data.statuses.processing }}</div>
-            <small class="text-muted">Processing</small>
-          </div>
-        </div>
-        <div class="col">
-          <div class="text-center p-2 bg-success bg-opacity-10 rounded">
-            <div class="fs-5 fw-bold">{{ data.statuses.sent }}</div>
-            <small class="text-muted">Sent</small>
-          </div>
-        </div>
-        <div class="col">
-          <div class="text-center p-2 bg-warning bg-opacity-10 rounded">
-            <div class="fs-5 fw-bold">{{ data.statuses.failed }}</div>
-            <small class="text-muted">Failed</small>
-          </div>
-        </div>
-        <div class="col">
+        <div class="col-4">
           <div class="text-center p-2 bg-danger bg-opacity-10 rounded">
-            <div class="fs-5 fw-bold">{{ data.statuses.exhausted }}</div>
-            <small class="text-muted">Exhausted</small>
+            <div class="fs-5 fw-bold">{{ data.statuses.failed + data.statuses.exhausted }}</div>
+            <small class="text-muted">Failed</small>
           </div>
         </div>
       </div>
@@ -113,6 +72,11 @@
         No email jobs yet
       </div>
       {% endif %}
+    </div>
+    <div class="card-footer bg-white border-0">
+      <a href="/admin/email-queue" hx-boost="true" hx-target="#module" hx-select="#module" hx-swap="outerHTML" hx-push-url="true" class="text-muted small">
+        <i class="bi bi-arrow-right me-1"></i>View all email jobs
+      </a>
     </div>
   </div>
 </div>
