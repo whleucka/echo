@@ -4,8 +4,8 @@ namespace Echo\Framework\Http;
 
 use App\Models\FileInfo;
 use App\Services\Admin\SidebarService;
-use Echo\Framework\Admin\{ModuleState, QueryBuilderDataSource, TableDataSource, TableResult};
-use Echo\Framework\Admin\Schema\{ColumnDefinition, FieldDefinition, FormSchema, FormSchemaBuilder, RowActionDefinition, TableSchema, TableSchemaBuilder, ToolbarActionDefinition};
+use Echo\Framework\Admin\{CsvExporter, FormControlRenderer, ModuleState, PivotSyncer, QueryBuilderDataSource, TableDataSource, TableResult};
+use Echo\Framework\Admin\Schema\{FormSchema, FormSchemaBuilder, TableSchema, TableSchemaBuilder};
 use Echo\Framework\Audit\AuditLogger;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
@@ -141,7 +141,11 @@ abstract class ModuleController extends Controller
             ->fetchAll();
 
         if ($rows) {
-            $this->streamCSV($rows, $this->moduleLink . '_export.csv');
+            $exporter = new CsvExporter(
+                $this->tableSchema->columns,
+                fn(array $row) => $this->exportOverride($row)
+            );
+            $exporter->stream($rows, $this->moduleLink . '_export.csv');
         }
         return null;
     }
@@ -259,7 +263,8 @@ abstract class ModuleController extends Controller
             try {
                 $id = $this->handleStore($request);
                 if ($id) {
-                    $this->syncPivotTables($id);
+                    (new PivotSyncer())->sync($id, $this->pendingPivotData);
+                    $this->pendingPivotData = [];
                     $newValues = db()->fetch(
                         "SELECT * FROM {$this->tableName} WHERE {$this->tableSchema->primaryKey} = ?",
                         [$id]
@@ -304,7 +309,8 @@ abstract class ModuleController extends Controller
                 );
                 $result = $this->handleUpdate($id, $request);
                 if ($result) {
-                    $this->syncPivotTables($id);
+                    (new PivotSyncer())->sync($id, $this->pendingPivotData);
+                    $this->pendingPivotData = [];
                     $newValues = db()->fetch(
                         "SELECT * FROM {$this->tableName} WHERE {$pk} = ?",
                         [$id]
@@ -748,146 +754,24 @@ abstract class ModuleController extends Controller
         $twig->addFunction(new TwigFunction("hasEdit", fn(int $id) => $this->hasEdit($id)));
         $twig->addFunction(new TwigFunction("hasDelete", fn(int $id) => $this->hasDelete($id)));
         $twig->addFunction(new TwigFunction("isToolbarActionAllowed", fn(string $name) => $this->isToolbarActionAllowed($name)));
-        $twig->addFunction(new TwigFunction("control", fn(string $column, ?string $value) => $this->control($column, $value, $forceReadonly, $formType)));
+        $formRenderer = $this->makeFormRenderer();
+        $twig->addFunction(new TwigFunction("control",
+            fn(string $col, ?string $val) => $formRenderer->render($col, $val, $forceReadonly, $formType)
+        ));
         $twig->addFunction(new TwigFunction("format", fn(string $column, ?string $value) => $this->formatValue($column, $value)));
     }
 
-    // =========================================================================
-    // Form controls (schema-driven)
-    // =========================================================================
-
-    private function control(string $column, ?string $value, bool $forceReadonly = false, string $formType = 'create')
+    private function makeFormRenderer(): FormControlRenderer
     {
-        $field = $this->formSchema->getField($column);
-        if (!$field) {
-            return $value;
-        }
-
-        // Custom renderer takes priority
-        if ($field->controlRenderer) {
-            return ($field->controlRenderer)($column, $value);
-        }
-
-        $control = $field->control;
-
-        return match ($control) {
-            "input" => $this->renderControl("input", $field, $value, forceReadonly: $forceReadonly, formType: $formType),
-            "number" => $this->renderControl("input", $field, $value, [
-                "type" => "number",
-            ], $forceReadonly, $formType),
-            "checkbox" => $this->renderControl("input", $field, $value, [
-                "value" => 1,
-                "type" => "checkbox",
-                "class" => "form-check-input ms-1",
-                "checked" => $value != false,
-            ], $forceReadonly, $formType),
-            "email" => $this->renderControl("input", $field, $value, [
-                "type" => "email",
-                "autocomplete" => "email",
-            ], $forceReadonly, $formType),
-            "password" => $this->renderControl("input", $field, $value, [
-                "type" => "password",
-                "autocomplete" => "current-password",
-            ], $forceReadonly, $formType),
-            "dropdown" => $this->renderControl("dropdown", $field, $value, [
-                "class" => "form-select",
-                "options" => $field->resolveOptions(),
-            ], $forceReadonly, $formType),
-            "multiselect" => $this->renderControl("multiselect", $field, $value, [
-                "class" => "form-select",
-                "options" => $field->resolveOptions(),
-                "selected" => $this->getPivotValues($field),
-            ], $forceReadonly, $formType),
-            "textarea" => $this->renderControl("textarea", $field, $value, forceReadonly: $forceReadonly, formType: $formType),
-            "editor" => $this->renderControl("editor", $field, $value, [
-                "module" => ["link" => $this->moduleLink],
-            ], $forceReadonly, $formType),
-            "image", "file" => $this->renderFileControl($control, $field, $value, $forceReadonly, $formType),
-            default => $value,
-        };
-    }
-
-    private function renderFileControl(string $control, FieldDefinition $field, ?string $value, bool $forceReadonly, string $formType = 'create'): string
-    {
-        $fi = new FileInfo($value);
-        $data = [
-            "type" => "file",
-            "file" => $fi ? $fi->getAttributes() : false,
-            "accept" => $field->accept ?? ($control === 'image' ? 'image/*' : ''),
-        ];
-        if ($control === 'image') {
-            $data["stored_name"] = $fi ? $fi->stored_name : false;
-        }
-        return $this->renderControl($control, $field, $value, $data, $forceReadonly, $formType);
-    }
-
-    private function renderControl(string $type, FieldDefinition $field, ?string $value, array $data = [], bool $forceReadonly = false, string $formType = 'create')
-    {
-        $required = $field->isRequired($formType);
-        $column = $field->name;
-        $default = [
-            "type" => "input",
-            "class" => "form-control",
-            "v_class" => $this->getValidationClass($column, $required),
-            "id" => $column,
-            "name" => $column,
-            "title" => $field->label,
-            "value" => $value,
-            "placeholder" => "",
-            "datalist" => $field->datalist,
-            "alt" => null,
-            "minlength" => null,
-            "maxlength" => null,
-            "size" => null,
-            "list" => null,
-            "min" => null,
-            "max" => null,
-            "height" => null,
-            "width" => null,
-            "step" => null,
-            "accpet" => null,
-            "pattern" => null,
-            "dirname" => null,
-            "inputmode" => null,
-            "autocomplete" => null,
-            "checked" => null,
-            "autofocus" => null,
-            "required" => $required,
-            "readonly" => $forceReadonly || $field->readonly,
-            "disabled" => $forceReadonly || $field->disabled,
-        ];
-        $template_data = array_merge($default, $data);
-        return $this->render("admin/controls/$type.html.twig", $template_data);
-    }
-
-    private function getValidationClass(string $column, bool $required)
-    {
-        $validationErrors = $this->getValidationErrors();
-        $request = $this->request->request;
-        $classname = [];
-        if (isset($request->$column) || $required && !isset($request->$column)) {
-            $classname[] = isset($validationErrors[$column])
-                ? 'is-invalid'
-                : (isset($request->$column) ? 'is-valid' : '');
-        }
-        return implode(" ", $classname);
-    }
-
-    /**
-     * Get the current pivot values for a multiselect field.
-     */
-    private function getPivotValues(FieldDefinition $field): array
-    {
-        if (!$field->hasPivot() || $this->currentFormId === null) {
-            return [];
-        }
-
-        $rows = db()->fetchAll(
-            "SELECT {$field->pivotForeignKey} FROM {$field->pivotTable} WHERE {$field->pivotLocalKey} = ?",
-            [$this->currentFormId]
+        return new FormControlRenderer(
+            formSchema: $this->formSchema,
+            moduleLink: $this->moduleLink,
+            renderer: fn(string $t, array $d) => $this->render($t, $d),
+            validationErrors: $this->getValidationErrors(),
+            request: $this->request,
+            pivotSyncer: new PivotSyncer(),
+            currentFormId: $this->currentFormId,
         );
-
-        return array_column($rows, $field->pivotForeignKey);
     }
 
     // =========================================================================
@@ -926,7 +810,7 @@ abstract class ModuleController extends Controller
                         $request[$column] = null;
                     }
                 } elseif ($is_upload) {
-                    $upload_result = $this->handleFileUpload($is_upload);
+                    $upload_result = (new FileUploadHandler())->handle($is_upload);
                     if ($upload_result) {
                         $request[$column] = $upload_result;
                     }
@@ -1023,133 +907,6 @@ abstract class ModuleController extends Controller
         if (is_callable($exec)) {
             $exec($id);
         }
-    }
-
-    /**
-     * Sync pivot tables for multiselect fields.
-     * Deletes existing relations and inserts new ones.
-     *
-     * @throws RuntimeException if pivot sync fails
-     */
-    private function syncPivotTables(int $id): void
-    {
-        foreach ($this->pendingPivotData as $pivot) {
-            $field = $pivot['field'];
-            $values = $pivot['values'];
-
-            // Delete existing relations
-            $deleted = db()->execute(
-                "DELETE FROM {$field->pivotTable} WHERE {$field->pivotLocalKey} = ?",
-                [$id]
-            );
-            if ($deleted === false) {
-                throw new RuntimeException("Failed to delete existing pivot relations from {$field->pivotTable}");
-            }
-
-            // Insert new relations
-            foreach ($values as $foreignId) {
-                if ($foreignId) {
-                    $inserted = db()->execute(
-                        "INSERT INTO {$field->pivotTable} ({$field->pivotLocalKey}, {$field->pivotForeignKey}) VALUES (?, ?)",
-                        [$id, $foreignId]
-                    );
-                    if ($inserted === false) {
-                        throw new RuntimeException("Failed to insert pivot relation into {$field->pivotTable}");
-                    }
-                }
-            }
-        }
-
-        // Clear pending data
-        $this->pendingPivotData = [];
-    }
-
-    // =========================================================================
-    // File uploads
-    // =========================================================================
-
-    protected function handleFileUpload(array $file): int|false
-    {
-        $upload_dir = config("paths.uploads");
-        if (!is_dir($upload_dir)) {
-            $result = mkdir($upload_dir, 0775, true);
-            if (!$result) {
-                throw new RuntimeException("Cannot create uploads directory" . $file['error']);
-            }
-        }
-
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            throw new RuntimeException("File upload error: " . $file['error']);
-        }
-
-        $og_name = basename($file['name']);
-        $extension = pathinfo($og_name, PATHINFO_EXTENSION);
-        $unique_name = uniqid('file_', true) . ($extension ? ".$extension" : "");
-        $target_path = sprintf("%s/%s", $upload_dir, $unique_name);
-
-        if (!move_uploaded_file($file['tmp_name'], $target_path)) {
-            throw new RuntimeException("Failed to move uploaded file.");
-        }
-
-        $mime_type = mime_content_type($target_path);
-        $file_size = filesize($target_path);
-        $relative_path = sprintf("/uploads/%s", $unique_name);
-
-        $result = FileInfo::create([
-            "original_name" => $og_name,
-            "stored_name" => $unique_name,
-            "path" => $relative_path,
-            "mime_type" => $mime_type,
-            "size" => $file_size,
-        ]);
-
-        return $result->id ?? false;
-    }
-
-    // =========================================================================
-    // CSV Export
-    // =========================================================================
-
-    private function streamCSV(iterable $rows, string $filename = 'export.csv')
-    {
-        set_time_limit(0);
-        ini_set('memory_limit', '-1');
-
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Pragma: no-cache');
-        header('Expires: 0');
-
-        $output_handle = fopen('php://output', 'w');
-        if ($output_handle === false) {
-            throw new RuntimeException("Unable to open output stream");
-        }
-
-        // Write headers from schema columns
-        $headers = array_map(fn(ColumnDefinition $col) => $col->label, $this->tableSchema->columns);
-        fputcsv($output_handle, $headers, escape: '');
-
-        foreach ($rows as $row) {
-            $row = $this->exportOverride($row);
-            $ordered_row = [];
-            foreach ($this->tableSchema->columns as $col) {
-                $ordered_row[] = $this->sanitizeCsvValue($row[$col->name] ?? '');
-            }
-            fputcsv($output_handle, $ordered_row, escape: '');
-            flush();
-        }
-
-        fclose($output_handle);
-        exit;
-    }
-
-    private function sanitizeCsvValue(mixed $value): string
-    {
-        $value = (string) $value;
-        if (preg_match('/^[=+\-@\t\r]/', $value)) {
-            return "'" . $value;
-        }
-        return $value;
     }
 
     protected function exportOverride(array $row): array

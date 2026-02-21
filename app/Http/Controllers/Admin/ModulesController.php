@@ -48,7 +48,9 @@ class ModulesController extends ModuleController
                 FROM modules
                 ORDER BY parent_id IS NULL DESC, title");
 
-        $builder->field('link', 'Link')->input();
+        $builder->field('link', 'Link')
+            ->input()
+            ->rules(['required']);
 
         $builder->field('title', 'Title')
                 ->input()
@@ -56,9 +58,12 @@ class ModulesController extends ModuleController
 
         $builder->field('icon', 'Icon')
                 ->input()
-                ->datalist($this->getIconList());
+                ->datalist($this->getIconList())
+                ->rules(['required']);
 
-        $builder->field('item_order', 'Order')->number();
+        $builder->field('item_order', 'Order')
+            ->number()
+            ->rules(['required']);
     }
 
     private function getIconList(): array
