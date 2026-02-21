@@ -54,7 +54,7 @@ function initActivityMap() {
       Object.keys(countryData).forEach(function(code) {
         var count = countryData[code];
         if (!count) return;
-        var ratio = maxVal > 1 ? (count - 1) / (maxVal - 1) : 1;
+        var ratio = maxVal > 1 ? Math.log(count) / Math.log(maxVal) : 1;
         ratio = Math.max(0, Math.min(1, ratio));
         var color = lerpColor('#dcfce7', '#16a34a', ratio);
         var path = el.querySelector('[data-code="' + code + '"]');
