@@ -30,15 +30,19 @@ function applyMapColors(el, countryData, maxVal) {
 /**
  * Initialize the activity world map widget
  */
-function initActivityMap() {
+function initActivityMap(attempt) {
+  attempt = attempt || 0;
   var el = document.getElementById('activity-world-map');
   if (!el || el.dataset.init === '1') return;
   if (typeof jsVectorMap === 'undefined') return;
 
-  // On mobile, layout may not be complete yet when htmx:afterSettle fires.
-  // Defer one animation frame to ensure the container has a real width.
+  // On mobile, layout may not be complete yet when htmx:afterSettle fires
+  // (e.g. sidebar HTMX swap races with widget load, squeezing the container).
+  // Retry with setTimeout — more reliable than rAF on mobile browsers.
   if (el.offsetWidth === 0) {
-    requestAnimationFrame(initActivityMap);
+    if (attempt < 20) {
+      setTimeout(function() { initActivityMap(attempt + 1); }, 50);
+    }
     return;
   }
 
@@ -77,6 +81,14 @@ function initActivityMap() {
       // Apply gradient fills directly to SVG paths — bypasses jsvectormap's
       // series scale which mishandles large value ranges.
       applyMapColors(el, countryData, maxVal);
+      // On mobile the sidebar HTMX swap may widen the container shortly after
+      // init. Force a resize + recolor after a brief delay to catch this.
+      setTimeout(function() {
+        if (el._mapObject) {
+          el._mapObject.updateSize();
+          applyMapColors(el, el._mapCountryData, el._mapMaxVal);
+        }
+      }, 300);
     },
   });
 
