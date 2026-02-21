@@ -91,9 +91,6 @@ class Response implements ResponseInterface
         // Custom headers
         foreach ($this->headers as $key => $value) {
             header("$key: $value");
-            if (in_array($key, ['Location', 'HX-Location', 'HX-Redirect'])) {
-                exit;
-            }
         }
     }
 }

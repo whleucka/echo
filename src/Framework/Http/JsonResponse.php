@@ -5,7 +5,7 @@ namespace Echo\Framework\Http;
 class JsonResponse implements ResponseInterface
 {
     private int $code;
-    private array $headers;
+    private array $headers = [];
 
     public function __construct(private array $content, ?int $code = null)
     {

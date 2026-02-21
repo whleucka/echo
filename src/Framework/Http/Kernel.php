@@ -33,10 +33,15 @@ class Kernel implements KernelInterface
         // Set the current route in the request
         $request->setAttribute('route', $route);
 
-        // Get controller payload through middleware pipeline
-        $middleware = new Middleware();
-        return $middleware->layer($this->middlewareLayers)
-            ->handle($request, fn () => $this->response($route, $request));
+        // Run the middleware pipeline; catch any middleware-level throwables so
+        // they get a rendered error page rather than a raw stack trace.
+        try {
+            $middleware = new Middleware();
+            return $middleware->layer($this->middlewareLayers)
+                ->handle($request, fn () => $this->response($route, $request));
+        } catch (\Throwable $e) {
+            return $this->renderer->renderException($e, $request);
+        }
     }
 
     private function response(array $route, RequestInterface $request): ResponseInterface
@@ -47,6 +52,7 @@ class Kernel implements KernelInterface
         $params = $route['params'];
         $middleware = $route['middleware'];
         $api_error = false;
+        $api_status = 500;
         $controller = null;
         $content = null;
 
@@ -75,6 +81,7 @@ class Kernel implements KernelInterface
             }
         } catch (HttpException $ex) {
             if (in_array('api', $middleware)) {
+                $api_status = $ex->statusCode;
                 $api_error = $this->sanitizeApiError($ex, 'HTTP_ERROR', $ex->getMessage());
             } else {
                 return $this->renderer->renderHttp($ex, $request);
@@ -112,7 +119,7 @@ class Kernel implements KernelInterface
             if ($api_error) {
                 $api_response['error'] = $api_error;
                 $api_response['success'] = false;
-                $api_response['status'] = 500;
+                $api_response['status'] = $api_status;
                 $api_response['data'] = null;
             }
             $response = new JsonResponse($api_response, $api_response['status']);
@@ -120,8 +127,8 @@ class Kernel implements KernelInterface
             $response = new HttpResponse($content);
         }
 
-        // Set the headers
-        foreach ($controller?->getHeaders() as $key => $value) {
+        // Set the headers from the controller (guard against null controller on error paths)
+        foreach ($controller?->getHeaders() ?? [] as $key => $value) {
             $response->setHeader($key, $value);
         }
 
