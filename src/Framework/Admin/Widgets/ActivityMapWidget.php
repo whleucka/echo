@@ -34,7 +34,7 @@ class ActivityMapWidget extends Widget
         $top = [];
         $i = 0;
         foreach ($data['countries'] as $code => $count) {
-            if ($i >= 8) break;
+            if ($i >= 10) break;
             $top[] = [
                 'code' => $code,
                 'flag' => $this->countryFlag($code),

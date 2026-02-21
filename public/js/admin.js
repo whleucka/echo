@@ -13,6 +13,21 @@ function lerpColor(a, b, t) {
 }
 
 /**
+ * Apply gradient fills to all active map regions.
+ */
+function applyMapColors(el, countryData, maxVal) {
+  Object.keys(countryData).forEach(function(code) {
+    var count = countryData[code];
+    if (!count) return;
+    var ratio = maxVal > 1 ? Math.log(count) / Math.log(maxVal) : 1;
+    ratio = Math.max(0, Math.min(1, ratio));
+    var color = lerpColor('#dcfce7', '#16a34a', ratio);
+    var path = el.querySelector('[data-code="' + code + '"]');
+    if (path) path.style.fill = color;
+  });
+}
+
+/**
  * Initialize the activity world map widget
  */
 function initActivityMap() {
@@ -24,6 +39,9 @@ function initActivityMap() {
   var maxVal = parseInt(el.dataset.max, 10) || 1;
 
   el.dataset.init = '1';
+
+  el._mapCountryData = countryData;
+  el._mapMaxVal = maxVal;
 
   el._mapObject = new jsVectorMap({
     selector: '#activity-world-map',
@@ -51,17 +69,25 @@ function initActivityMap() {
     onLoaded: function() {
       // Apply gradient fills directly to SVG paths — bypasses jsvectormap's
       // series scale which mishandles large value ranges.
-      Object.keys(countryData).forEach(function(code) {
-        var count = countryData[code];
-        if (!count) return;
-        var ratio = maxVal > 1 ? Math.log(count) / Math.log(maxVal) : 1;
-        ratio = Math.max(0, Math.min(1, ratio));
-        var color = lerpColor('#dcfce7', '#16a34a', ratio);
-        var path = el.querySelector('[data-code="' + code + '"]');
-        if (path) path.style.fill = color;
-      });
+      applyMapColors(el, countryData, maxVal);
     },
   });
+
+  // Use ResizeObserver to detect container size changes and reapply colors
+  // after updateSize() redraws the SVG paths.
+  if (typeof ResizeObserver !== 'undefined') {
+    var resizeTimer;
+    el._mapResizeObserver = new ResizeObserver(function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() {
+        if (el._mapObject) {
+          el._mapObject.updateSize();
+          applyMapColors(el, el._mapCountryData, el._mapMaxVal);
+        }
+      }, 100);
+    });
+    el._mapResizeObserver.observe(el);
+  }
 }
 
 // Initialize on HTMX content swaps (covers widget load and filter changes)
@@ -72,12 +98,4 @@ document.addEventListener('htmx:afterSettle', function() {
 // Initialize on regular page load (non-HTMX)
 document.addEventListener('DOMContentLoaded', function() {
   initActivityMap();
-});
-
-// Resize the map when the window size changes
-window.addEventListener('resize', function() {
-  var el = document.getElementById('activity-world-map');
-  if (el && el._mapObject) {
-    el._mapObject.updateSize();
-  }
 });

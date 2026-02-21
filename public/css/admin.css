@@ -285,12 +285,14 @@ nav#nav-sidebar header h4 {
   padding: 0;
   aspect-ratio: 1;
 }
-#dashboard #widget-activity-heatmap .heatmap-legend {
+#dashboard #widget-activity-heatmap .heatmap-legend,
+#dashboard #widget-activity-map .heatmap-legend {
   flex-wrap: nowrap;
   white-space: nowrap;
   font-size: 0.6rem;
 }
-#dashboard #widget-activity-heatmap .heatmap-legend span {
+#dashboard #widget-activity-heatmap .heatmap-legend span,
+#dashboard #widget-activity-map .heatmap-legend span {
   min-width: 12px;
   min-height: 12px;
   width: 12px;
