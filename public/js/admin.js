@@ -9,6 +9,13 @@ function initActivityMap() {
   var countryData = JSON.parse(el.dataset.countries || '{}');
   var maxVal = parseInt(el.dataset.max, 10) || 1;
 
+  // Only pass countries with activity to the series so that countries with
+  // no data fall back to the regionStyle initial fill instead of SVG black.
+  var seriesData = {};
+  Object.keys(countryData).forEach(function(k) {
+    if (countryData[k] > 0) seriesData[k] = countryData[k];
+  });
+
   el.dataset.init = '1';
 
   new jsVectorMap({
@@ -33,8 +40,8 @@ function initActivityMap() {
       regions: [{
         attribute: 'fill',
         scale: ['#dcfce7', '#16a34a'],
-        values: countryData,
-        min: 0,
+        values: seriesData,
+        min: 1,
         max: maxVal,
       }]
     },
