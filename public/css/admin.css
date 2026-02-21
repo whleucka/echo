@@ -14,7 +14,7 @@ html,body {
 }
 #view {
   height: 100%;
-  width: calc(100% - 240px);
+  min-width: 0;
 }
 
 /**
