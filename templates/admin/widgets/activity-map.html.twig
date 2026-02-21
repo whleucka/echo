@@ -5,8 +5,14 @@
   hx-swap="outerHTML"
   {% endif %}>
   <div class="card shad border-0 h-100">
-    <div class="card-header bg-white border-0">
+    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
       <span><i class="bi bi-{{ widget.icon }} me-2"></i>{{ widget.title }}</span>
+      <button class="btn btn-sm btn-outline-secondary"
+        hx-get="/admin/dashboard/widgets/{{ widget.id }}?range={{ data.range }}"
+        hx-swap="outerHTML"
+        hx-target="#widget-{{ widget.id }}">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
     </div>
     <div class="card-body p-3">
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -42,7 +48,7 @@
         </div>
       </div>
       {% endif %}
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3">
+      <div class="mt-3">
         <div class="btn-group btn-group-sm" role="group">
           {% set ranges = {'today': 'Today', '7d': '7 Days', '30d': '30 Days', 'year': 'Year'} %}
           {% for key, label in ranges %}
@@ -55,12 +61,6 @@
           </button>
           {% endfor %}
         </div>
-        <button class="btn btn-sm btn-outline-secondary"
-          hx-get="/admin/dashboard/widgets/{{ widget.id }}?range={{ data.range }}"
-          hx-swap="outerHTML"
-          hx-target="#widget-{{ widget.id }}">
-          <i class="bi bi-arrow-clockwise"></i>
-        </button>
       </div>
     </div>
   </div>
