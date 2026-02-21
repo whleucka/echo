@@ -14,7 +14,7 @@ class SystemHealthWidget extends Widget
     protected int $width = 6;
     protected int $refreshInterval = 120;
     protected int $cacheTtl = 60;
-    protected int $priority = 20;
+    protected int $priority = 85;
 
     public function __construct(private SystemHealthService $healthService)
     {
