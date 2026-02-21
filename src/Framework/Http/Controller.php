@@ -6,7 +6,6 @@ use App\Models\User;
 use Echo\Framework\Http\Exception\HttpForbiddenException;
 use Echo\Framework\Http\Exception\HttpNotFoundException;
 use Echo\Framework\Session\Flash;
-use Error;
 
 class Controller implements ControllerInterface
 {
@@ -14,6 +13,7 @@ class Controller implements ControllerInterface
     protected ?RequestInterface $request = null;
     private array $headers = [];
     private array $validationErrors = [];
+    private ?array $jsonBody = null;
     private array $validationMessages = [
         "required" => "Required field",
         "unique" => "Must be unique",
@@ -37,6 +37,17 @@ class Controller implements ControllerInterface
         "max_length" => "Input is too long",
         "regex" => "Does not match pattern",
     ];
+
+    private function getJsonBody(): array
+    {
+        if ($this->jsonBody === null) {
+            $this->jsonBody = (array) json_decode(
+                file_get_contents('php://input') ?: '{}',
+                true
+            );
+        }
+        return $this->jsonBody;
+    }
 
     public function setHeader(string $key, string $value): void
     {
@@ -63,7 +74,7 @@ class Controller implements ControllerInterface
         $this->request = $request;
     }
 
-    public function getRequest(): RequestInterface
+    public function getRequest(): ?RequestInterface
     {
         return $this->request;
     }
@@ -89,8 +100,7 @@ class Controller implements ControllerInterface
         $valid = true;
 
         $req  = (array) ($this->request->request->data() ?? []);
-        $body = (array) json_decode(file_get_contents('php://input') ?: '{}', true);
-        $request = [...$req, ...$body];
+        $request = [...$req, ...$this->getJsonBody()];
 
         $data = [];
 
@@ -105,47 +115,53 @@ class Controller implements ControllerInterface
                 $data[$field] = $fieldValue;
                 continue;
             }
+            $fieldValid = true;
             foreach ($set as $rule) {
-                $r = explode(":", $rule);
-                $rule = $r[0];
-                $rule_val = $r[1] ?? null;
-                $request_value = $request[$field] ?? null;
-                $result = match($rule) {
-                    'match' => $request_value == $request[$rule_val],
-                    'unique' => $this->validateUnique($rule_val, $field, $request_value),
-                    'min_length' => strlen($request_value) >= $rule_val,
-                    'max_length' => strlen($request_value) <= $rule_val,
-                    'required' => !is_null($request_value) && $request_value !== '' && $request_value !== "NULL",
-                    'string' => is_string($request_value),
-                    'array' => is_array($request_value),
-                    'date' => strtotime($request_value) !== false,
-                    'numeric' => is_numeric($request_value),
-                    'email' => filter_var($request_value, FILTER_VALIDATE_EMAIL) !== false,
-                    'integer' => filter_var($request_value, FILTER_VALIDATE_INT) !== false,
-                    'float' => filter_var($request_value, FILTER_VALIDATE_FLOAT) !== false,
-                    'boolean' => filter_var($request_value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== null,
-                    'url' => filter_var($request_value, FILTER_VALIDATE_URL) !== false,
-                    'ip' => filter_var($request_value, FILTER_VALIDATE_IP) !== false,
-                    'ipv4' => filter_var($request_value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false,
-                    'ipv6' => filter_var($request_value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false,
-                    'mac' => filter_var($request_value, FILTER_VALIDATE_MAC) !== false,
-                    'domain' => filter_var($request_value, FILTER_VALIDATE_DOMAIN) !== false,
-                    'uuid' => preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $request_value),
-                    'regex' => preg_match("/$rule_val/", $request_value),
-                    default => throw new \Error("undefined validation rule: $rule")
+                $r        = explode(":", $rule, 2);
+                $ruleName = $r[0];
+                $ruleVal  = $r[1] ?? null;
+                $requestValue = $request[$field] ?? null;
+                $result = match($ruleName) {
+                    'match' => $requestValue == $request[$ruleVal],
+                    'unique' => $this->validateUnique($ruleVal, $field, $requestValue),
+                    'min_length' => mb_strlen((string) $requestValue) >= (int) $ruleVal,
+                    'max_length' => mb_strlen((string) $requestValue) <= (int) $ruleVal,
+                    'required' => !is_null($requestValue) && $requestValue !== '' && $requestValue !== "NULL",
+                    'string' => is_string($requestValue),
+                    'array' => is_array($requestValue),
+                    'date' => strtotime($requestValue) !== false,
+                    'numeric' => is_numeric($requestValue),
+                    'email' => filter_var($requestValue, FILTER_VALIDATE_EMAIL) !== false,
+                    'integer' => filter_var($requestValue, FILTER_VALIDATE_INT) !== false,
+                    'float' => filter_var($requestValue, FILTER_VALIDATE_FLOAT) !== false,
+                    'boolean' => filter_var($requestValue, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== null,
+                    'url' => filter_var($requestValue, FILTER_VALIDATE_URL) !== false,
+                    'ip' => filter_var($requestValue, FILTER_VALIDATE_IP) !== false,
+                    'ipv4' => filter_var($requestValue, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false,
+                    'ipv6' => filter_var($requestValue, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false,
+                    'mac' => filter_var($requestValue, FILTER_VALIDATE_MAC) !== false,
+                    'domain' => filter_var($requestValue, FILTER_VALIDATE_DOMAIN) !== false,
+                    'uuid' => (bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $requestValue),
+                    'regex' => (bool) preg_match('~' . str_replace('~', '\~', $ruleVal) . '~', (string) $requestValue),
+                    default => throw new \Error("undefined validation rule: $ruleName")
                 };
-                if ($result) {
-                    $data[$field] = $request[$field];
-                } else {
-                    if (isset($this->validationMessages[$field.'.'.$rule])) {
-                        $this->addValidationError($field, $this->validationMessages[$field.'.'.$rule]);
-                    } else if (isset($this->validationMessages[$rule])) {
-                        $this->addValidationError($field, $this->validationMessages[$rule]);
+
+                if (!$result) {
+                    if (isset($this->validationMessages[$field . '.' . $ruleName])) {
+                        $this->addValidationError($field, $this->validationMessages[$field . '.' . $ruleName]);
+                    } elseif (isset($this->validationMessages[$ruleName])) {
+                        $this->addValidationError($field, $this->validationMessages[$ruleName]);
                     } else {
                         $this->addValidationError($field, "Invalid");
                     }
+                    $fieldValid = false;
+                    break;
                 }
-                $valid &= $result;
+            }
+            if ($fieldValid) {
+                $data[$field] = $request[$field];
+            } else {
+                $valid = false;
             }
         }
         return $valid ? (object)$data : null;
@@ -167,12 +183,12 @@ class Controller implements ControllerInterface
         return count(db()->fetch("SELECT 1 FROM `$safeTable` WHERE `$safeField` = ?", [$value])) === 0;
     }
 
-    protected function setValidationMessage(string $rule, string $message)
+    protected function setValidationMessage(string $rule, string $message): void
     {
         $this->validationMessages[$rule] = $message;
     }
 
-    protected function addValidationError(string $field, string $message)
+    protected function addValidationError(string $field, string $message): void
     {
         $this->validationErrors[$field][] = $message;
     }
@@ -200,7 +216,7 @@ class Controller implements ControllerInterface
     protected function render(string $template, array $data = []): string
     {
         $twig = twig();
-        $data = array_merge($data, $this->getDefaultTemplateData());
+        $data = array_merge($this->getDefaultTemplateData(), $data);
         return $twig->render($template, $data);
     }
 }
