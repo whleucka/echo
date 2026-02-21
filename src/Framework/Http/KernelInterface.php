@@ -4,5 +4,5 @@ namespace Echo\Framework\Http;
 
 interface KernelInterface
 {
-    public function handle(RequestInterface $request): void;
+    public function handle(RequestInterface $request): ResponseInterface;
 }

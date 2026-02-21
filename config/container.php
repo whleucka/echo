@@ -10,6 +10,8 @@ use Echo\Framework\Routing\RouteCache;
 // Interface imports
 use Echo\Framework\Database\ConnectionInterface;
 use Echo\Framework\Database\DriverInterface;
+use Echo\Framework\Http\ErrorRenderer;
+use Echo\Framework\Http\ErrorRendererInterface;
 use Echo\Framework\Http\RequestInterface;
 use Echo\Framework\Routing\RouterInterface;
 
@@ -52,6 +54,7 @@ return [
     // ===================
     // Interface Bindings
     // ===================
+    ErrorRendererInterface::class => DI\get(ErrorRenderer::class),
     RequestInterface::class => DI\get(Request::class),
     RouterInterface::class => DI\get(Router::class),
     DriverInterface::class => DI\get(getDriverClass()),

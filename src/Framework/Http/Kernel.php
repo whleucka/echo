@@ -2,9 +2,9 @@
 
 namespace Echo\Framework\Http;
 
-use chillerlan\QRCode\QRCode;
 use Echo\Framework\Http\Exception\HttpException;
 use Echo\Framework\Http\Response as HttpResponse;
+use Echo\Framework\Routing\RouterInterface;
 
 use Error;
 use Exception;
@@ -15,29 +15,28 @@ class Kernel implements KernelInterface
     // Middleware layers
     protected array $middlewareLayers = [];
 
-    public function handle(RequestInterface $request): void
+    public function __construct(
+        private RouterInterface $router,
+        private ErrorRendererInterface $renderer,
+    ) {}
+
+    public function handle(RequestInterface $request): ResponseInterface
     {
         // Dispatch the route
-        $route = router()->dispatch($request->getUri(), $request->getMethod(), $request->getHost());
+        $route = $this->router->dispatch($request->getUri(), $request->getMethod(), $request->getHost());
 
         // If there is no route, then 404
         if (is_null($route)) {
-            $content = twig()->render("error/404.html.twig");
-            $response = new HttpResponse($content, 404);
-            $response->send();
-            exit;
+            return $this->renderer->renderNotFound($request);
         }
 
         // Set the current route in the request
-        $request->setAttribute("route", $route);
+        $request->setAttribute('route', $route);
 
-        // Get controller payload
+        // Get controller payload through middleware pipeline
         $middleware = new Middleware();
-        $response = $middleware->layer($this->middlewareLayers)
+        return $middleware->layer($this->middlewareLayers)
             ->handle($request, fn () => $this->response($route, $request));
-
-        $response->send();
-        exit;
     }
 
     private function response(array $route, RequestInterface $request): ResponseInterface
@@ -48,24 +47,20 @@ class Kernel implements KernelInterface
         $params = $route['params'];
         $middleware = $route['middleware'];
         $api_error = false;
-        $request_id = $request->getAttribute("request_id");
         $controller = null;
         $content = null;
 
         try {
-            // Using the container will allow for DI
-            // in the controller constructor
+            // Using the container will allow for DI in the controller constructor
             $controller = container()->get($controller_class);
 
             // Set the controller request
             $controller->setRequest($request);
 
-            // Set the application user (skip for benchmark/debug to avoid session overhead)
-            if (!in_array('benchmark', $middleware, true) && !in_array('debug', $middleware, true)) {
-                $user = user();
-                if ($user) {
-                    $controller->setUser($user);
-                }
+            // Set the application user from request attribute (set by Auth middleware)
+            $user = $request->getAttribute('user');
+            if ($user) {
+                $controller->setUser($user);
             }
 
             // Set the content from the controller endpoint
@@ -73,103 +68,55 @@ class Kernel implements KernelInterface
             $content = $controller->$method(...$params);
             profiler()?->endSection('controller');
         } catch (PDOException $ex) {
-            // Handle database exception
-            if (in_array("api", $middleware)) {
+            if (in_array('api', $middleware)) {
                 $api_error = $this->sanitizeApiError($ex, 'DATABASE_ERROR', 'A database error occurred');
             } else {
-                $debug = db()->debug();
-                $extra = "<strong>SQL</strong><pre>" . $debug['sql'] . "</pre>";
-                $extra .= "<strong>Params</strong><pre>" . print_r($debug['params'], true) . "</pre>";
-                $content = twig()->render("error/blue-screen.html.twig", [
-                    "message" => "An database error has occurred.",
-                    "extra" => $extra,
-                    "debug" => config("app.debug"),
-                    "request_id" => $request_id,
-                    "e" => $ex,
-                    "qr" => (new QRCode)->render($request_id),
-                    "is_logged" => session()->get("user_uuid"),
-                ]);
-                $response = new HttpResponse($content, 500);
-                return $response;
+                return $this->renderer->renderDatabase($ex, $request);
             }
         } catch (HttpException $ex) {
-            // Handle HTTP exceptions (404, 403, etc.)
-            if (in_array("api", $middleware)) {
+            if (in_array('api', $middleware)) {
                 $api_error = $this->sanitizeApiError($ex, 'HTTP_ERROR', $ex->getMessage());
             } else {
-                $template = match ($ex->statusCode) {
-                    404 => "error/404.html.twig",
-                    403 => "error/permission-denied.html.twig",
-                    default => "error/blue-screen.html.twig",
-                };
-                $content = twig()->render($template, [
-                    "message" => $ex->getMessage(),
-                    "debug" => config("app.debug"),
-                    "request_id" => $request_id,
-                    "e" => $ex,
-                    "is_logged" => session()->get("user_uuid"),
-                ]);
-                return new HttpResponse($content, $ex->statusCode);
+                return $this->renderer->renderHttp($ex, $request);
             }
         } catch (Exception $ex) {
-            // Handle exception
-            if (in_array("api", $middleware)) {
+            if (in_array('api', $middleware)) {
                 $api_error = $this->sanitizeApiError($ex, 'SERVER_ERROR', 'An error occurred processing your request');
             } else {
-                $content = twig()->render("error/blue-screen.html.twig", [
-                    "message" => "An uncaught exception occurred.",
-                    "debug" => config("app.debug"),
-                    "request_id" => $request_id,
-                    "e" => $ex,
-                    "qr" => (new QRCode)->render($request_id),
-                    "is_logged" => session()->get("user_uuid"),
-                ]);
-                $response = new HttpResponse($content, 500);
-                return $response;
+                return $this->renderer->renderException($ex, $request);
             }
         } catch (Error $err) {
-            // Handle error
-            if (in_array("api", $middleware)) {
+            if (in_array('api', $middleware)) {
                 $api_error = $this->sanitizeApiError($err, 'FATAL_ERROR', 'A fatal error occurred');
             } else {
-                $content = twig()->render("error/blue-screen.html.twig", [
-                    "message" => "A fatal error occurred.",
-                    "debug" => config("app.debug"),
-                    "request_id" => $request_id,
-                    "e" => $err,
-                    "qr" => (new QRCode)->render($request_id),
-                    "is_logged" => session()->get("user_uuid"),
-                ]);
-                $response = new HttpResponse($content, 500);
-                return $response;
+                return $this->renderer->renderException($err, $request);
             }
         }
 
-        // Check if it is already a response class?
+        // Check if it is already a response class
         if ($content instanceof HttpResponse) {
             return $content;
         }
+
         // Create response (api or web)
-        if (in_array("api", $middleware)) {
+        if (in_array('api', $middleware)) {
             $code = http_response_code();
             $api_response = [
-                "id" => $request->getAttribute("request_id"),
-                "success" => $code === 200,
-                "status" => $code,
-                "data" => $content ?? null,
-                "ts" => date(DATE_ATOM),
+                'id' => $request->getAttribute('request_id'),
+                'success' => $code === 200,
+                'status' => $code,
+                'data' => $content ?? null,
+                'ts' => date(DATE_ATOM),
             ];
             // Handle API errors with sanitized messages
             if ($api_error) {
-                $api_response["error"] = $api_error;
-                $api_response["success"] = false;
-                $api_response["status"] = 500;
-                $api_response["data"] = null;
+                $api_response['error'] = $api_error;
+                $api_response['success'] = false;
+                $api_response['status'] = 500;
+                $api_response['data'] = null;
             }
-            // API response
-            $response = new JsonResponse($api_response, $api_response["status"]);
+            $response = new JsonResponse($api_response, $api_response['status']);
         } else {
-            // Web response
             $response = new HttpResponse($content);
         }
 
@@ -182,8 +129,8 @@ class Kernel implements KernelInterface
     }
 
     /**
-     * Sanitize error messages for API responses
-     * Only expose details in debug mode, otherwise return generic message
+     * Sanitize error messages for API responses.
+     * Only expose details in debug mode, otherwise return generic message.
      */
     private function sanitizeApiError(\Throwable $e, string $code, string $publicMessage): array
     {
@@ -192,7 +139,6 @@ class Kernel implements KernelInterface
             'message' => $publicMessage,
         ];
 
-        // Only include detailed error info in debug mode
         if (config('app.debug')) {
             $error['debug'] = [
                 'message' => $e->getMessage(),
@@ -201,7 +147,6 @@ class Kernel implements KernelInterface
             ];
         }
 
-        // Log the full error server-side
         error_log(sprintf(
             "[%s] %s: %s in %s:%d",
             date('Y-m-d H:i:s'),

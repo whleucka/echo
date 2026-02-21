@@ -26,9 +26,10 @@ class Application implements ApplicationInterface
     {
         // Run the application (web or cli)
         if ($this->kernel instanceof HttpKernelInterface) {
-            // Handle a web request
+            // Handle a web request — kernel returns a response, we send it here
             $request = container()->get(Request::class);
-            $this->kernel->handle($request);
+            $this->kernel->handle($request)->send();
+            exit;
         } elseif ($this->kernel instanceof ConsoleKernelInterface) {
             // Run a command in cli mode
             $this->kernel->handle();

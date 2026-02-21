@@ -4,383 +4,162 @@ declare(strict_types=1);
 
 namespace Tests\Http;
 
+use Echo\Framework\Http\ErrorRendererInterface;
+use Echo\Framework\Http\Kernel;
+use Echo\Framework\Http\RequestInterface;
+use Echo\Framework\Http\ResponseInterface;
+use Echo\Framework\Routing\RouterInterface;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for HTTP Kernel logic
+ * Unit tests for the HTTP Kernel.
  *
- * These tests verify the core logic patterns used by the Kernel
- * without requiring full application bootstrap.
+ * The Kernel is tested in isolation: router and error renderer are mocked,
+ * so no application bootstrap is required and no process termination occurs.
  */
 class KernelTest extends TestCase
 {
-    /**
-     * Test 404 detection when route is null
-     */
-    public function testDetects404WhenRouteIsNull(): void
+    /** @var RequestInterface&Stub */
+    private RequestInterface $request;
+
+    protected function setUp(): void
     {
-        $route = null;
-
-        $is404 = $this->isNotFound($route);
-
-        $this->assertTrue($is404);
+        // The request is only ever stubbed — we never assert call counts on it.
+        $this->request = $this->createStub(RequestInterface::class);
+        $this->request->method('getUri')->willReturn('/any');
+        $this->request->method('getMethod')->willReturn('GET');
+        $this->request->method('getHost')->willReturn('localhost');
     }
 
-    /**
-     * Test route found when route is array
-     */
-    public function testRouteFoundWhenRouteExists(): void
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private function makeKernel(RouterInterface $router, ErrorRendererInterface $renderer): Kernel
     {
-        $route = [
-            'controller' => 'TestController',
-            'method' => 'index',
-            'params' => [],
-            'middleware' => ['web'],
-        ];
-
-        $is404 = $this->isNotFound($route);
-
-        $this->assertFalse($is404);
+        return new class ($router, $renderer) extends Kernel {};
     }
 
-    /**
-     * Test API route detection
-     */
-    public function testDetectsApiRoute(): void
+    private function stubResponse(int $status = 200): ResponseInterface&Stub
     {
-        $middleware = ['api'];
-
-        $isApi = $this->isApiRoute($middleware);
-
-        $this->assertTrue($isApi);
+        $response = $this->createStub(ResponseInterface::class);
+        $response->method('getStatusCode')->willReturn($status);
+        return $response;
     }
 
-    /**
-     * Test web route detection
-     */
-    public function testDetectsWebRoute(): void
+    // -------------------------------------------------------------------------
+    // 404 path
+    // -------------------------------------------------------------------------
+
+    public function testReturns404ResponseWhenRouteNotFound(): void
     {
-        $middleware = ['web', 'auth'];
+        $router = $this->createMock(RouterInterface::class);
+        $router->expects($this->once())->method('dispatch')->willReturn(null);
 
-        $isApi = $this->isApiRoute($middleware);
+        $renderer = $this->createMock(ErrorRendererInterface::class);
+        $renderer->expects($this->once())
+            ->method('renderNotFound')
+            ->with($this->request)
+            ->willReturn($this->stubResponse(404));
 
-        $this->assertFalse($isApi);
+        $response = $this->makeKernel($router, $renderer)->handle($this->request);
+
+        $this->assertSame(404, $response->getStatusCode());
     }
 
-    /**
-     * Test API route with multiple middleware
-     */
-    public function testDetectsApiRouteWithMultipleMiddleware(): void
+    public function testRenderNotFoundIsCalledOnlyOnce(): void
     {
-        $middleware = ['api', 'auth', 'rate-limit'];
+        $router = $this->createMock(RouterInterface::class);
+        $router->expects($this->once())->method('dispatch')->willReturn(null);
 
-        $isApi = $this->isApiRoute($middleware);
+        $renderer = $this->createMock(ErrorRendererInterface::class);
+        $renderer->expects($this->once())
+            ->method('renderNotFound')
+            ->willReturn($this->stubResponse(404));
 
-        $this->assertTrue($isApi);
+        $this->makeKernel($router, $renderer)->handle($this->request);
     }
 
-    /**
-     * Test API response structure on success
-     */
-    public function testApiResponseStructureOnSuccess(): void
+    // -------------------------------------------------------------------------
+    // Return type
+    // -------------------------------------------------------------------------
+
+    public function testHandleReturnsResponseInterface(): void
     {
-        $requestId = 'test-request-123';
-        $data = ['id' => 1, 'name' => 'Test'];
-        $statusCode = 200;
+        $router = $this->createMock(RouterInterface::class);
+        $router->expects($this->once())->method('dispatch')->willReturn(null);
 
-        $response = $this->buildApiResponse($requestId, $data, $statusCode);
+        $renderer = $this->createMock(ErrorRendererInterface::class);
+        $renderer->expects($this->once())
+            ->method('renderNotFound')
+            ->willReturn($this->stubResponse());
 
-        $this->assertEquals($requestId, $response['id']);
-        $this->assertTrue($response['success']);
-        $this->assertEquals(200, $response['status']);
-        $this->assertEquals($data, $response['data']);
-        $this->assertArrayHasKey('ts', $response);
+        $result = $this->makeKernel($router, $renderer)->handle($this->request);
+
+        $this->assertInstanceOf(ResponseInterface::class, $result);
     }
 
-    /**
-     * Test API response structure on error
-     */
-    public function testApiResponseStructureOnError(): void
+    // -------------------------------------------------------------------------
+    // Router receives correct arguments
+    // -------------------------------------------------------------------------
+
+    public function testDispatchReceivesUriMethodAndHost(): void
     {
-        $requestId = 'test-request-123';
-        $data = null;
-        $statusCode = 500;
+        $request = $this->createStub(RequestInterface::class);
+        $request->method('getUri')->willReturn('/test-path');
+        $request->method('getMethod')->willReturn('POST');
+        $request->method('getHost')->willReturn('example.com');
 
-        $response = $this->buildApiResponse($requestId, $data, $statusCode);
+        $router = $this->createMock(RouterInterface::class);
+        $router->expects($this->once())
+            ->method('dispatch')
+            ->with('/test-path', 'POST', 'example.com')
+            ->willReturn(null);
 
-        $this->assertEquals($requestId, $response['id']);
-        $this->assertFalse($response['success']);
-        $this->assertEquals(500, $response['status']);
-        $this->assertNull($response['data']);
+        $renderer = $this->createMock(ErrorRendererInterface::class);
+        $renderer->expects($this->once())
+            ->method('renderNotFound')
+            ->willReturn($this->stubResponse());
+
+        $this->makeKernel($router, $renderer)->handle($request);
     }
 
-    /**
-     * Test API response with various status codes
-     */
-    public function testApiResponseWithVariousStatusCodes(): void
-    {
-        $testCases = [
-            200 => true,
-            201 => false, // Only 200 is success in current logic
-            400 => false,
-            401 => false,
-            404 => false,
-            500 => false,
-        ];
+    // -------------------------------------------------------------------------
+    // Renderer receives the request object
+    // -------------------------------------------------------------------------
 
-        foreach ($testCases as $code => $expectedSuccess) {
-            $response = $this->buildApiResponse('test', [], $code);
-            $this->assertEquals(
-                $expectedSuccess,
-                $response['success'],
-                "Status $code should have success=$expectedSuccess"
-            );
-        }
+    public function testRendererReceivesRequestOnNotFound(): void
+    {
+        $router = $this->createMock(RouterInterface::class);
+        $router->expects($this->once())->method('dispatch')->willReturn(null);
+
+        $renderer = $this->createMock(ErrorRendererInterface::class);
+        $renderer->expects($this->once())
+            ->method('renderNotFound')
+            ->with($this->identicalTo($this->request))
+            ->willReturn($this->stubResponse());
+
+        $this->makeKernel($router, $renderer)->handle($this->request);
     }
 
-    /**
-     * Test API error sanitization in debug mode
-     */
-    public function testApiErrorSanitizationInDebugMode(): void
+    // -------------------------------------------------------------------------
+    // Kernel does not call exit or send (process boundary is in Application)
+    // -------------------------------------------------------------------------
+
+    public function testHandleDoesNotTerminateProcess(): void
     {
-        $debugMode = true;
-        $error = $this->sanitizeApiError(
-            'DATABASE_ERROR',
-            'A database error occurred',
-            'Original error message',
-            '/path/to/file.php',
-            42,
-            $debugMode
-        );
+        // If handle() called exit, the assertion below would never be reached.
+        $router = $this->createMock(RouterInterface::class);
+        $router->expects($this->once())->method('dispatch')->willReturn(null);
 
-        $this->assertEquals('DATABASE_ERROR', $error['code']);
-        $this->assertEquals('A database error occurred', $error['message']);
-        $this->assertArrayHasKey('debug', $error);
-        $this->assertEquals('Original error message', $error['debug']['message']);
-        $this->assertEquals('/path/to/file.php', $error['debug']['file']);
-        $this->assertEquals(42, $error['debug']['line']);
-    }
+        $renderer = $this->createMock(ErrorRendererInterface::class);
+        $renderer->expects($this->once())
+            ->method('renderNotFound')
+            ->willReturn($this->stubResponse());
 
-    /**
-     * Test API error sanitization in production mode
-     */
-    public function testApiErrorSanitizationInProductionMode(): void
-    {
-        $debugMode = false;
-        $error = $this->sanitizeApiError(
-            'DATABASE_ERROR',
-            'A database error occurred',
-            'Original sensitive error message',
-            '/path/to/file.php',
-            42,
-            $debugMode
-        );
+        $this->makeKernel($router, $renderer)->handle($this->request);
 
-        $this->assertEquals('DATABASE_ERROR', $error['code']);
-        $this->assertEquals('A database error occurred', $error['message']);
-        $this->assertArrayNotHasKey('debug', $error);
-    }
-
-    /**
-     * Test controller method extraction from route
-     */
-    public function testControllerMethodExtractionFromRoute(): void
-    {
-        $route = [
-            'controller' => 'App\\Http\\Controllers\\UserController',
-            'method' => 'show',
-            'params' => [123],
-            'middleware' => ['web', 'auth'],
-        ];
-
-        $this->assertEquals('App\\Http\\Controllers\\UserController', $route['controller']);
-        $this->assertEquals('show', $route['method']);
-        $this->assertEquals([123], $route['params']);
-        $this->assertEquals(['web', 'auth'], $route['middleware']);
-    }
-
-    /**
-     * Test route params are passed to controller method
-     */
-    public function testRouteParamsPassedToControllerMethod(): void
-    {
-        $route = [
-            'controller' => 'UserController',
-            'method' => 'show',
-            'params' => [123, 'extra'],
-            'middleware' => ['web'],
-        ];
-
-        // Simulate calling controller method with params
-        $methodCallResult = $this->simulateControllerCall($route['params']);
-
-        $this->assertEquals([123, 'extra'], $methodCallResult);
-    }
-
-    /**
-     * Test different error types have different codes
-     */
-    public function testDifferentErrorTypesHaveDifferentCodes(): void
-    {
-        $errorTypes = [
-            'PDOException' => 'DATABASE_ERROR',
-            'Exception' => 'SERVER_ERROR',
-            'Error' => 'FATAL_ERROR',
-        ];
-
-        foreach ($errorTypes as $type => $expectedCode) {
-            $this->assertEquals($expectedCode, $errorTypes[$type]);
-        }
-    }
-
-    /**
-     * Test request ID is included in API responses
-     */
-    public function testRequestIdIncludedInApiResponses(): void
-    {
-        $requestId = 'req-' . uniqid();
-
-        $response = $this->buildApiResponse($requestId, ['test' => true], 200);
-
-        $this->assertEquals($requestId, $response['id']);
-    }
-
-    /**
-     * Test timestamp format in API response
-     */
-    public function testTimestampFormatInApiResponse(): void
-    {
-        $response = $this->buildApiResponse('test', [], 200);
-
-        // Should be in ISO 8601 / ATOM format
-        $this->assertMatchesRegularExpression(
-            '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[\+\-]\d{2}:\d{2}$/',
-            $response['ts']
-        );
-    }
-
-    /**
-     * Test middleware layers are applied in order
-     */
-    public function testMiddlewareLayersAppliedInOrder(): void
-    {
-        $layers = [
-            'Echo\\Framework\\Http\\Middleware\\RequestId',
-            'Echo\\Framework\\Http\\Middleware\\RequestLimit',
-            'Echo\\Framework\\Http\\Middleware\\Auth',
-        ];
-
-        // Verify order is maintained
-        $this->assertEquals('Echo\\Framework\\Http\\Middleware\\RequestId', $layers[0]);
-        $this->assertEquals('Echo\\Framework\\Http\\Middleware\\RequestLimit', $layers[1]);
-        $this->assertEquals('Echo\\Framework\\Http\\Middleware\\Auth', $layers[2]);
-    }
-
-    /**
-     * Test user UUID retrieval from session
-     */
-    public function testUserUuidRetrievalFromSession(): void
-    {
-        // Simulate session with user_uuid
-        $session = ['user_uuid' => 'test-uuid-123'];
-
-        $uuid = $session['user_uuid'] ?? null;
-
-        $this->assertEquals('test-uuid-123', $uuid);
-    }
-
-    /**
-     * Test user UUID is null when not logged in
-     */
-    public function testUserUuidNullWhenNotLoggedIn(): void
-    {
-        // Simulate empty session
-        $session = [];
-
-        $uuid = $session['user_uuid'] ?? null;
-
-        $this->assertNull($uuid);
-    }
-
-    /**
-     * Test web error response includes debug info conditionally
-     */
-    public function testWebErrorResponseDebugInfo(): void
-    {
-        $debugMode = true;
-        $errorData = [
-            'message' => 'An error occurred',
-            'debug' => $debugMode,
-            'e' => new \Exception('Test error'),
-        ];
-
-        $this->assertTrue($errorData['debug']);
-        $this->assertInstanceOf(\Exception::class, $errorData['e']);
-    }
-
-    /**
-     * Helper: Check if route is not found
-     */
-    private function isNotFound(?array $route): bool
-    {
-        return is_null($route);
-    }
-
-    /**
-     * Helper: Check if route is API
-     */
-    private function isApiRoute(array $middleware): bool
-    {
-        return in_array('api', $middleware);
-    }
-
-    /**
-     * Helper: Build API response structure
-     */
-    private function buildApiResponse(string $requestId, mixed $data, int $statusCode): array
-    {
-        return [
-            'id' => $requestId,
-            'success' => $statusCode === 200,
-            'status' => $statusCode,
-            'data' => $data,
-            'ts' => date(DATE_ATOM),
-        ];
-    }
-
-    /**
-     * Helper: Sanitize API error
-     */
-    private function sanitizeApiError(
-        string $code,
-        string $publicMessage,
-        string $originalMessage,
-        string $file,
-        int $line,
-        bool $debugMode
-    ): array {
-        $error = [
-            'code' => $code,
-            'message' => $publicMessage,
-        ];
-
-        if ($debugMode) {
-            $error['debug'] = [
-                'message' => $originalMessage,
-                'file' => $file,
-                'line' => $line,
-            ];
-        }
-
-        return $error;
-    }
-
-    /**
-     * Helper: Simulate controller method call
-     */
-    private function simulateControllerCall(array $params): array
-    {
-        // Just return the params to verify they would be passed correctly
-        return $params;
+        $this->assertTrue(true);
     }
 }

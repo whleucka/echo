@@ -25,6 +25,9 @@ class Auth implements MiddlewareInterface
         }
 
         $user = user();
+        if ($user) {
+            $request->setAttribute('user', $user);
+        }
 
         if (in_array('auth', $middleware) && !$user) {
             Flash::add("warning", "Please sign in to view this page.");

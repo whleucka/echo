@@ -25,7 +25,7 @@ function recursiveFiles(string $directory)
  */
 function app(): Application
 {
-    $kernel = new HttpKernel();
+    $kernel = container()->get(HttpKernel::class);
     return new Application($kernel);
 }
 
