@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Echo\Framework\Admin\WidgetRegistry;
 use Echo\Framework\Admin\Widgets\ActivityHeatmapWidget;
+use Echo\Framework\Admin\Widgets\ActivityMapWidget;
 use Echo\Framework\Admin\Widgets\AuditSummaryWidget;
 use Echo\Framework\Admin\Widgets\DatabaseWidget;
 use Echo\Framework\Admin\Widgets\EmailQueueWidget;
@@ -27,6 +28,7 @@ class WidgetServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Register dashboard widgets (ordered by priority in each widget class)
+        WidgetRegistry::register('activity-map', ActivityMapWidget::class);
         WidgetRegistry::register('activity-heatmap', ActivityHeatmapWidget::class);
         WidgetRegistry::register('file-info', FileInfoWidget::class);
         WidgetRegistry::register('stats', StatsWidget::class);

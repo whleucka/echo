@@ -721,6 +721,54 @@ class DashboardService
     }
 
     /**
+     * Get activity counts grouped by country code for a given time range
+     */
+    public function getCountryActivity(string $range = '7d'): array
+    {
+        $now = $this->now();
+
+        $since = match ($range) {
+            'today' => $now->setTime(0, 0, 0)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+            '7d'    => $now->modify('-7 days')->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+            '30d'   => $now->modify('-30 days')->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+            'year'  => $now->modify('first day of January')->setTime(0, 0, 0)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+            default => $now->modify('-7 days')->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+        };
+
+        $data = db()->fetchAll(
+            "SELECT country_code, COUNT(*) as count
+             FROM activity
+             WHERE country_code IS NOT NULL
+               AND created_at >= ?
+             GROUP BY country_code
+             ORDER BY count DESC",
+            [$since]
+        );
+
+        $countries = [];
+        $maxCount = 1;
+        $totalRequests = 0;
+
+        foreach ($data as $row) {
+            $code = strtoupper($row['country_code']);
+            $count = (int)$row['count'];
+            $countries[$code] = $count;
+            $totalRequests += $count;
+            if ($count > $maxCount) {
+                $maxCount = $count;
+            }
+        }
+
+        return [
+            'countries' => $countries,
+            'max' => $maxCount,
+            'total' => $totalRequests,
+            'country_count' => count($countries),
+            'range' => $range,
+        ];
+    }
+
+    /**
      * Get system uptime if available
      */
     private function getUptime(): ?string
