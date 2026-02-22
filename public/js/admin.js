@@ -49,13 +49,12 @@ function initActivityMap(attempt) {
   var countryData = JSON.parse(el.dataset.countries || '{}');
   var maxVal = parseInt(el.dataset.max, 10) || 1;
 
-  el.dataset.init = '1';
-
   el._mapCountryData = countryData;
   el._mapMaxVal = maxVal;
 
+  try {
   el._mapObject = new jsVectorMap({
-    selector: '#activity-world-map',
+    selector: el,
     map: 'world',
     backgroundColor: 'transparent',
     zoomButtons: false,
@@ -91,6 +90,10 @@ function initActivityMap(attempt) {
       }, 300);
     },
   });
+  el.dataset.init = '1';
+  } catch (e) {
+    return;
+  }
 
   // Use ResizeObserver to detect container size changes and reapply colors
   // after updateSize() redraws the SVG paths.
