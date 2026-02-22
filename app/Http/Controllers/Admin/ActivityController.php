@@ -34,7 +34,7 @@ class ActivityController extends ModuleController
                     ORDER BY label");
         $builder->filter('country_code', 'activity.country_code')
             ->label('Country')
-            ->optionsFrom("SELECT DISTINCT country_code 
+            ->optionsFrom("SELECT DISTINCT country_code as value, country_code as label
                 FROM activity 
                 ORDER BY country_code");
 
