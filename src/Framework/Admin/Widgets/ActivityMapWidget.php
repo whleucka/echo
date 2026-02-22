@@ -51,15 +51,14 @@ class ActivityMapWidget extends Widget
     }
 
     /**
-     * Convert a 2-letter country code to a flag emoji
+     * Convert a 2-letter country code to a flag icon
      */
     private function countryFlag(string $code): string
     {
-        $code = strtoupper($code);
+        $code = strtolower($code);
         if (strlen($code) !== 2) {
             return '';
         }
-        return mb_chr(0x1F1E6 + ord($code[0]) - ord('A'))
-             . mb_chr(0x1F1E6 + ord($code[1]) - ord('A'));
+        return sprintf('<span class="fi fi-%s"></span>', $code);
     }
 }

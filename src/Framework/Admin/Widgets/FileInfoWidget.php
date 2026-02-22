@@ -8,7 +8,7 @@ use Echo\Framework\Admin\Widget;
 class FileInfoWidget extends Widget
 {
     protected string $id = 'file-info';
-    protected string $title = 'File Uploads (Today)';
+    protected string $title = 'File Uploads';
     protected string $icon = 'file-earmark-arrow-up';
     protected string $template = 'admin/widgets/file-info.html.twig';
     protected int $width = 6;

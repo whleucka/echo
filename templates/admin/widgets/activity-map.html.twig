@@ -40,7 +40,7 @@
         <div class="d-flex flex-wrap gap-2 mt-1 small text-muted">
           {% for item in data.top %}
             <span class="badge bg-light text-dark border">
-              {{ item.flag }} {{ item.code }}
+              {{ item.flag|raw }} {{ item.code }}
               <strong>{{ item.count }}</strong>
             </span>
           {% endfor %}

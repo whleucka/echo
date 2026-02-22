@@ -49,16 +49,34 @@ function initActivityMap(attempt) {
   var countryData = JSON.parse(el.dataset.countries || '{}');
   var maxVal = parseInt(el.dataset.max, 10) || 1;
 
+  // Determine the top country for auto-focus
+  var topCountry = null;
+  var topCount = 0;
+  Object.keys(countryData).forEach(function(code) {
+    if (countryData[code] > topCount) {
+      topCount = countryData[code];
+      topCountry = code;
+    }
+  });
+
   el._mapCountryData = countryData;
   el._mapMaxVal = maxVal;
+
+  // Build focusOn config if there is activity data
+  var focusConfig = topCountry ? { region: topCountry, animate: true } : undefined;
 
   try {
   el._mapObject = new jsVectorMap({
     selector: el,
     map: 'world',
     backgroundColor: 'transparent',
-    zoomButtons: false,
+    zoomButtons: true,
     zoomOnScroll: false,
+    zoomOnScrollSpeed: 3,
+    zoomMax: 12,
+    zoomMin: 1,
+    zoomAnimate: true,
+    focusOn: focusConfig,
     showTooltip: true,
     regionStyle: {
       initial: {

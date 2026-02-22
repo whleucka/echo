@@ -8,7 +8,7 @@ use Echo\Framework\Admin\Widget;
 class AuditSummaryWidget extends Widget
 {
     protected string $id = 'audit-summary';
-    protected string $title = 'Audit Activity (7 days)';
+    protected string $title = 'Audit Activity';
     protected string $icon = 'journal-text';
     protected string $template = 'admin/widgets/audit-summary.html.twig';
     protected int $width = 6;

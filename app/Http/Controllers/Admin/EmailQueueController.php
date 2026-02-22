@@ -27,16 +27,6 @@ class EmailQueueController extends ModuleController
         $builder->column('sent_at', 'Sent At');
         $builder->column('created_at', 'Created');
 
-        $builder->filter('status', 'status')
-            ->label('Status')
-            ->options([
-                ['value' => 'pending', 'label' => 'Pending'],
-                ['value' => 'processing', 'label' => 'Processing'],
-                ['value' => 'sent', 'label' => 'Sent'],
-                ['value' => 'failed', 'label' => 'Failed'],
-                ['value' => 'exhausted', 'label' => 'Exhausted'],
-            ]);
-
         $builder->filterLink('Pending', "status = 'pending'");
         $builder->filterLink('Sent', "status = 'sent'");
         $builder->filterLink('Failed', "status IN ('failed', 'exhausted')");

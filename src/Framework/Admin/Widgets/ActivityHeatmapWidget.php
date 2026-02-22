@@ -8,7 +8,7 @@ use Echo\Framework\Admin\Widget;
 class ActivityHeatmapWidget extends Widget
 {
     protected string $id = 'activity-heatmap';
-    protected string $title = 'Activity Heatmap (7 days)';
+    protected string $title = 'Activity Heatmap';
     protected string $icon = 'grid-3x3';
     protected string $template = 'admin/widgets/activity-heatmap.html.twig';
     protected int $width = 6;

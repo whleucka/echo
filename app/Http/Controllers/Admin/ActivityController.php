@@ -40,7 +40,7 @@ class ActivityController extends ModuleController
     }
 
     /**
-     * Convert a 2-letter country code to a flag emoji, or a fallback icon
+     * Convert a 2-letter country code to a flag icon, or a fallback icon
      */
     private function countryFlag(?string $code): string
     {
@@ -48,9 +48,7 @@ class ActivityController extends ModuleController
             return '<i class="bi bi-globe text-muted" title="Unknown"></i>';
         }
 
-        $code = strtoupper($code);
-        $flag = mb_chr(0x1F1E6 + ord($code[0]) - ord('A'))
-              . mb_chr(0x1F1E6 + ord($code[1]) - ord('A'));
-        return sprintf('<span title="%s" style="font-size:1.25em">%s</span>', $code, $flag);
+        $code = strtolower($code);
+        return sprintf('<span class="fi fi-%s" title="%s"></span>', $code, strtoupper($code));
     }
 }
