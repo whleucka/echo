@@ -2,6 +2,10 @@
 
 <a href='https://github.com/whleucka/echo/actions/workflows/php.yml'><img src='https://github.com/whleucka/echo/actions/workflows/php.yml/badge.svg' alt='github badge'></a>
 
+<img width="1920" height="1085" alt="image" src="https://github.com/user-attachments/assets/af1c9f5f-8ecd-4cb2-852d-c3ff9f9c6db6" />
+
+---
+
 A modern PHP 8.4+ MVC framework with attribute-based routing, PHP-DI, and Twig. Runs in Docker (PHP 8.4-FPM, Nginx, MariaDB 11, Redis 7).
 
 > **Work in Progress**: APIs and internals may change. This project will
@@ -175,10 +179,6 @@ All defined in `app/Helpers/Functions.php`:
 | `format_bytes($bytes, $precision)` | Human-readable file size (e.g. `1.5 MB`) |
 
 ## Admin Modules
-
-<img width="1273" height="1156" alt="image" src="https://github.com/user-attachments/assets/f1c4ff2e-5a04-4b9c-aaf0-077e6bdd69a4" />
-
----
 
 Extend `ModuleController` for instant CRUD with HTMX tables, modals, sorting, filtering, pagination, CSV export, and per-user permissions.
 
