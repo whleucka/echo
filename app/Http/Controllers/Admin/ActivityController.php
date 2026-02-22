@@ -38,7 +38,8 @@ class ActivityController extends ModuleController
                 FROM activity 
                 ORDER BY country_code");
 
-        $builder->filterLink('All', "1=1");
+        $builder->filterLink('Unauthenticated', "user_id IS NULL");
+        $builder->filterLink('Authenticated', "user_id IS NOT NULL");
         $builder->filterLink('Me', sprintf("user_id = %s", user()->id));
 
         $builder->toolbarAction('export');
