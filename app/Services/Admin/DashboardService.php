@@ -736,7 +736,7 @@ class DashboardService
         };
 
         $data = db()->fetchAll(
-            "SELECT country_code, COUNT(*) as count
+            "SELECT country_code, COUNT(DISTINCT ip) as count
              FROM activity
              WHERE country_code IS NOT NULL
                AND created_at >= ?
@@ -747,13 +747,13 @@ class DashboardService
 
         $countries = [];
         $maxCount = 1;
-        $totalRequests = 0;
+        $totalUniqueIps = 0;
 
         foreach ($data as $row) {
             $code = strtoupper($row['country_code']);
             $count = (int)$row['count'];
             $countries[$code] = $count;
-            $totalRequests += $count;
+            $totalUniqueIps += $count;
             if ($count > $maxCount) {
                 $maxCount = $count;
             }
@@ -762,7 +762,7 @@ class DashboardService
         return [
             'countries' => $countries,
             'max' => $maxCount,
-            'total' => $totalRequests,
+            'total' => $totalUniqueIps,
             'country_count' => count($countries),
             'range' => $range,
         ];

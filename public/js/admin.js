@@ -74,7 +74,7 @@ function initActivityMap(attempt) {
     onRegionTooltipShow: function(_event, tooltip, code) {
       var count = countryData[code] || 0;
       var name = tooltip.text();
-      tooltip.text(name + ': ' + count.toLocaleString() + ' requests');
+      tooltip.text(name + ': ' + count.toLocaleString() + ' unique IPs');
     },
     onLoaded: function() {
       // Apply gradient fills directly to SVG paths — bypasses jsvectormap's
