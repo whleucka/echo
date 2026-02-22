@@ -32,6 +32,11 @@ class ActivityController extends ModuleController
                     CONCAT(first_name, ' ', surname) as label 
                     FROM users 
                     ORDER BY label");
+        $builder->filter('country_code', 'activity.country_code')
+            ->label('Country')
+            ->optionsFrom("SELECT DISTINCT country_code 
+                FROM activity 
+                ORDER BY country_code");
 
         $builder->filterLink('All', "1=1");
         $builder->filterLink('Me', sprintf("user_id = %s", user()->id));
