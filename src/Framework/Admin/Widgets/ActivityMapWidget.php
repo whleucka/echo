@@ -12,7 +12,7 @@ class ActivityMapWidget extends Widget
     protected string $icon = 'globe-americas';
     protected string $template = 'admin/widgets/activity-map.html.twig';
     protected int $width = 12;
-    protected int $refreshInterval = 300; // 5 minutes
+    protected int $refreshInterval = 3600; // 1 hr
     protected int $cacheTtl = 0; // no cache -- range is dynamic
     protected int $priority = 25; // before the heatmap
 
