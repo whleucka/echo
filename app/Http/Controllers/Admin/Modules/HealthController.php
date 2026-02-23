@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Admin\Modules;
 
 use App\Services\Admin\SystemHealthService;
 use Echo\Framework\Admin\NoTableTrait;

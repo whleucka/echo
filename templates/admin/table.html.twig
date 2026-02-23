@@ -8,25 +8,25 @@
       {{ csrf()|raw }}
       {% for action in toolbarActions %}
         {% if action.name == 'create' and isToolbarActionAllowed('create') %}
-          <button class="btn btn-sm btn-success me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/create" hx-target="#modal" hx-select=".modal-dialog" hx-swap="innerHTML"><i class="bi {{ action.icon }} pe-1"></i> {{ action.label }}</button>
+          <button class="btn btn-sm btn-success me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="{{ uri(module.link ~ '.admin.create') }}" hx-target="#modal" hx-select=".modal-dialog" hx-swap="innerHTML"><i class="bi {{ action.icon }} pe-1"></i> {{ action.label }}</button>
         {% endif %}
       {% endfor %}
       {% for link in filters.filterLinks.links %}
-        <button hx-get="/admin/{{ module.link }}/filter/link/{{ loop.index0 }}" hx-swap="outerHTML" hx-target="#table" hx-select="#table" class="btn btn-primary btn-sm text-light filter-link {% if filters.filterLinks.active == loop.index0 %}active{% endif %} me-2">
+        <button hx-get="{{ uri(module.link ~ '.admin.filter-link', {index: loop.index0}) }}" hx-swap="outerHTML" hx-target="#table" hx-select="#table" class="btn btn-primary btn-sm text-light filter-link {% if filters.filterLinks.active == loop.index0 %}active{% endif %} me-2">
           <i class="bi bi-filter-circle me-1"></i> {{ link }} <span class="link-count badge bg-light text-dark ms-2">--</span>
         </button>
-        <span hx-get="/admin/{{ module.link }}/filter/count/{{ loop.index0 }}" hx-trigger="load" hx-swap="textContent" hx-target="previous .link-count"></span>
+        <span hx-get="{{ uri(module.link ~ '.admin.filter-count', {index: loop.index0}) }}" hx-trigger="load" hx-swap="textContent" hx-target="previous .link-count"></span>
       {% endfor %}
       {% for action in toolbarActions %}
         {% if action.name == 'export' and isToolbarActionAllowed('export') and data.rows %}
-          <a href="/admin/{{ module.link }}/export-csv" class="btn btn-sm btn-primary me-2"><i class="bi {{ action.icon }} pe-1"></i> {{ action.label }}</a>
+          <a href="{{ uri(module.link ~ '.admin.export-csv') }}" class="btn btn-sm btn-primary me-2"><i class="bi {{ action.icon }} pe-1"></i> {{ action.label }}</a>
         {% endif %}
       {% endfor %}
       {% if filters.show %}
-        <button class="btn btn-sm btn-primary me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/filter" hx-target="#modal" hx-select=".modal-dialog" hx-swap="innerHTML"><i class="bi bi-funnel pe-1"></i> Filter</button>
+        <button class="btn btn-sm btn-primary me-2" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="{{ uri(module.link ~ '.admin.render-filter') }}" hx-target="#modal" hx-select=".modal-dialog" hx-swap="innerHTML"><i class="bi bi-funnel pe-1"></i> Filter</button>
       {% endif %}
       {% if filters.showClear %}
-          <button hx-post="/admin/{{ module.link }}/modal/filter" type="submit" class="btn btn-sm btn-danger me-2" name="filter_clear"><i class="bi bi-trash pe-1"></i> Clear Filter</button>
+          <button hx-post="{{ uri(module.link ~ '.admin.set-filter') }}" type="submit" class="btn btn-sm btn-danger me-2" name="filter_clear"><i class="bi bi-trash pe-1"></i> Clear Filter</button>
       {% endif %}
     </form>
     {% if tableActions|length > 0 %}
@@ -38,7 +38,7 @@
         <option value="{{ action.value }}">{{ action.label }}</option>
         {% endfor %}
       </select>
-      <button hx-post="/admin/{{ module.link }}/table-action" hx-include="#table-action, .checkbox-selection, [name='csrf_token']" hx-confirm="Are you sure you want to apply this action?" hx-select="#module" hx-target="#module" hx-swap="outerHTML" type="button" class="btn btn-sm btn-primary" id="table-action-submit" disabled>Apply</button>
+      <button hx-post="{{ uri(module.link ~ '.admin.table-action') }}" hx-include="#table-action, .checkbox-selection, [name='csrf_token']" hx-confirm="Are you sure you want to apply this action?" hx-select="#module" hx-target="#module" hx-swap="outerHTML" type="button" class="btn btn-sm btn-primary" id="table-action-submit" disabled>Apply</button>
     </div>
     {% endif %}
   </div>
@@ -55,7 +55,7 @@
             </th>
             {% endif %}
             {% for column,title in headers %}
-            <th hx-get="/admin/{{ module.link }}/sort/{{ loop.index0 }}" hx-target="#table" hx-select="#table" hx-swap="outerHTML" class="pointer {% if column == filters.orderBy %}active {% if filters.sort == 'ASC' %}asc{% else %}desc{% endif %}{% endif %}" nowrap>{{ title }}</th>
+            <th hx-get="{{ uri(module.link ~ '.admin.sort', {idx: loop.index0}) }}" hx-target="#table" hx-select="#table" hx-swap="outerHTML" class="pointer {% if column == filters.orderBy %}active {% if filters.sort == 'ASC' %}asc{% else %}desc{% endif %}{% endif %}" nowrap>{{ title }}</th>
             {% endfor %}
             {% if rowActions|length > 0 %}
             <th class="text-end">Actions</th>
@@ -78,13 +78,13 @@
                 <div class="d-flex justify-content-end">
                   {% for action in rowActions %}
                     {% if action.name == 'show' and hasShow(row.id) %}
-                      <button class="btn btn-sm" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/{{ row.id }}" hx-target="#modal" hx-select=".modal-dialog" hx-swap="innerHTML"><i class="bi {{ action.icon }}"></i></button>
+                      <button class="btn btn-sm" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="{{ uri(module.link ~ '.admin.show', {id: row.id}) }}" hx-target="#modal" hx-select=".modal-dialog" hx-swap="innerHTML"><i class="bi {{ action.icon }}"></i></button>
                     {% elseif action.name == 'edit' and hasEdit(row.id) %}
-                      <button class="btn btn-sm ms-1" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="/admin/{{ module.link }}/modal/{{ row.id }}/edit" hx-target="#modal" hx-select=".modal-dialog" hx-swap="innerHTML"><i class="bi {{ action.icon }}"></i></button>
+                      <button class="btn btn-sm ms-1" hx-on::after-request="new bootstrap.Modal(document.getElementById('modal')).show()" hx-get="{{ uri(module.link ~ '.admin.edit', {id: row.id}) }}" hx-target="#modal" hx-select=".modal-dialog" hx-swap="innerHTML"><i class="bi {{ action.icon }}"></i></button>
                     {% elseif action.name == 'delete' and hasDelete(row.id) %}
-                      <button class="btn btn-sm ms-1" hx-confirm="{{ action.confirm }}" hx-post="/admin/{{ module.link }}/{{ row.id }}/destroy"><i class="bi {{ action.icon }}"></i></button>
+                      <button class="btn btn-sm ms-1" hx-confirm="{{ action.confirm }}" hx-post="{{ uri(module.link ~ '.admin.destroy', {id: row.id}) }}"><i class="bi {{ action.icon }}"></i></button>
                     {% elseif action.name not in ['show', 'edit', 'delete'] %}
-                      <button class="btn btn-sm ms-1" title="{{ action.label }}" {% if action.confirm %}hx-confirm="{{ action.confirm }}"{% endif %} hx-post="/admin/{{ module.link }}/table-action" hx-vals='{"table_action": "{{ action.name }}", "table_selection[]": "{{ row.id }}"}' hx-target="#module" hx-select="#module" hx-swap="outerHTML"><i class="bi {{ action.icon }}"></i></button>
+                      <button class="btn btn-sm ms-1" title="{{ action.label }}" {% if action.confirm %}hx-confirm="{{ action.confirm }}"{% endif %} hx-post="{{ uri(module.link ~ '.admin.table-action') }}" hx-vals='{"table_action": "{{ action.name }}", "table_selection[]": "{{ row.id }}"}' hx-target="#module" hx-select="#module" hx-swap="outerHTML"><i class="bi {{ action.icon }}"></i></button>
                     {% endif %}
                   {% endfor %}
                 </div>
@@ -114,7 +114,7 @@
           hx-target="#module"
           hx-select="#module"
           hx-swap="outerHTML"
-          onchange="htmx.ajax('GET', '/admin/{{ module.link }}/per-page/' + this.value, {target: '#module', select: '#module', swap: 'outerHTML'})">
+          onchange="htmx.ajax('GET', '{{ uri(module.link ~ '.admin.per-page', {count: '__COUNT__'}) }}'.replace('__COUNT__', this.value), {target: '#module', select: '#module', swap: 'outerHTML'})">
           {% for opt in pagination.perPageOptions %}
             <option value="{{ opt }}" {% if pagination.perPage == opt %}selected{% endif %}>{{ opt }}</option>
           {% endfor %}
@@ -126,12 +126,12 @@
         <ul class="pagination pagination-sm mb-0">
           {% if pagination.page != 1 and pagination.page > pagination.links %}
           <li class="page-item">
-            <a class="page-link" href="/admin/{{ module.link }}/page/1">
+            <a class="page-link" href="{{ uri(module.link ~ '.admin.page', {page: 1}) }}">
               <span><i class="bi bi-chevron-double-left"></i></span>
             </a>
           </li>
           <li class="page-item {% if pagination.page - 1 <= 0 %}disabled{% endif %}">
-            <a class="page-link" href="/admin/{{ module.link }}/page/{{ pagination.page - 1}}">
+            <a class="page-link" href="{{ uri(module.link ~ '.admin.page', {page: pagination.page - 1}) }}">
               <span><i class="bi bi-chevron-left"></i></span>
             </a>
           </li>
@@ -139,28 +139,28 @@
           {% for i in pagination.page - pagination.links..pagination.page - 1 %}
             {% if i >= 1 %}
             <li class="page-item">
-              <a class="page-link" href="/admin/{{ module.link }}/page/{{ i }}">{{ i }}</a>
+              <a class="page-link" href="{{ uri(module.link ~ '.admin.page', {page: i}) }}">{{ i }}</a>
             </li>
             {% endif %}
           {% endfor %}
           <li class="page-item active">
-            <a class="page-link" href="/admin/{{ module.link }}/page/{{ pagination.page }}">{{ pagination.page }}</a>
+            <a class="page-link" href="{{ uri(module.link ~ '.admin.page', {page: pagination.page}) }}">{{ pagination.page }}</a>
           </li>
           {% for i in pagination.page + 1..pagination.page + pagination.links %}
             {% if i <= pagination.totalPages %}
             <li class="page-item">
-              <a class="page-link" href="/admin/{{ module.link }}/page/{{ i }}">{{ i }}</a>
+              <a class="page-link" href="{{ uri(module.link ~ '.admin.page', {page: i}) }}">{{ i }}</a>
             </li>
             {% endif %}
           {% endfor %}
           {% if pagination.page != pagination.totalPages and pagination.page < pagination.totalPages - pagination.paginationLinks %}
           <li class="page-item">
-            <a class="page-link {% if pagination.page + 1 >= pagination.totalPages %}disabled{% endif %}" href="/admin/{{ module.link }}/page/{{ pagination.page + 1 }}">
+            <a class="page-link {% if pagination.page + 1 >= pagination.totalPages %}disabled{% endif %}" href="{{ uri(module.link ~ '.admin.page', {page: pagination.page + 1}) }}">
               <span><i class="bi bi-chevron-right"></i></span>
             </a>
           </li>
           <li class="page-item">
-            <a class="page-link" href="/admin/{{ module.link }}/page/{{ pagination.totalPages }}">
+            <a class="page-link" href="{{ uri(module.link ~ '.admin.page', {page: pagination.totalPages}) }}">
               <span><i class="bi bi-chevron-double-right"></i></span>
             </a>
           </li>

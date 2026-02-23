@@ -109,7 +109,7 @@ class DashboardService
             'id' => 'requests-chart-today',
             'title' => "Today's Requests",
             'icon' => 'clock',
-            'refresh_url' => '/admin/dashboard/requests/chart/today',
+            'refresh_url' => uri('dashboard.requests.today.chart'),
             'options' => json_encode([
                 'type' => 'line',
                 'data' => (object)[
@@ -199,7 +199,7 @@ class DashboardService
             'id' => 'requests-chart-week',
             'title' => 'This Week',
             'icon' => 'calendar-week',
-            'refresh_url' => '/admin/dashboard/requests/chart/week',
+            'refresh_url' => uri('dashboard.requests.week.chart'),
             'options' => json_encode([
                 'type' => 'bar',
                 'data' => (object)[
@@ -278,7 +278,7 @@ class DashboardService
             'id' => 'requests-chart-month',
             'title' => 'This Month',
             'icon' => 'calendar-month',
-            'refresh_url' => '/admin/dashboard/requests/chart/month',
+            'refresh_url' => uri('dashboard.requests.month.chart'),
             'options' => json_encode([
                 'type' => 'bar',
                 'data' => (object)[
@@ -356,7 +356,7 @@ class DashboardService
             'id' => 'requests-chart-ytd',
             'title' => 'Year to Date',
             'icon' => 'calendar-range',
-            'refresh_url' => '/admin/dashboard/requests/chart/ytd',
+            'refresh_url' => uri('dashboard.requests.ytd.chart'),
             'options' => json_encode([
                 'type' => 'bar',
                 'data' => (object)[

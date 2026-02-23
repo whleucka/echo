@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers\Admin\Auth;
 
 use App\Services\Auth\SignInService;
 use Echo\Framework\Http\Controller;
@@ -8,14 +8,14 @@ use Echo\Framework\Http\Response;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Post;
 
-#[Group(pathPrefix: "/admin")]
+#[Group(subdomain: 'admin', namePrefix: 'auth')]
 class SignOutController extends Controller
 {
     public function __construct(private SignInService $service)
     {
     }
 
-    #[Post("/sign-out", "auth.sign-out.post", ["auth"])]
+    #[Post("/sign-out", "sign-out.post", ["auth"])]
     public function post(): Response
     {
         $this->service->signOut();

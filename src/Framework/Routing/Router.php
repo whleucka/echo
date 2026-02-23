@@ -39,6 +39,22 @@ class Router implements RouterInterface
     }
 
     /**
+     * Get the subdomain constraint for a named route
+     */
+    public function getRouteSubdomain(string $name): ?string
+    {
+        $routes = $this->collector->getRoutes();
+        foreach ($routes as $uri => $route) {
+            foreach ($route as $method => $info) {
+                if ($info['name'] === $name) {
+                    return $info['subdomain'] ?? null;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * Dispatch a new route
      */
     public function dispatch(string $uri, string $method, ?string $host = null): ?array

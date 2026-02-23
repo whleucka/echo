@@ -1,22 +1,22 @@
 <div id="dashboard">
   {% include "components/flash.html.twig" %}
 
-  <div id="widgets" hx-get="/admin/dashboard/widgets" hx-trigger="load">
+  <div id="widgets" hx-get="{{ uri('dashboard.widgets.all') }}" hx-trigger="load">
   </div>
 
   <div id="charts">
     <div class="row">
-      <div class="col-12 mb-4" hx-get="/admin/dashboard/requests/chart/today" hx-trigger="load">
+      <div class="col-12 mb-4" hx-get="{{ uri('dashboard.requests.today.chart') }}" hx-trigger="load">
       </div>
     </div>
     <div class="row">
-      <div class="col-12 col-lg-6 mb-4" hx-get="/admin/dashboard/requests/chart/week" hx-trigger="load">
+      <div class="col-12 col-lg-6 mb-4" hx-get="{{ uri('dashboard.requests.week.chart') }}" hx-trigger="load">
       </div>
-      <div class="col-12 col-lg-6 mb-4" hx-get="/admin/dashboard/requests/chart/month" hx-trigger="load">
+      <div class="col-12 col-lg-6 mb-4" hx-get="{{ uri('dashboard.requests.month.chart') }}" hx-trigger="load">
       </div>
     </div>
     <div class="row">
-      <div class="col-12 mb-4" hx-get="/admin/dashboard/requests/chart/ytd" hx-trigger="load">
+      <div class="col-12 mb-4" hx-get="{{ uri('dashboard.requests.ytd.chart') }}" hx-trigger="load">
       </div>
     </div>
   </div>

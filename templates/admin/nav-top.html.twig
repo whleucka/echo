@@ -1,6 +1,6 @@
 <nav id="nav-top" class="d-flex align-items-center">
-  <button class="btn d-none d-md-block" id="sidebar-toggle" hx-get="/admin/sidebar/toggle" hx-target="#nav-sidebar" hx-select="#nav-sidebar" hx-swap="outerHTML" hx-on::after-request="sidebarLinkActiveLoad()"><i class="bi bi-list"></i></button>
-  <a class="navbar-brand d-sm-block d-md-none fw-bold me-2" href="/admin/dashboard"><i class="bi bi-shield-check ps-2 pe-1"></i> Admin</a>
+  <button class="btn d-none d-md-block" id="sidebar-toggle" hx-get="{{ uri('admin.sidebar.toggle') }}" hx-target="#nav-sidebar" hx-select="#nav-sidebar" hx-swap="outerHTML" hx-on::after-request="sidebarLinkActiveLoad()"><i class="bi bi-list"></i></button>
+  <a class="navbar-brand d-sm-block d-md-none fw-bold me-2" href="{{ uri('dashboard.admin.index') }}"><i class="bi bi-shield-check ps-2 pe-1"></i> Admin</a>
   <div class="hx-indicator p-2">
     <div class="spinner"></div>
   </div>
@@ -20,7 +20,7 @@
         {% endfor %}
         <li class="ps-2 d-block d-md-none text-secondary">Session</li>
         <li>
-          <form method="POST" action="/admin/sign-out" hx-boost="false">
+          <form method="POST" action="{{ uri('auth.sign-out.post') }}" hx-boost="false">
             {{ csrf()|raw }}
             <button type="submit" class="dropdown-item">
               <span class="bi bi-door-closed"></span> <span class="ps-2">Sign Out</span>

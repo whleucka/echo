@@ -27,7 +27,26 @@ class TwigExtension extends AbstractExtension
 
     public function uri(string $name, array $params = [])
     {
-        return uri($name, ...array_values($params));
+        $path = uri($name, ...array_values($params));
+
+        if ($path === null) {
+            return null;
+        }
+
+        $routeSubdomain = router()->getRouteSubdomain($name);
+        $currentSubdomain = request()->getSubdomain();
+
+        if ($routeSubdomain && $routeSubdomain !== $currentSubdomain) {
+            $appUrl = config('app.url') ?? 'http://localhost';
+            $parsed = parse_url($appUrl);
+            $scheme = $parsed['scheme'] ?? request()->getScheme();
+            $host = $parsed['host'] ?? 'localhost';
+            $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+
+            return "{$scheme}://{$routeSubdomain}.{$host}{$port}{$path}";
+        }
+
+        return $path;
     }
 
     public function old(string $name, mixed $default = null)

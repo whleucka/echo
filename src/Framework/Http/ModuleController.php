@@ -15,7 +15,7 @@ use RuntimeException;
 use Throwable;
 use Twig\TwigFunction;
 
-#[Group(pathPrefix: "/admin", middleware: ["auth"])]
+#[Group(subdomain: 'admin', middleware: ["auth"])]
 abstract class ModuleController extends Controller
 {
     // --- Schema-driven components ---
@@ -640,7 +640,7 @@ abstract class ModuleController extends Controller
         $hasDateColumn = $this->tableSchema->dateColumn !== '';
 
         return $this->render("admin/filter.html.twig", [
-            "post" => "/admin/{$this->moduleLink}/modal/filter",
+            "post" => uri("{$this->moduleLink}.admin.set-filter"),
             "showClear" => $this->state->hasFilters(),
             "dropdowns" => [
                 "show" => !empty($this->tableSchema->filters),
@@ -697,8 +697,8 @@ abstract class ModuleController extends Controller
             "id" => $id,
             "title" => $title,
             "post" => $id
-                ? "/admin/{$this->moduleLink}/$id/update"
-                : "/admin/{$this->moduleLink}",
+                ? uri("{$this->moduleLink}.admin.update", $id)
+                : uri("{$this->moduleLink}.admin.store"),
             "submit" => $submit,
             "readonly" => $readonly,
             "labels" => $this->formSchema->getLabels(),

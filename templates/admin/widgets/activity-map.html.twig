@@ -1,6 +1,6 @@
 <div class="col-12 col-lg-{{ widget.width }} mb-4 d-none d-md-block" id="widget-{{ widget.id }}"
   {% if widget.refresh_interval > 0 %}
-  hx-get="/admin/dashboard/widgets/{{ widget.id }}?range={{ data.range }}"
+  hx-get="{{ uri('dashboard.widgets.render', {id: widget.id}) }}?range={{ data.range }}"
   hx-trigger="every {{ widget.refresh_interval }}s"
   hx-swap="outerHTML"
   {% endif %}>
@@ -8,7 +8,7 @@
     <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
       <span><i class="bi bi-{{ widget.icon }} me-2"></i>{{ widget.title }}</span>
       <button class="btn btn-sm btn-outline-secondary"
-        hx-get="/admin/dashboard/widgets/{{ widget.id }}?range={{ data.range }}"
+        hx-get="{{ uri('dashboard.widgets.render', {id: widget.id}) }}?range={{ data.range }}"
         hx-swap="outerHTML"
         hx-target="#widget-{{ widget.id }}">
         <i class="bi bi-arrow-clockwise"></i>

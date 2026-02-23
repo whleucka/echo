@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers\Admin\Auth;
 
 use App\Services\Auth\ForgotPasswordService;
 use Echo\Framework\Http\Controller;
@@ -8,7 +8,7 @@ use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
 use Echo\Framework\Session\Flash;
 
-#[Group(pathPrefix: '/admin')]
+#[Group(subdomain: 'admin')]
 class ForgotPasswordController extends Controller
 {
     public function __construct(private ForgotPasswordService $service)

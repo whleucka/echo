@@ -134,11 +134,38 @@ function env(string $name, mixed $default = null)
 }
 
 /**
- * Get route uri
+ * Get route uri (path only)
  */
 function uri(string $name, ...$params): ?string
 {
     return router()->searchUri($name, ...$params);
+}
+
+/**
+ * Get route url (full URL with scheme/host when crossing subdomains)
+ */
+function url(string $name, ...$params): ?string
+{
+    $path = uri($name, ...$params);
+
+    if ($path === null) {
+        return null;
+    }
+
+    $routeSubdomain = router()->getRouteSubdomain($name);
+    $currentSubdomain = request()->getSubdomain();
+
+    if ($routeSubdomain && $routeSubdomain !== $currentSubdomain) {
+        $appUrl = config('app.url') ?? 'http://localhost';
+        $parsed = parse_url($appUrl);
+        $scheme = $parsed['scheme'] ?? request()->getScheme();
+        $host = $parsed['host'] ?? 'localhost';
+        $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+
+        return "{$scheme}://{$routeSubdomain}.{$host}{$port}{$path}";
+    }
+
+    return $path;
 }
 
 

@@ -1,7 +1,7 @@
 <?php
 
 return [
-    "authenticated_route" => "/admin/dashboard",
+    "authenticated_route" => uri("dashboard.admin.index"),
     "register_enabled" => env("AUTH_REGISTER_ENABLED", false),
     "trusted_proxies" => array_filter(explode(',', env('TRUSTED_PROXIES') ?? '')),
     "whitelist" => [

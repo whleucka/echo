@@ -29,6 +29,6 @@ class Module extends Model
      */
     public function url(): string
     {
-        return '/admin/' . $this->link;
+        return uri("{$this->link}.admin.index") ?? '/';
     }
 }

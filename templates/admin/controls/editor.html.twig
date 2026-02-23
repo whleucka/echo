@@ -139,7 +139,7 @@
 
   // Determine upload endpoint from the module URL
   var moduleLink = {{ module.link|json_encode|raw }};
-  var uploadUrl = '/admin/' + moduleLink + '/upload-image';
+  var uploadUrl = '{{ uri(module.link ~ '.admin.upload-image') }}';
 
   // Load all Editor.js scripts, then initialize
   var scripts = [

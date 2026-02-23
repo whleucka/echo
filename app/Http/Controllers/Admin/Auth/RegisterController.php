@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers\Admin\Auth;
 
 use App\Services\Auth\RegisterService;
 use Echo\Framework\Http\Controller;
@@ -9,7 +9,7 @@ use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
 use Echo\Framework\Session\Flash;
 
-#[Group(pathPrefix: '/admin')]
+#[Group(subdomain: 'admin', namePrefix: 'auth')]
 class RegisterController extends Controller
 {
     public function __construct(private RegisterService $service)
@@ -19,13 +19,13 @@ class RegisterController extends Controller
         }
     }
 
-    #[Get("/register", "auth.register.index")]
+    #[Get("/register", "register.index")]
     public function index(): string
     {
         return $this->render("auth/register/index.html.twig");
     }
 
-    #[Post("/register", "auth.register.post", ["max_requests" => 10, "decay_seconds" => 60])]
+    #[Post("/register", "register.post", ["max_requests" => 10, "decay_seconds" => 60])]
     public function post(): string|Response
     {
         $this->setValidationMessage("password.min_length", "Must be at least 10 characters");

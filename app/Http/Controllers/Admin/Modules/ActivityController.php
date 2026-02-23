@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Admin\Modules;
 
 use Echo\Framework\Admin\Schema\TableSchemaBuilder;
 use Echo\Framework\Http\ModuleController;

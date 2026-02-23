@@ -100,6 +100,27 @@ class Request implements RequestInterface
         return $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
     }
 
+    public function getScheme(): string
+    {
+        if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+            return 'https';
+        }
+        if (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https') {
+            return 'https';
+        }
+        return 'http';
+    }
+
+    public function getSubdomain(): ?string
+    {
+        $host = strtok($this->getHost(), ':');
+        $parts = explode('.', $host);
+        if (count($parts) < 2) {
+            return null;
+        }
+        return $parts[0];
+    }
+
     public function getUri(): string
     {
         return strtok($_SERVER["REQUEST_URI"], '?');

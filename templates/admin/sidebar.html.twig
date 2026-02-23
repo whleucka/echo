@@ -1,4 +1,4 @@
-<nav id="nav-sidebar" class="text-light {% if hide %}hide{% endif %} d-none d-md-block" hx-get="/admin/sidebar" hx-trigger="loadSidebar from:body" hx-swap="outerHTML">
+<nav id="nav-sidebar" class="text-light {% if hide %}hide{% endif %} d-none d-md-block" hx-get="{{ uri('admin.sidebar.load') }}" hx-trigger="loadSidebar from:body" hx-swap="outerHTML">
   <header class="d-flex justify-content-center align-items-center p-2">
     <h4 class="m-0"><i class="bi bi-shield-check pe-1"></i> <span class="desc">Admin</span></h4>
   </header>

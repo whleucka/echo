@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers\Admin\Auth;
 
 use App\Services\Auth\SignInService;
 use Echo\Framework\Http\Controller;
@@ -9,14 +9,14 @@ use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
 use Echo\Framework\Session\Flash;
 
-#[Group(pathPrefix: '/admin')]
+#[Group(subdomain: 'admin', namePrefix: 'auth')]
 class SignInController extends Controller
 {
     public function __construct(private SignInService $service)
     {
     }
 
-    #[Get("/sign-in", "auth.sign-in.index")]
+    #[Get("/sign-in", "sign-in.index")]
     public function index(): string
     {
         return $this->render("auth/sign-in/index.html.twig", [
@@ -24,7 +24,7 @@ class SignInController extends Controller
         ]);
     }
 
-    #[Post("/sign-in", "auth.sign-in.post", ["max_requests" => 10, "decay_seconds" => 60])]
+    #[Post("/sign-in", "sign-in.post", ["max_requests" => 10, "decay_seconds" => 60])]
     public function post(): string|Response
     {
         $valid = $this->validate([

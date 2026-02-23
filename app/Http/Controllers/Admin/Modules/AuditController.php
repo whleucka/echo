@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Admin\Modules;
 
 use App\Models\Audit;
 use Echo\Framework\Admin\Schema\{ModalSize, TableSchemaBuilder};

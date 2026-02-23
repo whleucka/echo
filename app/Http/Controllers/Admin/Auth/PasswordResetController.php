@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers\Admin\Auth;
 
 use App\Services\Auth\PasswordResetService;
 use Echo\Framework\Http\Controller;
@@ -8,14 +8,14 @@ use Echo\Framework\Http\Response;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
 
-#[Group(pathPrefix: '/admin')]
+#[Group(subdomain: 'admin', namePrefix: 'auth')]
 class PasswordResetController extends Controller
 {
     public function __construct(private PasswordResetService $service)
     {
     }
 
-    #[Get("/password-reset", "auth.password-reset.index")]
+    #[Get("/password-reset", "password-reset.index")]
     public function index(): string|Response
     {
         $token = request()->get->get('token', '');
@@ -39,7 +39,7 @@ class PasswordResetController extends Controller
         ]);
     }
 
-    #[Post("/password-reset", "auth.password-reset.post", ["max_requests" => 5, "decay_seconds" => 60])]
+    #[Post("/password-reset", "password-reset.post", ["max_requests" => 5, "decay_seconds" => 60])]
     public function post(): string|Response
     {
         $token = request()->post->get('token', '');
