@@ -53,7 +53,7 @@
           {% for key, label in ranges %}
           <button type="button"
             class="btn {{ data.range == key ? 'btn-primary' : 'btn-outline-secondary' }}"
-            hx-get="/admin/dashboard/widgets/{{ widget.id }}?range={{ key }}"
+            hx-get="{{ uri('dashboard.widgets.render', {id: widget.id}) }}?range={{ key }}"
             hx-target="#widget-{{ widget.id }}"
             hx-swap="outerHTML">
             {{ label }}
