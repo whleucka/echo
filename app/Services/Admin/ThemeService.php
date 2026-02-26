@@ -15,9 +15,12 @@ class ThemeService
     {
         session()->set(self::SESSION_KEY, $enabled);
         if (user()) {
-            qb()->table('users')
+            $theme = $enabled ? 'dark' : 'light';
+            qb()->update(['theme' => $theme])
+                ->params([$theme])
+                ->table('users')
                 ->where(['id = ?'], user()->id)
-                ->update(['theme' => $enabled ? 'dark' : 'light']);
+                ->execute();
         }
     }
 
