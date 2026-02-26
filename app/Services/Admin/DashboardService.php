@@ -778,6 +778,140 @@ class DashboardService
     }
 
     /**
+     * Get daily report data for the previous day.
+     *
+     * Aggregates requests, users, audit events, email queue stats,
+     * file uploads, and top countries — reusing existing query patterns.
+     */
+    public function getDailyReportData(): array
+    {
+        $now = $this->now();
+        $yesterday = $now->modify('-1 day');
+        $date = $yesterday->format('Y-m-d');
+        $dayStart = $date . ' 00:00:00';
+        $dayEnd = $date . ' 23:59:59';
+        $tzOffset = $now->format('P');
+
+        // -- Requests --
+        $totalRequests = Activity::where('created_at', '>=', $dayStart)
+            ->andWhere('created_at', '<=', $dayEnd)
+            ->count();
+
+        $uniqueVisitors = Activity::where('created_at', '>=', $dayStart)
+            ->andWhere('created_at', '<=', $dayEnd)
+            ->count('DISTINCT ip');
+
+        // Requests by hour (for sparkline-style summary)
+        $hourlyData = db()->fetchAll(
+            "SELECT
+                HOUR(CONVERT_TZ(created_at, '+00:00', ?)) AS hour,
+                COUNT(*) AS total
+            FROM activity
+            WHERE created_at BETWEEN ? AND ?
+            GROUP BY hour
+            ORDER BY hour",
+            [$tzOffset, $dayStart, $dayEnd]
+        );
+
+        $peakHour = 0;
+        $peakCount = 0;
+        foreach ($hourlyData as $row) {
+            if ((int)$row['total'] > $peakCount) {
+                $peakCount = (int)$row['total'];
+                $peakHour = (int)$row['hour'];
+            }
+        }
+
+        // -- Users --
+        $totalUsers = User::countAll();
+        $newUsers = User::where('created_at', '>=', $dayStart)
+            ->andWhere('created_at', '<=', $dayEnd)
+            ->count();
+
+        // -- Audit events --
+        $auditTotal = Audit::where('created_at', '>=', $dayStart)
+            ->andWhere('created_at', '<=', $dayEnd)
+            ->count();
+
+        $auditByEvent = db()->fetchAll(
+            "SELECT event, COUNT(*) as count
+            FROM audits
+            WHERE created_at >= ? AND created_at <= ?
+            GROUP BY event",
+            [$dayStart, $dayEnd]
+        );
+
+        $auditEvents = ['created' => 0, 'updated' => 0, 'deleted' => 0];
+        foreach ($auditByEvent as $row) {
+            $auditEvents[$row['event']] = (int)$row['count'];
+        }
+
+        // -- Email queue --
+        $emailsSent = EmailJob::where('status', 'sent')
+            ->andWhere('sent_at', '>=', $dayStart)
+            ->andWhere('sent_at', '<=', $dayEnd)
+            ->count();
+
+        $emailsFailed = EmailJob::where('last_attempt_at', '>=', $dayStart)
+            ->andWhere('last_attempt_at', '<=', $dayEnd)
+            ->whereRaw("status IN ('failed', 'exhausted')")
+            ->count();
+
+        // -- File uploads --
+        $uploadsCount = FileInfo::where('created_at', '>=', $dayStart)
+            ->andWhere('created_at', '<=', $dayEnd)
+            ->count();
+
+        $uploadsSize = db()->fetch(
+            "SELECT COALESCE(SUM(size), 0) as total_size
+             FROM file_info
+             WHERE created_at >= ? AND created_at <= ?",
+            [$dayStart, $dayEnd]
+        );
+
+        // -- Top countries --
+        $topCountries = db()->fetchAll(
+            "SELECT country_code, COUNT(DISTINCT ip) as count
+             FROM activity
+             WHERE country_code IS NOT NULL
+               AND created_at >= ? AND created_at <= ?
+             GROUP BY country_code
+             ORDER BY count DESC
+             LIMIT 5",
+            [$dayStart, $dayEnd]
+        );
+
+        return [
+            'date' => $yesterday->format('l, F j, Y'),
+            'date_short' => $date,
+            'app_name' => config('app.name') ?? 'Echo',
+            'requests' => [
+                'total' => (int)$totalRequests,
+                'unique_visitors' => (int)$uniqueVisitors,
+                'peak_hour' => sprintf('%02d:00', $peakHour),
+                'peak_count' => $peakCount,
+            ],
+            'users' => [
+                'total' => (int)$totalUsers,
+                'new' => (int)$newUsers,
+            ],
+            'audit' => [
+                'total' => (int)$auditTotal,
+                'events' => $auditEvents,
+            ],
+            'emails' => [
+                'sent' => (int)$emailsSent,
+                'failed' => (int)$emailsFailed,
+            ],
+            'uploads' => [
+                'count' => (int)$uploadsCount,
+                'size' => format_bytes((int)($uploadsSize['total_size'] ?? 0)),
+            ],
+            'top_countries' => $topCountries,
+        ];
+    }
+
+    /**
      * Get file info statistics for dashboard widget
      */
     public function getFileInfoStats(): array

@@ -1,0 +1,128 @@
+{% extends "emails/base.html.twig" %}
+
+{% block header %}
+    <h2>{{ app_name }} Daily Report</h2>
+    <p style="color: #666; margin: 0;">{{ data.date }}</p>
+{% endblock %}
+
+{% block body %}
+    <p>Here is your daily summary of what happened on <strong>{{ app_name }}</strong> yesterday.</p>
+
+    {# -- Traffic -- #}
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0; border-collapse: collapse;">
+        <tr>
+            <td colspan="2" style="padding: 12px 16px; background-color: #2563eb; color: #fff; font-weight: bold; border-radius: 6px 6px 0 0;">
+                Traffic
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee;">Total Requests</td>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">{{ data.requests.total }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee;">Unique Visitors</td>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">{{ data.requests.unique_visitors }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 16px;">Peak Hour</td>
+            <td style="padding: 10px 16px; text-align: right; font-weight: bold;">{{ data.requests.peak_hour }} ({{ data.requests.peak_count }} requests)</td>
+        </tr>
+    </table>
+
+    {# -- Users -- #}
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0; border-collapse: collapse;">
+        <tr>
+            <td colspan="2" style="padding: 12px 16px; background-color: #22c55e; color: #fff; font-weight: bold; border-radius: 6px 6px 0 0;">
+                Users
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee;">Total Users</td>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">{{ data.users.total }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 16px;">New Signups</td>
+            <td style="padding: 10px 16px; text-align: right; font-weight: bold;">{{ data.users.new }}</td>
+        </tr>
+    </table>
+
+    {# -- Audit Activity -- #}
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0; border-collapse: collapse;">
+        <tr>
+            <td colspan="2" style="padding: 12px 16px; background-color: #f59e0b; color: #fff; font-weight: bold; border-radius: 6px 6px 0 0;">
+                Audit Activity
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee;">Total Changes</td>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">{{ data.audit.total }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee;">Created</td>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: right;">{{ data.audit.events.created }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee;">Updated</td>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: right;">{{ data.audit.events.updated }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 16px;">Deleted</td>
+            <td style="padding: 10px 16px; text-align: right;">{{ data.audit.events.deleted }}</td>
+        </tr>
+    </table>
+
+    {# -- Emails -- #}
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0; border-collapse: collapse;">
+        <tr>
+            <td colspan="2" style="padding: 12px 16px; background-color: #8b5cf6; color: #fff; font-weight: bold; border-radius: 6px 6px 0 0;">
+                Email Queue
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee;">Sent</td>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">{{ data.emails.sent }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 16px;">Failed</td>
+            <td style="padding: 10px 16px; text-align: right; font-weight: bold; {{ data.emails.failed > 0 ? 'color: #dc2626;' : '' }}">{{ data.emails.failed }}</td>
+        </tr>
+    </table>
+
+    {# -- File Uploads -- #}
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0; border-collapse: collapse;">
+        <tr>
+            <td colspan="2" style="padding: 12px 16px; background-color: #06b6d4; color: #fff; font-weight: bold; border-radius: 6px 6px 0 0;">
+                File Uploads
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee;">Files Uploaded</td>
+            <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">{{ data.uploads.count }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 16px;">Total Size</td>
+            <td style="padding: 10px 16px; text-align: right; font-weight: bold;">{{ data.uploads.size }}</td>
+        </tr>
+    </table>
+
+    {# -- Top Countries -- #}
+    {% if data.top_countries|length > 0 %}
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0; border-collapse: collapse;">
+        <tr>
+            <td colspan="2" style="padding: 12px 16px; background-color: #64748b; color: #fff; font-weight: bold; border-radius: 6px 6px 0 0;">
+                Top Countries
+            </td>
+        </tr>
+        {% for country in data.top_countries %}
+        <tr>
+            <td style="padding: 10px 16px; {{ not loop.last ? 'border-bottom: 1px solid #eee;' : '' }}">{{ country.country_code }}</td>
+            <td style="padding: 10px 16px; text-align: right; font-weight: bold; {{ not loop.last ? 'border-bottom: 1px solid #eee;' : '' }}">{{ country.count }} visitor{{ country.count != 1 ? 's' : '' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+{% endblock %}
+
+{% block footer %}
+    <p>This is an automated daily report from {{ app_name }}. Sent {{ 'now'|date('F j, Y \\a\\t g:i A') }}.</p>
+{% endblock %}
