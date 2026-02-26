@@ -80,8 +80,8 @@ function initActivityMap(attempt) {
     showTooltip: true,
     regionStyle: {
       initial: {
-        fill: '#e5e7eb',
-        stroke: '#d1d5db',
+        fill: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#313244' : '#e5e7eb',
+        stroke: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#45475a' : '#d1d5db',
         strokeWidth: 0.5,
       },
       hover: {
@@ -130,8 +130,51 @@ function initActivityMap(attempt) {
   }
 }
 
-// Initialize on HTMX content swaps (covers widget load and filter changes)
-document.addEventListener('htmx:afterSettle', function() {
+/**
+ * Recolor the activity map base regions and data regions for the current theme.
+ */
+function updateMapTheme() {
+  var el = document.getElementById('activity-world-map');
+  if (!el || !el._mapObject) return;
+  var isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+  var baseFill = isDark ? '#313244' : '#e5e7eb';
+  var baseStroke = isDark ? '#45475a' : '#d1d5db';
+  // Reset all regions to the base fill
+  var paths = el.querySelectorAll('path[data-code]');
+  paths.forEach(function(path) {
+    path.style.fill = baseFill;
+    path.style.stroke = baseStroke;
+  });
+  // Re-apply data colors on top
+  if (el._mapCountryData && el._mapMaxVal) {
+    applyMapColors(el, el._mapCountryData, el._mapMaxVal);
+  }
+}
+
+/**
+ * Apply dark/light theme based on the current toggle icon state.
+ * Sets data-bs-theme on <html> and injects/removes the dark stylesheet.
+ */
+function applyTheme() {
+  var toggle = document.querySelector('#theme-toggle i');
+  var isDark = toggle && toggle.classList.contains('bi-sun-fill');
+  document.documentElement.setAttribute('data-bs-theme', isDark ? 'dark' : 'light');
+  var link = document.getElementById('dark-theme-css');
+  if (isDark && !link) {
+    link = document.createElement('link');
+    link.id = 'dark-theme-css';
+    link.rel = 'stylesheet';
+    link.href = '/css/admin-dark.css';
+    document.head.appendChild(link);
+  } else if (!isDark && link) {
+    link.remove();
+  }
+  updateMapTheme();
+}
+
+// Initialize on HTMX content swaps (covers widget load, theme toggle, etc.)
+document.addEventListener('htmx:afterSwap', function() {
+  applyTheme();
   initActivityMap();
 });
 

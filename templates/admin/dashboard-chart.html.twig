@@ -1,5 +1,5 @@
 <div class="card shad border-0 h-100" id="chart-card-{{ id }}">
-  <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+  <div class="card-header border-0 d-flex justify-content-between align-items-center">
     <span><i class="bi bi-{{ icon|default('graph-up') }} me-2"></i>{{ title|default('Chart') }}</span>
     <button class="btn btn-sm btn-outline-secondary"
       hx-get="{{ refresh_url }}"

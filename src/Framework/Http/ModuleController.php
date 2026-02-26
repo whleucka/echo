@@ -4,6 +4,7 @@ namespace Echo\Framework\Http;
 
 use App\Models\FileInfo;
 use App\Services\Admin\SidebarService;
+use App\Services\Admin\ThemeService;
 use Echo\Framework\Admin\{CsvExporter, FormControlRenderer, ModuleState, PivotSyncer, QueryBuilderDataSource, TableDataSource, TableResult};
 use Echo\Framework\Admin\Schema\{FormSchema, FormSchemaBuilder, TableSchema, TableSchemaBuilder};
 use Echo\Framework\Audit\AuditLogger;
@@ -1100,7 +1101,9 @@ abstract class ModuleController extends Controller
     {
         $module = $this->getModule();
         $sidebar_provider = new SidebarService();
+        $theme_provider = new ThemeService();
         return [
+            "dark_mode" => $theme_provider->isDarkMode(),
             "sidebar" => [
                 "hide" => $sidebar_provider->getState(),
                 "links" => $sidebar_provider->getLinks(null, user()),

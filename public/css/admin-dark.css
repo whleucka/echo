@@ -1,0 +1,310 @@
+/**
+ * Admin Dark Theme
+ *
+ * Overrides for custom admin styles when data-bs-theme="dark" is active.
+ * Bootstrap 5 handles most component theming via data-bs-theme; this file
+ * covers the admin panel's custom-colored elements.
+ *
+ * Palette:
+ *   Base background:   #181825
+ *   Surface:           #1e1e2e
+ *   Surface elevated:  #252536
+ *   Border:            #313244
+ *   Text primary:      #cdd6f4
+ *   Text muted:        #a6adc8
+ *   Accent:            #818cf8  (indigo-400)
+ *   Accent light:      #a5b4fc  (indigo-300)
+ *   Accent dark:       #6366f1  (indigo-500)
+ *   Accent hover:      #7c3aed  (violet-600)
+ *   Sidebar gradient:  #1e2030 -> #0d1117
+ *   Sidebar active:    #c7d2fe  (indigo-200)
+ */
+
+/**
+ * Structure
+ */
+[data-bs-theme="dark"] body {
+  background-color: #181825;
+}
+[data-bs-theme="dark"] #admin {
+  color: #cdd6f4;
+}
+
+/**
+ * Utilities
+ */
+[data-bs-theme="dark"] .shad {
+  box-shadow: rgba(0, 0, 0, 0.3) 0px 0px 5px 0px, rgba(0, 0, 0, 0.3) 0px 0px 1px 0px;
+}
+[data-bs-theme="dark"] .btn-primary,
+[data-bs-theme="dark"] .btn-primary:disabled {
+  background-color: #6366f1;
+  border-color: #6366f1;
+}
+[data-bs-theme="dark"] .btn-primary:hover {
+  background-color: #7c3aed;
+  border-color: #7c3aed;
+}
+
+/**
+ * Sidebar
+ */
+[data-bs-theme="dark"] nav#nav-sidebar {
+  background: linear-gradient(180deg, #1e2030 0%, #0d1117 100%);
+}
+[data-bs-theme="dark"] nav#nav-sidebar header {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+[data-bs-theme="dark"] nav#nav-sidebar .nav-link.active {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #c7d2fe;
+  border-left-color: #818cf8;
+}
+[data-bs-theme="dark"] nav#nav-sidebar .category {
+  color: #a5b4fc;
+}
+
+/**
+ * Nav top
+ */
+[data-bs-theme="dark"] #nav-top {
+  background-color: #1e1e2e;
+  border-bottom-color: #313244;
+}
+[data-bs-theme="dark"] #nav-top .navbar-brand {
+  color: #818cf8;
+}
+[data-bs-theme="dark"] #nav-top .avatar {
+  border-color: #313244;
+}
+[data-bs-theme="dark"] #nav-top #theme-toggle {
+  color: #cdd6f4;
+}
+[data-bs-theme="dark"] #nav-top #sidebar-toggle {
+  color: #cdd6f4;
+}
+[data-bs-theme="dark"] #nav-top .dropdown-toggle {
+  color: #cdd6f4;
+}
+[data-bs-theme="dark"] #nav-top .dropdown-menu {
+  background-color: #252536;
+  border-color: #313244;
+}
+[data-bs-theme="dark"] #nav-top .dropdown-item {
+  color: #cdd6f4;
+}
+[data-bs-theme="dark"] #nav-top .dropdown-item:hover,
+[data-bs-theme="dark"] #nav-top .dropdown-item:focus {
+  background-color: #313244;
+  color: #cdd6f4;
+}
+
+/**
+ * Module
+ */
+[data-bs-theme="dark"] #module {
+  background-color: #181825;
+}
+[data-bs-theme="dark"] #module-title {
+  color: #fffafa;
+}
+
+/**
+ * Table
+ */
+[data-bs-theme="dark"] #table .table {
+  --bs-table-bg: #1e1e2e;
+  --bs-table-color: #cdd6f4;
+  --bs-table-border-color: #313244;
+  --bs-table-striped-bg: #252536;
+  --bs-table-hover-bg: #252536;
+}
+[data-bs-theme="dark"] #table .table th {
+  color: #a6adc8;
+}
+[data-bs-theme="dark"] #table .table th.active {
+  color: #cdd6f4;
+}
+
+/**
+ * Filters
+ */
+[data-bs-theme="dark"] #table .filter-link.active {
+  background-color: #6366f1;
+}
+[data-bs-theme="dark"] #filter-search {
+  background-color: #252536;
+  border-color: #313244;
+  color: #cdd6f4;
+}
+
+/**
+ * Pagination
+ */
+[data-bs-theme="dark"] #pagination .page-link {
+  color: #818cf8;
+  background-color: #1e1e2e;
+  border-color: #313244;
+}
+[data-bs-theme="dark"] #pagination .page-item.active .page-link {
+  border-color: #6366f1;
+  background-color: #6366f1 !important;
+  color: #fff;
+}
+
+/**
+ * Forms
+ */
+[data-bs-theme="dark"] .form-label {
+  color: #cdd6f4;
+}
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+  background-color: #252536;
+  border-color: #313244;
+  color: #cdd6f4;
+}
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+  background-color: #252536;
+  border-color: #818cf8;
+  color: #cdd6f4;
+}
+
+/**
+ * Cards
+ */
+[data-bs-theme="dark"] #admin .card {
+  background-color: #1e1e2e;
+  border-color: #313244;
+}
+[data-bs-theme="dark"] #admin .card-header {
+  color: #a5b4fc;
+  background-color: #1e1e2e;
+  border-bottom-color: #313244;
+}
+[data-bs-theme="dark"] #admin .card-footer {
+  background-color: #1e1e2e;
+  border-top-color: #313244;
+}
+[data-bs-theme="dark"] #dashboard .card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+[data-bs-theme="dark"] #dashboard .card-header {
+  background-color: #1e1e2e;
+  border-bottom-color: #313244;
+}
+[data-bs-theme="dark"] #dashboard .card-footer {
+  background-color: #1e1e2e;
+  border-top-color: #313244;
+}
+
+/**
+ * Modal
+ */
+[data-bs-theme="dark"] .modal-content {
+  background-color: #1e1e2e;
+  border-color: #313244;
+}
+[data-bs-theme="dark"] .modal-header {
+  border-bottom-color: #313244;
+}
+[data-bs-theme="dark"] .modal-footer {
+  border-top-color: #313244;
+}
+
+/**
+ * Editor.js
+ */
+[data-bs-theme="dark"] .editorjs-container {
+  background: #252536;
+}
+[data-bs-theme="dark"] .editorjs-container .ce-code__textarea {
+  background: #1e1e2e;
+  border-color: #313244;
+  color: #cdd6f4;
+}
+[data-bs-theme="dark"] .editorjs-container .cdx-quote {
+  border-left-color: #818cf8;
+}
+[data-bs-theme="dark"] .editorjs-readonly .editorjs-content pre {
+  background: #1e1e2e;
+  border-color: #313244;
+  color: #cdd6f4;
+}
+[data-bs-theme="dark"] .editorjs-readonly .editorjs-content blockquote {
+  border-left-color: #818cf8;
+  color: #a6adc8;
+}
+[data-bs-theme="dark"] .editorjs-readonly .editorjs-content blockquote cite {
+  color: #6c7086;
+}
+[data-bs-theme="dark"] .editorjs-readonly .editorjs-content hr {
+  border-top-color: #313244;
+}
+
+/**
+ * HTMX spinner
+ */
+[data-bs-theme="dark"] .hx-indicator {
+  color: #818cf8;
+}
+[data-bs-theme="dark"] .spinner::before,
+[data-bs-theme="dark"] .spinner::after {
+  border-color: #818cf8 #818cf8 #0000 #0000;
+}
+[data-bs-theme="dark"] .spinner::after {
+  border-color: #0000 #0000 #313244 #313244;
+}
+
+/**
+ * Widget tables & lists (inside cards)
+ */
+[data-bs-theme="dark"] #admin .card .table {
+  --bs-table-bg: transparent;
+  --bs-table-color: #cdd6f4;
+  --bs-table-border-color: #313244;
+  --bs-table-hover-bg: #252536;
+}
+[data-bs-theme="dark"] #admin .card .table-light {
+  --bs-table-bg: transparent;
+  --bs-table-color: #a6adc8;
+  --bs-table-border-color: #313244;
+}
+[data-bs-theme="dark"] #admin .card .list-group-item {
+  background-color: transparent;
+  border-color: #313244;
+  color: #cdd6f4;
+}
+
+/**
+ * Activity heatmap
+ */
+[data-bs-theme="dark"] #dashboard .bg-light {
+  background-color: #252536 !important;
+}
+
+/**
+ * Flash messages
+ */
+[data-bs-theme="dark"] .flash.alert {
+  background-color: #252536;
+  border-color: #313244;
+  color: #cdd6f4;
+}
+
+/**
+ * Text utilities
+ */
+[data-bs-theme="dark"] .text-secondary {
+  color: #a6adc8 !important;
+}
+
+/**
+ * Bulk actions
+ */
+[data-bs-theme="dark"] #bulk-actions #table-action {
+  background-color: #252536;
+  border-color: #313244;
+  color: #cdd6f4;
+}

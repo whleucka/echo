@@ -11,6 +11,9 @@
   <link rel="stylesheet" href="/css/bootstrap-icons/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/flag-icons/flag-icons.min.css">
   <link href="/css/admin.css?d=2026-02-22" rel="stylesheet">
+  {% if dark_mode is defined and dark_mode %}
+  <link id="dark-theme-css" href="/css/admin-dark.css" rel="stylesheet">
+  {% endif %}
   <link href="/css/jsvectormap.min.css" rel="stylesheet">
 {% endblock %}
 

@@ -5,6 +5,13 @@
     <div class="spinner"></div>
   </div>
   <div class="d-flex align-items-center ms-auto">
+    <button class="btn" id="theme-toggle" title="Toggle dark mode"
+      hx-get="{{ uri('admin.theme.toggle') }}"
+      hx-target="#nav-top"
+      hx-select="#nav-top"
+      hx-swap="outerHTML">
+      <i class="bi {{ dark_mode ? 'bi-sun-fill' : 'bi-moon-fill' }}"></i>
+    </button>
     <div class="dropdown">
       <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
         <img class="avatar" src="{{ user.avatar }}" />

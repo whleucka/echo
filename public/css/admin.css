@@ -141,7 +141,7 @@ nav#nav-sidebar header h4 {
 }
 #module-title {
   font-weight: 800;
-  color: #095555;
+  color: #444;
 }
 
 /**
@@ -232,6 +232,10 @@ nav#nav-sidebar header h4 {
 #admin .card-header {
   font-weight: 600;
   color: #0d6e6e;
+  background-color: #fff;
+}
+#admin .card-footer {
+  background-color: #fff;
 }
 
 /**
@@ -244,6 +248,9 @@ nav#nav-sidebar header h4 {
 #dashboard .card-header {
   background-color: #fff;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+#dashboard .card-footer {
+  background-color: #fff;
 }
 #dashboard #widgets {
   display: flex;
@@ -298,6 +305,13 @@ nav#nav-sidebar header h4 {
   width: 12px;
   height: 12px;
   flex-shrink: 0;
+}
+#dashboard #widget-activity-map .jvm-zoom-btn {
+  top: auto;
+  bottom: 10px;
+}
+#dashboard #widget-activity-map .jvm-zoom-btn.jvm-zoomin {
+  bottom: 30px;
 }
 #dashboard .chart-container {
   position: relative;
