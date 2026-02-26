@@ -16,6 +16,7 @@ class SignInService
         if ($user && $service->verifyPassword($password, $user->password)) {
             session()->regenerate();
             session()->set("user_uuid", $user->uuid);
+            session()->set("dark_mode", $user->theme === "dark");
             $log->info('Login successful', [
                 'user_id' => $user->id,
                 'email' => $email_address,

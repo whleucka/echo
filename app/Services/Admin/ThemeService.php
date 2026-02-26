@@ -14,6 +14,11 @@ class ThemeService
     public function setDarkMode(bool $enabled): void
     {
         session()->set(self::SESSION_KEY, $enabled);
+        if (user()) {
+            qb()->table('users')
+                ->where('id', user()->id)
+                ->update(['theme' => $enabled ? 'dark' : 'light']);
+        }
     }
 
     public function toggle(): void

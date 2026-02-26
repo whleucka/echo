@@ -57,6 +57,14 @@ class UsersController extends ModuleController
                 ])
                 ->rules(['required']);
 
+        $builder->field('theme', 'Theme')
+                ->dropdown()
+                ->options([
+                    ['value' => 'light', 'label' => 'Light'],
+                    ['value' => 'dark', 'label' => 'Dark'],
+                ])
+                ->rules(['required']);
+
         $builder->field('first_name', 'First Name')
                 ->input()
                 ->rules(['required']);
