@@ -2,10 +2,6 @@
 
 <a href='https://github.com/whleucka/echo/actions/workflows/php.yml'><img src='https://github.com/whleucka/echo/actions/workflows/php.yml/badge.svg' alt='github badge'></a>
 
-<img width="1920" height="1085" alt="image" src="https://github.com/user-attachments/assets/af1c9f5f-8ecd-4cb2-852d-c3ff9f9c6db6" />
-
----
-
 A modern PHP 8.4+ MVC framework with attribute-based routing, PHP-DI, and Twig. Runs in Docker (PHP 8.4-FPM, Nginx, MariaDB 11, Redis 7).
 
 > **Work in Progress**: APIs and internals may change. This project will
@@ -295,6 +291,11 @@ tests/               # PHPUnit tests
 bin/console          # CLI entry point
 public/index.php     # Web entry point
 ```
+
+## Screenshots
+
+<img width="1436" height="1058" alt="image" src="https://github.com/user-attachments/assets/63b7251a-28b4-4349-ab6b-6fb5944df1bc" />
+
 
 ## Testing
 
