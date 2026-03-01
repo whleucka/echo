@@ -307,10 +307,12 @@ nav#nav-sidebar header h4 {
   flex-shrink: 0;
 }
 #dashboard #widget-activity-map .jvm-zoom-btn {
-  top: 10px;
+  left: auto;
+  right: 10px;
+  bottom: 10px;
 }
-#dashboard #widget-activity-map .jvm-zoom-btn.jvm-zoomout {
-  top: 30px;
+#dashboard #widget-activity-map .jvm-zoom-btn.jvm-zoomin {
+  bottom: 30px;
 }
 #dashboard .chart-container {
   position: relative;
