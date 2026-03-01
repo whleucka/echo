@@ -306,8 +306,9 @@ nav#nav-sidebar header h4 {
   height: 12px;
   flex-shrink: 0;
 }
-#dashboard #widget-activity-map .jvm-zoom-btn {
-  left: auto;
+#dashboard #widget-activity-map .jvm-zoom-btn,
+#activity-world-map .jvm-zoom-btn {
+  left: auto !important;
   right: 10px;
 }
 #dashboard .chart-container {
