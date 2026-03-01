@@ -70,7 +70,7 @@ function initActivityMap(attempt) {
     selector: el,
     map: 'world',
     backgroundColor: 'transparent',
-    zoomButtons: true,
+    zoomButtons: false,
     zoomOnScroll: false,
     zoomOnScrollSpeed: 3,
     zoomMax: 12,
@@ -106,27 +106,20 @@ function initActivityMap(attempt) {
           applyMapColors(el, el._mapCountryData, el._mapMaxVal);
         }
       }, 300);
-      // The focusOn animation resets zoom button inline styles. Use a
-      // MutationObserver to enforce correct positioning whenever the
-      // library modifies the style attribute.
-      var btns = el.querySelectorAll('.jvm-zoom-btn');
-      if (btns.length) {
-        var tops = { 'jvm-zoomin': '10px', 'jvm-zoomout': '30px' };
-        var observer = new MutationObserver(function(mutations) {
-          mutations.forEach(function(m) {
-            var btn = m.target;
-            var key = btn.classList.contains('jvm-zoomin') ? 'jvm-zoomin' : 'jvm-zoomout';
-            if (btn.style.top !== tops[key]) {
-              btn.style.top = tops[key];
-            }
-          });
-        });
-        btns.forEach(function(btn) {
-          var key = btn.classList.contains('jvm-zoomin') ? 'jvm-zoomin' : 'jvm-zoomout';
-          btn.style.top = tops[key];
-          observer.observe(btn, { attributes: true, attributeFilter: ['style'] });
-        });
-        el._zoomObserver = observer;
+      // Add custom zoom buttons — the library's built-in buttons get
+      // repositioned by the focusOn animation, so we manage our own.
+      var container = el.querySelector('.jvm-container');
+      if (container && !container.querySelector('.map-zoom-btn')) {
+        var zoomIn = document.createElement('button');
+        zoomIn.className = 'map-zoom-btn map-zoom-in';
+        zoomIn.innerHTML = '+';
+        zoomIn.addEventListener('click', function() { el._mapObject.setScale(el._mapObject.scale * 1.5); });
+        var zoomOut = document.createElement('button');
+        zoomOut.className = 'map-zoom-btn map-zoom-out';
+        zoomOut.innerHTML = '&minus;';
+        zoomOut.addEventListener('click', function() { el._mapObject.setScale(el._mapObject.scale / 1.5); });
+        container.appendChild(zoomIn);
+        container.appendChild(zoomOut);
       }
     },
   });

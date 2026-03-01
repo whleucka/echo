@@ -306,9 +306,29 @@ nav#nav-sidebar header h4 {
   height: 12px;
   flex-shrink: 0;
 }
-#activity-world-map .jvm-zoom-btn {
-  left: auto !important;
-  right: 10px !important;
+#activity-world-map .map-zoom-btn {
+  position: absolute;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 3px;
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 1;
+  opacity: 0.8;
+}
+#activity-world-map .map-zoom-btn:hover {
+  opacity: 1;
+}
+#activity-world-map .map-zoom-in {
+  bottom: 38px;
+}
+#activity-world-map .map-zoom-out {
+  bottom: 10px;
 }
 #dashboard .chart-container {
   position: relative;
