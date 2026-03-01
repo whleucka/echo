@@ -98,6 +98,15 @@ function initActivityMap(attempt) {
       // Apply gradient fills directly to SVG paths — bypasses jsvectormap's
       // series scale which mishandles large value ranges.
       applyMapColors(el, countryData, maxVal);
+      // Fix zoom button positioning — the library's CSS top values can be
+      // lost after HTMX outerHTML swaps, so set them explicitly.
+      var container = el.querySelector('.jvm-container');
+      if (container) {
+        var zoomIn = container.querySelector('.jvm-zoomin');
+        var zoomOut = container.querySelector('.jvm-zoomout');
+        if (zoomIn) zoomIn.style.top = '10px';
+        if (zoomOut) zoomOut.style.top = '30px';
+      }
       // On mobile the sidebar HTMX swap may widen the container shortly after
       // init. Force a resize + recolor after a brief delay to catch this.
       setTimeout(function() {
