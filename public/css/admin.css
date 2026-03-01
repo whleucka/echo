@@ -307,6 +307,7 @@ nav#nav-sidebar header h4 {
   flex-shrink: 0;
 }
 #dashboard #widget-activity-map .jvm-zoom-btn {
+  top: auto !important;
   left: auto;
   right: 10px;
   bottom: 10px;
