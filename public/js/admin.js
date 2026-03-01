@@ -100,18 +100,34 @@ function initActivityMap(attempt) {
       applyMapColors(el, countryData, maxVal);
       // On mobile the sidebar HTMX swap may widen the container shortly after
       // init. Force a resize + recolor after a brief delay to catch this.
-      // Also fix zoom button positioning — the library's CSS top values can
-      // be lost after HTMX swaps and the focusOn animation resets them.
       setTimeout(function() {
         if (el._mapObject) {
           el._mapObject.updateSize();
           applyMapColors(el, el._mapCountryData, el._mapMaxVal);
         }
-        var zoomIn = el.querySelector('.jvm-zoomin');
-        var zoomOut = el.querySelector('.jvm-zoomout');
-        if (zoomIn) zoomIn.style.top = '10px';
-        if (zoomOut) zoomOut.style.top = '30px';
       }, 300);
+      // The focusOn animation resets zoom button inline styles. Use a
+      // MutationObserver to enforce correct positioning whenever the
+      // library modifies the style attribute.
+      var btns = el.querySelectorAll('.jvm-zoom-btn');
+      if (btns.length) {
+        var tops = { 'jvm-zoomin': '10px', 'jvm-zoomout': '30px' };
+        var observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(m) {
+            var btn = m.target;
+            var key = btn.classList.contains('jvm-zoomin') ? 'jvm-zoomin' : 'jvm-zoomout';
+            if (btn.style.top !== tops[key]) {
+              btn.style.top = tops[key];
+            }
+          });
+        });
+        btns.forEach(function(btn) {
+          var key = btn.classList.contains('jvm-zoomin') ? 'jvm-zoomin' : 'jvm-zoomout';
+          btn.style.top = tops[key];
+          observer.observe(btn, { attributes: true, attributeFilter: ['style'] });
+        });
+        el._zoomObserver = observer;
+      }
     },
   });
   el.dataset.init = '1';
