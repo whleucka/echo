@@ -112,11 +112,17 @@ function initActivityMap(attempt) {
         var zoomIn = document.createElement('button');
         zoomIn.className = 'map-zoom-btn map-zoom-in';
         zoomIn.innerHTML = '+';
-        zoomIn.addEventListener('click', function() { el._mapObject.setScale(el._mapObject.scale * 1.5); });
+        zoomIn.addEventListener('click', function() {
+          var map = el._mapObject;
+          map._setScale(map.scale * map.params.zoomStep, map._width / 2, map._height / 2, false, map.params.zoomAnimate);
+        });
         var zoomOut = document.createElement('button');
         zoomOut.className = 'map-zoom-btn map-zoom-out';
         zoomOut.innerHTML = '&minus;';
-        zoomOut.addEventListener('click', function() { el._mapObject.setScale(el._mapObject.scale / 1.5); });
+        zoomOut.addEventListener('click', function() {
+          var map = el._mapObject;
+          map._setScale(map.scale / map.params.zoomStep, map._width / 2, map._height / 2, false, map.params.zoomAnimate);
+        });
         el.appendChild(zoomIn);
         el.appendChild(zoomOut);
       }
