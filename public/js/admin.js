@@ -108,8 +108,7 @@ function initActivityMap(attempt) {
       }, 300);
       // Add custom zoom buttons — the library's built-in buttons get
       // repositioned by the focusOn animation, so we manage our own.
-      var container = el.querySelector('.jvm-container');
-      if (container && !container.querySelector('.map-zoom-btn')) {
+      if (!el.querySelector('.map-zoom-btn')) {
         var zoomIn = document.createElement('button');
         zoomIn.className = 'map-zoom-btn map-zoom-in';
         zoomIn.innerHTML = '+';
@@ -118,8 +117,8 @@ function initActivityMap(attempt) {
         zoomOut.className = 'map-zoom-btn map-zoom-out';
         zoomOut.innerHTML = '&minus;';
         zoomOut.addEventListener('click', function() { el._mapObject.setScale(el._mapObject.scale / 1.5); });
-        container.appendChild(zoomIn);
-        container.appendChild(zoomOut);
+        el.appendChild(zoomIn);
+        el.appendChild(zoomOut);
       }
     },
   });

@@ -306,6 +306,9 @@ nav#nav-sidebar header h4 {
   height: 12px;
   flex-shrink: 0;
 }
+#activity-world-map {
+  position: relative;
+}
 #activity-world-map .map-zoom-btn {
   position: absolute;
   right: 10px;
