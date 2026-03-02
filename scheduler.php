@@ -20,5 +20,10 @@ $scheduler->php($jobs . "/daily_report.php")
     ->daily('06:00')
     ->output($logs . "daily-report-" . date("Y-m-d") . ".log", true);
 
+// Log cleanup - remove log files older than 7 days
+$scheduler->php($jobs . "/log_cleanup.php")
+    ->daily('00:00')
+    ->output($logs . "log-cleanup-" . date("Y-m-d") . ".log", true);
+
 // Let the scheduler execute jobs which are due.
 $scheduler->run();
