@@ -38,6 +38,14 @@ abstract class ModuleController extends Controller
     // --- Pivot data to sync after store/update ---
     private array $pendingPivotData = [];
 
+    // --- Track whether Twig functions have been registered ---
+    private bool $functionsRegistered = false;
+
+    // --- Active form renderer context (updated per registerFunctions call) ---
+    private ?FormControlRenderer $activeFormRenderer = null;
+    private bool $activeFormReadonly = false;
+    private string $activeFormType = 'create';
+
     /**
      * Subclasses define their table schema here.
      * OR they can use NoTableTrait
@@ -79,6 +87,20 @@ abstract class ModuleController extends Controller
     #[Get("/", "admin.index")]
     public function index(): string
     {
+        // Hydrate state from URL query parameters (for shareable links)
+        $actions = $this->state->hydrateFromQuery(
+            $this->request->get->data(),
+            $this->tableSchema
+        );
+
+        // Deep-link: open edit or show modal if requested via query param
+        if ($actions['edit'] && $this->hasEdit($actions['edit'])) {
+            return $this->renderModule($this->getModuleDataWithModal($actions['edit'], 'edit'));
+        }
+        if ($actions['show'] && $this->hasShow($actions['show'])) {
+            return $this->renderModule($this->getModuleDataWithModal($actions['show'], 'show'));
+        }
+
         return $this->renderModule($this->getModuleData());
     }
 
@@ -86,7 +108,8 @@ abstract class ModuleController extends Controller
     public function page(int $page): string
     {
         $this->state->setPage($page);
-        return $this->index();
+        header("HX-Push-Url: " . $this->buildStateUrl());
+        return $this->renderModule($this->getModuleData());
     }
 
     #[Get("/sort/{idx}", "admin.sort")]
@@ -94,7 +117,7 @@ abstract class ModuleController extends Controller
     {
         $columns = $this->tableSchema->columns;
         if (!isset($columns[$idx])) {
-            return $this->index();
+            return $this->renderModule($this->getModuleData());
         }
 
         $column = $columns[$idx]->name;
@@ -107,7 +130,8 @@ abstract class ModuleController extends Controller
             $this->state->setOrderBy($column);
             $this->state->setSort('DESC');
         }
-        return $this->index();
+        header("HX-Push-Url: " . $this->buildStateUrl());
+        return $this->renderModule($this->getModuleData());
     }
 
     #[Get("/per-page/{count}", "admin.per-page")]
@@ -117,7 +141,8 @@ abstract class ModuleController extends Controller
             $this->state->setPerPage($count);
             $this->state->setPage(1);
         }
-        return $this->index();
+        header("HX-Push-Url: " . $this->buildStateUrl());
+        return $this->renderModule($this->getModuleData());
     }
 
     #[Get("/export-csv", "admin.export-csv")]
@@ -171,7 +196,8 @@ abstract class ModuleController extends Controller
     {
         $this->state->setActiveFilterLink($index);
         $this->state->setPage(1);
-        return $this->index();
+        header("HX-Push-Url: " . $this->buildStateUrl());
+        return $this->renderModule($this->getModuleData());
     }
 
     #[Get("/filter/count/{index}", "admin.filter-count")]
@@ -224,7 +250,8 @@ abstract class ModuleController extends Controller
             header("HX-Retarget: #module");
             header("HX-Reselect: #module");
             header("HX-Reswap: outerHTML");
-            return $this->index();
+            header("HX-Push-Url: " . $this->buildStateUrl());
+            return $this->renderModule($this->getModuleData());
         }
 
         Flash::add("warning", "Validation error");
@@ -276,7 +303,8 @@ abstract class ModuleController extends Controller
                     header("HX-Retarget: #module");
                     header("HX-Reselect: #module");
                     header("HX-Reswap: outerHTML");
-                    return $this->index();
+                    header("HX-Push-Url: " . $this->buildStateUrl());
+                    return $this->renderModule($this->getModuleData());
                 }
                 db()->rollback();
             } catch (Throwable $ex) {
@@ -322,7 +350,8 @@ abstract class ModuleController extends Controller
                     header("HX-Retarget: #module");
                     header("HX-Reselect: #module");
                     header("HX-Reswap: outerHTML");
-                    return $this->index();
+                    header("HX-Push-Url: " . $this->buildStateUrl());
+                    return $this->renderModule($this->getModuleData());
                 }
                 db()->rollback();
             } catch (Throwable $ex) {
@@ -367,7 +396,8 @@ abstract class ModuleController extends Controller
         header("HX-Retarget: #module");
         header("HX-Reselect: #module");
         header("HX-Reswap: outerHTML");
-        return $this->index();
+        header("HX-Push-Url: " . $this->buildStateUrl());
+        return $this->renderModule($this->getModuleData());
     }
 
     // =========================================================================
@@ -751,15 +781,31 @@ abstract class ModuleController extends Controller
     private function registerFunctions(bool $forceReadonly = false, string $formType = 'create'): void
     {
         $twig = twig();
-        $twig->addFunction(new TwigFunction("hasShow", fn(int $id) => $this->hasShow($id)));
-        $twig->addFunction(new TwigFunction("hasEdit", fn(int $id) => $this->hasEdit($id)));
-        $twig->addFunction(new TwigFunction("hasDelete", fn(int $id) => $this->hasDelete($id)));
-        $twig->addFunction(new TwigFunction("isToolbarActionAllowed", fn(string $name) => $this->isToolbarActionAllowed($name)));
-        $formRenderer = $this->makeFormRenderer();
-        $twig->addFunction(new TwigFunction("control",
-            fn(string $col, ?string $val) => $formRenderer->render($col, $val, $forceReadonly, $formType)
-        ));
-        $twig->addFunction(new TwigFunction("format", fn(string $column, ?string $value) => $this->formatValue($column, $value)));
+
+        // Shared functions only need to be registered once per request.
+        // Twig throws if you add a function after the environment is initialized.
+        if (!$this->functionsRegistered) {
+            $twig->addFunction(new TwigFunction("hasShow", fn(int $id) => $this->hasShow($id)));
+            $twig->addFunction(new TwigFunction("hasEdit", fn(int $id) => $this->hasEdit($id)));
+            $twig->addFunction(new TwigFunction("hasDelete", fn(int $id) => $this->hasDelete($id)));
+            $twig->addFunction(new TwigFunction("isToolbarActionAllowed", fn(string $name) => $this->isToolbarActionAllowed($name)));
+            $twig->addFunction(new TwigFunction("format", fn(string $column, ?string $value) => $this->formatValue($column, $value)));
+
+            // Register control() with a closure that delegates to the current renderer,
+            // so it can be updated for form context without re-registering.
+            $twig->addFunction(new TwigFunction("control",
+                fn(string $col, ?string $val) => $this->activeFormRenderer->render(
+                    $col, $val, $this->activeFormReadonly, $this->activeFormType
+                )
+            ));
+
+            $this->functionsRegistered = true;
+        }
+
+        // Update the active form renderer context for the control() function.
+        $this->activeFormRenderer = $this->makeFormRenderer();
+        $this->activeFormReadonly = $forceReadonly;
+        $this->activeFormType = $formType;
     }
 
     private function makeFormRenderer(): FormControlRenderer
@@ -1095,6 +1141,30 @@ abstract class ModuleController extends Controller
             ...$this->getCommonData(),
             "content" => $this->renderTable(),
         ];
+    }
+
+    /**
+     * Build module data with the table rendered AND a modal pre-loaded.
+     * Used for deep-linking to ?edit=ID or ?show=ID.
+     */
+    private function getModuleDataWithModal(int $id, string $type): array
+    {
+        return [
+            ...$this->getCommonData(),
+            "content" => $this->renderTable(),
+            "preloadModal" => $this->renderForm($id, $type),
+        ];
+    }
+
+    /**
+     * Build the canonical URL for the current module state.
+     * Used for HX-Push-Url headers so the browser URL stays in sync.
+     */
+    protected function buildStateUrl(): string
+    {
+        $base = uri("{$this->moduleLink}.admin.index");
+        $qs = $this->state->toQueryString($this->tableSchema);
+        return $qs !== '' ? "{$base}?{$qs}" : $base;
     }
 
     protected function getCommonData(): array

@@ -12,8 +12,12 @@
   </h1>
   {{ content|raw }}
   <div id="modal" class="modal fade" tabindex="-1">
+    {% if preloadModal is defined and preloadModal %}
+      {{ preloadModal|raw }}
+    {% else %}
     <div class="modal-dialog">
     </div>
+    {% endif %}
   </div>
   <script>
     setTimeout(() => {
@@ -22,5 +26,13 @@
         backdrop.remove()
       }
     });
+    {% if preloadModal is defined and preloadModal %}
+    document.addEventListener('DOMContentLoaded', () => {
+      const modalEl = document.getElementById('modal');
+      if (modalEl) {
+        new bootstrap.Modal(modalEl).show();
+      }
+    });
+    {% endif %}
   </script>
 {% endblock %}
