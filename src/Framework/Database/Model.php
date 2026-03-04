@@ -636,6 +636,11 @@ abstract class Model implements ModelInterface
         return $this->attributes[$name] ?? null;
     }
 
+    public function __isset($name): bool
+    {
+        return isset($this->attributes[$name]);
+    }
+
     /**
      * Hydrate a model instance from data without additional queries
      */
