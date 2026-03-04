@@ -2,6 +2,13 @@
 
 namespace Echo\Framework\Database;
 
+use Echo\Framework\Event\EventDispatcherInterface;
+use Echo\Framework\Event\Model\ModelCreating;
+use Echo\Framework\Event\Model\ModelCreated;
+use Echo\Framework\Event\Model\ModelUpdating;
+use Echo\Framework\Event\Model\ModelUpdated;
+use Echo\Framework\Event\Model\ModelDeleting;
+use Echo\Framework\Event\Model\ModelDeleted;
 use Exception;
 use PDO;
 use RuntimeException;
@@ -65,6 +72,13 @@ abstract class Model implements ModelInterface
     {
         $class = get_called_class();
         $model = new $class();
+
+        // Dispatch ModelCreating event (allows cancellation)
+        $creating = static::fireEvent(new ModelCreating($class, $data));
+        if ($creating->isPropagationStopped()) {
+            return false;
+        }
+
         $result = $model->qb
             ->insert($data)
             ->into($model->tableName)
@@ -72,7 +86,14 @@ abstract class Model implements ModelInterface
             ->execute();
         if ($result && $model->autoIncrement) {
             $id = db()->lastInsertId();
-            return self::find($id);
+            $created = self::find($id);
+
+            // Dispatch ModelCreated event
+            if ($created instanceof static) {
+                static::fireEvent(new ModelCreated($created, $created->getAttributes()));
+            }
+
+            return $created;
         } elseif ($result && !$model->autoIncrement) {
             return true;
         }
@@ -507,6 +528,14 @@ abstract class Model implements ModelInterface
 
     public function save(): Model
     {
+        $oldAttributes = $this->getAttributes();
+
+        // Dispatch ModelUpdating event (allows cancellation)
+        $updating = static::fireEvent(new ModelUpdating($this, $oldAttributes, $this->attributes));
+        if ($updating->isPropagationStopped()) {
+            return $this;
+        }
+
         $key = $this->primaryKey;
         $params = [...array_values($this->attributes), $this->id];
         $result = $this->qb
@@ -517,12 +546,23 @@ abstract class Model implements ModelInterface
             ->execute();
         if ($result) {
             $this->loadAttributes($this->id);
+
+            // Dispatch ModelUpdated event
+            static::fireEvent(new ModelUpdated($this, $oldAttributes, $this->getAttributes()));
         }
         return $this;
     }
 
     public function update(array $data): Model
     {
+        $oldAttributes = $this->getAttributes();
+
+        // Dispatch ModelUpdating event (allows cancellation)
+        $updating = static::fireEvent(new ModelUpdating($this, $oldAttributes, $data));
+        if ($updating->isPropagationStopped()) {
+            return $this;
+        }
+
         $key = $this->primaryKey;
         $params = [...array_values($data), $this->id];
         $result = $this->qb
@@ -533,24 +573,57 @@ abstract class Model implements ModelInterface
             ->execute();
         if ($result) {
             $this->loadAttributes($this->id);
+
+            // Dispatch ModelUpdated event
+            static::fireEvent(new ModelUpdated($this, $oldAttributes, $this->getAttributes()));
         }
         return $this;
     }
 
     public function delete(): bool
     {
+        $attributes = $this->getAttributes();
+
+        // Dispatch ModelDeleting event (allows cancellation)
+        $deleting = static::fireEvent(new ModelDeleting($this, $attributes));
+        if ($deleting->isPropagationStopped()) {
+            return false;
+        }
+
         $key = $this->primaryKey;
         $result = $this->qb
             ->delete()
             ->from($this->tableName)
             ->where(["$key = ?"], $this->id)
             ->execute();
+
+        if ($result) {
+            // Dispatch ModelDeleted event
+            static::fireEvent(new ModelDeleted(static::class, $this->id, $attributes));
+        }
+
         return (bool) $result;
     }
 
     public function getAttributes(): array
     {
         return $this->attributes;
+    }
+
+    /**
+     * Get the table name for this model
+     */
+    public function getTableName(): string
+    {
+        return $this->tableName;
+    }
+
+    /**
+     * Get the primary key value
+     */
+    public function getId(): string|int|null
+    {
+        return $this->id;
     }
 
     public function __set($name, $value)
@@ -648,6 +721,26 @@ abstract class Model implements ModelInterface
     {
         $class = (new \ReflectionClass($this))->getShortName();
         return strtolower($class) . '_id';
+    }
+
+    /**
+     * Fire an event if the event dispatcher is available
+     *
+     * Gracefully degrades if no dispatcher is registered (e.g., in tests or CLI
+     * scripts that don't boot the full application).
+     */
+    protected static function fireEvent(\Echo\Framework\Event\EventInterface $event): \Echo\Framework\Event\EventInterface
+    {
+        try {
+            $container = container();
+            if ($container && $container->has(EventDispatcherInterface::class)) {
+                return $container->get(EventDispatcherInterface::class)->dispatch($event);
+            }
+        } catch (\Throwable) {
+            // Gracefully degrade — event dispatching should never break model operations
+        }
+
+        return $event;
     }
 
     /**

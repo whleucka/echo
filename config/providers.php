@@ -8,6 +8,7 @@
  */
 
 return [
+    App\Providers\EventServiceProvider::class,
     App\Providers\AppServiceProvider::class,
     App\Providers\DatabaseServiceProvider::class,
     App\Providers\RedisServiceProvider::class,

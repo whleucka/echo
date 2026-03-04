@@ -1,0 +1,12 @@
+<?php
+
+namespace App\Events;
+
+use Echo\Framework\Event\Event;
+
+class {{ class }} extends Event
+{
+    public function __construct(
+        // Define your event properties here
+    ) {}
+}

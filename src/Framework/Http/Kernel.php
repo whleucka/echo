@@ -2,6 +2,7 @@
 
 namespace Echo\Framework\Http;
 
+use Echo\Framework\Event\Http\ResponseSending;
 use Echo\Framework\Http\Exception\HttpException;
 use Echo\Framework\Http\Response as HttpResponse;
 use Echo\Framework\Routing\RouterInterface;
@@ -37,8 +38,17 @@ class Kernel implements KernelInterface
         // they get a rendered error page rather than a raw stack trace.
         try {
             $middleware = new Middleware();
-            return $middleware->layer($this->middlewareLayers)
+            $response = $middleware->layer($this->middlewareLayers)
                 ->handle($request, fn () => $this->response($route, $request));
+
+            // Dispatch ResponseSending event
+            try {
+                event(new ResponseSending($request, $response));
+            } catch (\Throwable) {
+                // Event dispatching should never prevent the response from being sent
+            }
+
+            return $response;
         } catch (\Throwable $e) {
             return $this->renderer->renderException($e, $request);
         }

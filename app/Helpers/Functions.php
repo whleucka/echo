@@ -262,6 +262,14 @@ function crypto(): \Echo\Framework\Crypto\Crypto
 }
 
 /**
+ * Dispatch an event
+ */
+function event(\Echo\Framework\Event\EventInterface $event): \Echo\Framework\Event\EventInterface
+{
+    return container()->get(\Echo\Framework\Event\EventDispatcherInterface::class)->dispatch($event);
+}
+
+/**
  * Get mailer instance
  */
 function mailer(): \Echo\Framework\Mail\Mailer

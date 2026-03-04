@@ -2,15 +2,17 @@
 
 namespace Echo\Framework\Http\Middleware;
 
-use App\Models\Activity;
-use App\Services\GeoIpService;
 use Closure;
+use Echo\Framework\Event\Http\RequestReceived;
 use Echo\Framework\Http\RequestInterface;
 use Echo\Framework\Http\ResponseInterface;
 use Echo\Framework\Http\MiddlewareInterface;
 
 /**
- * LogActivity
+ * LogActivity Middleware
+ *
+ * Dispatches a RequestReceived event for activity logging.
+ * The actual logging is handled by the ActivityListener.
  */
 class LogActivity implements MiddlewareInterface
 {
@@ -24,27 +26,11 @@ class LogActivity implements MiddlewareInterface
             return $next($request);
         }
 
+        // Dispatch RequestReceived event — listeners handle the logging
         try {
-            $user = user();
-            $clientIp = $request->getClientIp();
-
-            // Resolve country code from IP
-            $countryCode = null;
-            try {
-                $geoIp = container()->get(GeoIpService::class);
-                $countryCode = $geoIp->getCountryCode($clientIp);
-            } catch (\Exception) {
-                // GeoIP lookup is best-effort
-            }
-
-            Activity::createBulk([[
-                "user_id" => $user ? $user->id : null,
-                "uri" => $request->getUri(),
-                "ip" => ip2long($clientIp),
-                "country_code" => $countryCode,
-            ]]);
-        } catch (\Exception|\Error|\PDOException $e) {
-            error_log("-- Skipping session insert --");
+            event(new RequestReceived($request));
+        } catch (\Throwable) {
+            // Event dispatching should never break the request pipeline
         }
 
         return $next($request);

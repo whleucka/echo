@@ -1,0 +1,14 @@
+<?php
+
+namespace App\Listeners;
+
+use Echo\Framework\Event\EventInterface;
+use Echo\Framework\Event\ListenerInterface;
+
+class {{ class }} implements ListenerInterface
+{
+    public function handle(EventInterface $event): void
+    {
+        // Handle the event
+    }
+}

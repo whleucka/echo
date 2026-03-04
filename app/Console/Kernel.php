@@ -43,6 +43,8 @@ class Kernel extends ConsoleKernel
         Commands\MakeMiddlewareCommand::class,
         Commands\MakeProviderCommand::class,
         Commands\MakeCommandCommand::class,
+        Commands\MakeEventCommand::class,
+        Commands\MakeListenerCommand::class,
         
         // Activity
         Commands\ActivityCleanupCommand::class,
