@@ -2,6 +2,7 @@
 
 namespace App\Services\Auth;
 
+use App\Events\Auth\PasswordResetCompleted;
 use App\Models\User;
 
 class PasswordResetService
@@ -29,9 +30,6 @@ class PasswordResetService
 
     public function resetPassword(User $user, string $newPassword): bool
     {
-        $log = logger()->channel('auth');
-        $ip = request()->getClientIp();
-
         $authService = container()->get(AuthService::class);
         $hashedPassword = $authService->hashPassword($newPassword);
 
@@ -41,11 +39,7 @@ class PasswordResetService
             'reset_expires_at' => null,
         ]);
 
-        $log->info('Password reset successful', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'ip' => $ip,
-        ]);
+        event(new PasswordResetCompleted($user, request()->getClientIp()));
 
         return true;
     }

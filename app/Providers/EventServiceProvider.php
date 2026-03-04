@@ -2,6 +2,13 @@
 
 namespace App\Providers;
 
+use App\Events\Auth\PasswordResetCompleted;
+use App\Events\Auth\PasswordResetRequested;
+use App\Events\Auth\SignInFailed;
+use App\Events\Auth\UserRegistered;
+use App\Events\Auth\UserSignedIn;
+use App\Events\Auth\UserSignedOut;
+use App\Listeners\AuthListener;
 use Echo\Framework\Audit\AuditListener;
 use Echo\Framework\Event\EventServiceProvider as BaseEventServiceProvider;
 use Echo\Framework\Event\Model\ModelCreated;
@@ -34,6 +41,26 @@ class EventServiceProvider extends BaseEventServiceProvider
         // HTTP activity logging
         RequestReceived::class => [
             ActivityListener::class,
+        ],
+
+        // Authentication events
+        UserSignedIn::class => [
+            AuthListener::class,
+        ],
+        SignInFailed::class => [
+            AuthListener::class,
+        ],
+        UserSignedOut::class => [
+            AuthListener::class,
+        ],
+        UserRegistered::class => [
+            AuthListener::class,
+        ],
+        PasswordResetRequested::class => [
+            AuthListener::class,
+        ],
+        PasswordResetCompleted::class => [
+            AuthListener::class,
         ],
     ];
 }

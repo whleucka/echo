@@ -2,6 +2,7 @@
 
 namespace App\Services\Auth;
 
+use App\Events\Auth\PasswordResetRequested;
 use App\Models\User;
 use Echo\Framework\Crypto\Crypto;
 use Echo\Framework\Mail\Mailable;
@@ -10,13 +11,12 @@ class ForgotPasswordService
 {
     public function requestReset(string $email): void
     {
-        $log = logger()->channel('auth');
         $ip = request()->getClientIp();
 
         $user = User::where("email", $email)->first();
 
         if (!$user) {
-            $log->info('Password reset requested for unknown email', [
+            logger()->channel('auth')->info('Password reset requested for unknown email', [
                 'email' => $email,
                 'ip' => $ip,
             ]);
@@ -48,10 +48,6 @@ class ForgotPasswordService
 
         mailer()->queue($mailable);
 
-        $log->info('Password reset token generated', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'ip' => $ip,
-        ]);
+        event(new PasswordResetRequested($user, $ip));
     }
 }
