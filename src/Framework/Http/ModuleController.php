@@ -225,6 +225,7 @@ abstract class ModuleController extends Controller
     #[Post("/table-action", "admin.table-action")]
     public function tableAction(): string
     {
+        $this->registerFunctions();
         $this->handleRequest($this->request->request);
         return $this->index();
     }
