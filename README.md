@@ -37,6 +37,20 @@ Open `http://localhost`.
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
+## Documentation
+
+| Topic | Description |
+|---|---|
+| [Routing](docs/routing.md) | Attribute routing, groups, subdomain routing, middleware |
+| [Database / ORM](docs/database.md) | Model (CRUD, relationships, aggregates) and QueryBuilder |
+| [Admin Modules](docs/admin-modules.md) | ModuleController CRUD: tables, forms, JOINs, filters, actions, permissions |
+| [Events](docs/events.md) | Event system: creating events/listeners, dispatching, built-in events |
+| [Helpers](docs/helpers.md) | All global helper functions |
+| [Email](docs/email.md) | Mailable API, send/queue |
+| [Caching](docs/caching.md) | Redis and file-based caching |
+| [Console](docs/console.md) | All CLI commands |
+| [Testing](docs/testing.md) | PHPUnit setup and usage |
+
 ## Common Docker Commands
 
 ```bash
@@ -47,132 +61,51 @@ docker-compose exec -it redis redis-cli            # Redis CLI
 
 ## Routing
 
-Controllers use PHP 8 attributes. Route types: `Get`, `Post`, `Put`, `Patch`, `Delete`, `Head`.
+Controllers use PHP 8 attributes. Route types: `Get`, `Post`, `Put`, `Patch`, `Delete`, `Head`. Controllers in `app/Http/Controllers/` are auto-discovered.
 
 ```php
-use Echo\Framework\Http\Controller;
-use Echo\Framework\Routing\Route\{Get, Post};
-use Echo\Framework\Routing\Group;
-
 #[Group(pathPrefix: "/users", namePrefix: "user", middleware: ["auth"])]
 class UserController extends Controller
 {
     #[Get("/{id}", "show")]
-    public function show(string $id): string
-    {
-        $user = User::find($id);
-        return $this->render('users/show.html.twig', ['user' => $user]);
-    }
+    public function show(string $id): string { /* ... */ }
 
     #[Post(path: "/", name: "store")]
-    public function store(): string
-    {
-        $data = $this->validate([
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min_length:8',
-        ]);
-        $user = User::create($data);
-        return redirect('/users/' . $user->id);
-    }
+    public function store(): string { /* ... */ }
 }
 ```
 
-Controllers in `app/Http/Controllers/` are auto-discovered. Middleware is applied via the third attribute argument or the `Group` attribute.
-
-### Subdomain Routing
-
-Routes can be constrained to specific subdomains using the `subdomain` parameter on `Group` or individual route attributes:
-
-```php
-// API base controller - all routes only match api.example.com
-#[Group(pathPrefix: '/v1', namePrefix: 'api', subdomain: 'api', middleware: ['api'])]
-abstract class ApiController extends Controller { }
-
-// Wildcard subdomain for multi-tenancy - captures subdomain as first param
-#[Group(subdomain: '{tenant}')]
-class TenantController extends Controller
-{
-    #[Get('/dashboard', 'dashboard')]
-    public function dashboard(string $tenant): string
-    {
-        return $this->render('tenant/dashboard.html.twig', ['tenant' => $tenant]);
-    }
-}
-```
-
-For local Docker testing, add subdomains to `/etc/hosts`:
-```bash
-127.0.0.1 localhost api.localhost tenant1.localhost
-```
-
-Then access `http://api.localhost/v1/status` to hit subdomain-constrained routes.
+Supports subdomain routing and route caching. See [full routing docs](docs/routing.md).
 
 ## Database / ORM
 
+Active Record ORM with fluent query building, relationships, and model lifecycle events.
+
 ```php
-use Echo\Framework\Database\Model;
-
-class User extends Model
-{
-    use Auditable;
-
-    protected string $table = 'users';
-}
-
 $user  = User::find(1);
-$user  = User::where('email', 'a@b.com')->first();
-$user  = User::where('dob', '>=', '1967-01-12')->first();
-$users = User::where('active', 1)->orderBy('created_at', 'DESC')->get();
-// create a new model
-$user  = User::create([
-    'email' => 'a@b.com', 
-    'first_name' => 'Abby', 
-    'last_name' => 'Green'
-]);
-// update a model
-$user->update([
-    'first_name' => 'Jane', 
-    'last_name' => 'Doe'
-]);
-// or 
-$user->first_name = 'Alice';
-$user->save();
-// delete a model
+$users = User::where('active', 1)->orderBy('name')->get();
+$user  = User::create(['email' => 'a@b.com', 'name' => 'Alice']);
+$user->update(['name' => 'Jane']);
 $user->delete();
-
-// QueryBuilder for complex queries
-$rows = qb()->select('*')->from('users')->where('active', '=', 1)->get();
 ```
 
-## Helper Functions
+Includes `whereNull`, `whereBetween`, `whereRaw`, eager loading (`with`/`load`), aggregates (`count`, `max`), and `QueryBuilder` for complex JOINs. See [full database docs](docs/database.md).
 
-All defined in `app/Helpers/Functions.php`:
+## Events
 
-| Helper | Returns |
-|---|---|
-| `app()` | Web Application (HttpKernel) |
-| `console()` | Console Application (ConsoleKernel) |
-| `user()` | Authenticated User or null |
-| `container()` | DI container |
-| `qb()` | New QueryBuilder |
-| `twig()` | Twig Environment |
-| `db()` | PDO Connection or null |
-| `session()` | Session instance |
-| `router()` | Router instance |
-| `request()` | Current HTTP Request |
-| `env($key, $default)` | Environment variable |
-| `uri($name, ...$params)` | Named route URI |
-| `dump($val)` | Pretty-print value |
-| `dd($val)` | Dump & die |
-| `logger()` | Logger instance |
-| `profiler()` | Profiler (null if debug off) |
-| `redis()` | RedisManager instance |
-| `cache()` | Cache (Redis or file fallback) |
-| `redirect($url)` | Redirect response (HTMX-aware) |
-| `crypto()` | Crypto instance |
-| `mailer()` | Mailer instance |
-| `config($key)` | Config value (e.g. `config('app.debug')`) |
-| `format_bytes($bytes, $precision)` | Human-readable file size (e.g. `1.5 MB`) |
+PSR-14 inspired event system with model lifecycle, HTTP, and auth events.
+
+```php
+// Dispatch
+event(new OrderPlaced($order->id, $order->email, $order->total));
+
+// Register in EventServiceProvider
+protected array $listen = [
+    OrderPlaced::class => [SendConfirmation::class],
+];
+```
+
+Built-in events for model CRUD, HTTP requests, and authentication. See [full events docs](docs/events.md).
 
 ## Admin Modules
 
@@ -182,7 +115,7 @@ Extend `ModuleController` for instant CRUD with HTMX tables, modals, sorting, fi
 #[Group(pathPrefix: "/products", namePrefix: "products")]
 class ProductsController extends ModuleController
 {
-    public function __construct() { parent::__construct("products"); }
+    protected string $tableName = "products";
 
     protected function defineTable(TableSchemaBuilder $builder): void
     {
@@ -200,47 +133,32 @@ class ProductsController extends ModuleController
 }
 ```
 
-Built-in modules: Users, Activity, Audits, Health, Modules, User Permissions, File Info.
+Supports JOINs, expressions, filter links, custom formatters, image/file uploads, pivot tables, and hooks. See [full admin modules docs](docs/admin-modules.md).
 
 ## Email
 
 ```php
-use Echo\Framework\Mail\Mailable;
-
-// Send immediately
 mailer()->send(
     Mailable::create()
         ->to('user@example.com')
         ->subject('Welcome!')
         ->template('emails/welcome.html.twig', ['name' => 'Will'])
 );
-
-// Queue for background delivery
-mailer()->queue(
-    Mailable::create()
-        ->to('user@example.com')
-        ->subject('Newsletter')
-        ->template('emails/newsletter.html.twig', $data)
-);
 ```
 
-Configure SMTP in `.env` (`MAIL_HOST`, `MAIL_PORT`, etc.). Queue commands: `mail:queue`, `mail:status`, `mail:purge`.
+Supports queueing for background delivery. See [full email docs](docs/email.md).
 
 ## Redis & Caching
 
-Redis is optional: everything falls back to file-based alternatives.
+Redis is optional — falls back to file-based alternatives.
 
 ```php
-// Cache (auto-selects Redis or file driver)
 cache()->set('key', 'value', 3600);
 $val = cache()->get('key', 'default');
 $users = cache()->remember('active_users', 300, fn() => User::where('active', 1)->get());
-
-// Direct Redis
-redis()->connection('default')->set('key', 'value');
 ```
 
-Configure in `.env`: `REDIS_HOST`, `CACHE_DRIVER`, `SESSION_DRIVER`.
+See [full caching docs](docs/caching.md).
 
 ## Debug Toolbar
 
@@ -257,29 +175,25 @@ Endpoints at `/benchmark/*` (plaintext, json, db, queries, template, fullstack, 
 
 ## Console Commands
 
-`./bin/console` is the CLI entry point (Symfony Console). Run inside Docker:
+`./bin/console` is the CLI entry point. See [full command reference](docs/console.md).
 
 ```bash
-docker-compose exec -it php ./bin/console <command>
+./echo migrate:run              # run migrations
+./echo make:controller          # scaffold a controller
+./echo make:event               # scaffold an event
+./echo make:listener            # scaffold a listener
+./echo route:list               # list all routes
+./echo cache:clear              # clear all caches
 ```
-
-| Group | Commands |
-|---|---|
-| `audit:` | `list`, `stats`, `purge` |
-| `db:` | `backup`, `restore`, `list`, `cleanup` |
-| `mail:` | `queue`, `status`, `purge` |
-| `make:` | `command`, `controller`, `middleware`, `migration`, `model`, `provider`, `service`, `user` |
-| `migrate:` | `run`, `rollback`, `status`, `fresh`, `up`, `down` |
-| `route:` | `list`, `cache`, `clear` |
-| `session:` | `stats`, `cleanup` |
-| Other | `version`, `key:generate`, `storage:fix`, `cache:clear`, `server` |
 
 ## Project Structure
 
 ```
 app/                 # Application code (App\ namespace)
   Http/Controllers/  # Route controllers (auto-discovered)
-  Models/            # Eloquent-style models
+  Models/            # Active Record models
+  Events/            # Application events
+  Listeners/         # Event listeners
   Helpers/           # Global helper functions
   Services/          # Business logic services
   Providers/         # Service providers
@@ -288,6 +202,7 @@ config/              # PHP config files
 templates/           # Twig templates
 migrations/          # Database migrations
 tests/               # PHPUnit tests
+docs/                # Documentation
 bin/console          # CLI entry point
 public/index.php     # Web entry point
 ```
@@ -296,12 +211,15 @@ public/index.php     # Web entry point
 
 <img width="1436" height="1058" alt="image" src="https://github.com/user-attachments/assets/63b7251a-28b4-4349-ab6b-6fb5944df1bc" />
 
-
 ## Testing
 
 ```bash
-docker-compose exec -it php composer test
+./bin/phpunit                              # all tests
+./bin/phpunit tests/Http/KernelTest.php    # single file
+./bin/phpunit --filter testMethodName      # single method
 ```
+
+See [full testing docs](docs/testing.md).
 
 ## License
 
