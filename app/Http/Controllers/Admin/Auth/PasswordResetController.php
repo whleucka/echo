@@ -3,13 +3,10 @@
 namespace App\Http\Controllers\Admin\Auth;
 
 use App\Services\Auth\PasswordResetService;
-use Echo\Framework\Http\Controller;
 use Echo\Framework\Http\Response;
-use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
 
-#[Group(subdomain: 'admin', namePrefix: 'auth')]
-class PasswordResetController extends Controller
+class PasswordResetController extends AuthController
 {
     public function __construct(private PasswordResetService $service)
     {

@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Services\Admin\SidebarService;
-use Echo\Framework\Http\Controller;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;
 
 #[Group(subdomain: 'admin', middleware: ["auth"])]
-class SidebarController extends Controller
+class SidebarController extends AdminController
 {
     public function __construct(private SidebarService $service)
     {

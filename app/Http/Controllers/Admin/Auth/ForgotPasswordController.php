@@ -3,13 +3,10 @@
 namespace App\Http\Controllers\Admin\Auth;
 
 use App\Services\Auth\ForgotPasswordService;
-use Echo\Framework\Http\Controller;
-use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
 use Echo\Framework\Session\Flash;
 
-#[Group(subdomain: 'admin')]
-class ForgotPasswordController extends Controller
+class ForgotPasswordController extends AuthController
 {
     public function __construct(private ForgotPasswordService $service)
     {

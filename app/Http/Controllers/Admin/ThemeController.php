@@ -3,12 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Services\Admin\ThemeService;
-use Echo\Framework\Http\Controller;
-use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\Get;
 
-#[Group(subdomain: 'admin', middleware: ["auth"])]
-class ThemeController extends Controller
+class ThemeController extends AdminController
 {
     public function __construct(private ThemeService $service)
     {

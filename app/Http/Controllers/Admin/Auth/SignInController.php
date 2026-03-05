@@ -3,14 +3,11 @@
 namespace App\Http\Controllers\Admin\Auth;
 
 use App\Services\Auth\SignInService;
-use Echo\Framework\Http\Controller;
 use Echo\Framework\Http\Response;
-use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
 use Echo\Framework\Session\Flash;
 
-#[Group(subdomain: 'admin', namePrefix: 'auth')]
-class SignInController extends Controller
+class SignInController extends AuthController
 {
     public function __construct(private SignInService $service)
     {
