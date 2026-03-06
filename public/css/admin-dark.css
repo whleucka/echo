@@ -136,6 +136,7 @@
   background-color: #252536;
   border-color: #313244;
   color: #cdd6f4;
+  background-image: url("../images/magnifying_glass_icon_white.png");
 }
 
 /**
@@ -299,6 +300,10 @@
 [data-bs-theme="dark"] .text-secondary {
   color: #a6adc8 !important;
 }
+[data-bs-theme="dark"] .text-dark {
+  color: #a6adc8 !important;
+}
+
 
 /**
  * Bulk actions
