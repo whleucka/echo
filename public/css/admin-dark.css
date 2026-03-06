@@ -50,10 +50,11 @@
  * Sidebar
  */
 [data-bs-theme="dark"] nav#nav-sidebar {
-  background: linear-gradient(180deg, #1e2030 0%, #0d1117 100%);
+  background: linear-gradient(180deg, #1e1e2e 0%, #0d1117 100%);
+  border-right: 1px solid #313244;
 }
 [data-bs-theme="dark"] nav#nav-sidebar header {
-  background-color: rgba(0, 0, 0, 0.25);
+  background-color: transparent;
 }
 [data-bs-theme="dark"] nav#nav-sidebar .nav-link.active {
   background-color: rgba(255, 255, 255, 0.08);
