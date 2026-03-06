@@ -19,6 +19,10 @@ class Blacklist implements MiddlewareInterface
         $ip = $request->getClientIp();
 
         if (in_array($ip, $blacklist)) {
+            logger()->channel('auth')->warning('Blacklist denied: IP is blocked', [
+                'ip' => $ip,
+                'path' => $request->getUri(),
+            ]);
             return new HttpResponse("Access denied", 403);
         }
 

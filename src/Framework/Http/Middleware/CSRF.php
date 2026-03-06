@@ -26,6 +26,11 @@ class CSRF implements MiddlewareInterface
 
 
         if (!in_array('api', $middleware) && !$this->validate($request)) {
+            logger()->channel('auth')->warning('CSRF validation failed', [
+                'ip' => $request->getClientIp(),
+                'path' => $request->getUri(),
+                'method' => $request->getMethod(),
+            ]);
             if ($request->isHTMX()) {
                 $res = new HttpResponse('', 200);
                 $res->setHeader('HX-Redirect', uri("auth.sign-in.index"));
@@ -78,7 +83,8 @@ class CSRF implements MiddlewareInterface
 
         // Check POST body first, then X-CSRF-Token header (for HTMX/AJAX)
         $request_token = $request->post->csrf_token
-            ?? $_SERVER['HTTP_X_CSRF_TOKEN']
+            ?? $request->headers->get('X-Csrf-Token')
+            ?? $request->headers->get('X-CSRF-TOKEN')
             ?? null;
 
         if (

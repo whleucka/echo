@@ -32,7 +32,7 @@ class BearerAuth implements MiddlewareInterface
         }
 
         // Check for Authorization header
-        $authHeader = $this->getAuthorizationHeader();
+        $authHeader = $this->getAuthorizationHeader($request);
 
         if (!$authHeader) {
             // No auth header - let other middleware handle or proceed
@@ -69,32 +69,24 @@ class BearerAuth implements MiddlewareInterface
     }
 
     /**
-     * Get Authorization header from request
+     * Get Authorization header from request.
+     *
+     * Uses the request headers object (populated via getallheaders() at boot).
+     * Falls back to $_SERVER for Apache mod_rewrite edge cases where
+     * REDIRECT_HTTP_AUTHORIZATION is set but not in getallheaders().
      */
-    private function getAuthorizationHeader(): ?string
+    private function getAuthorizationHeader(RequestInterface $request): ?string
     {
-        // Check standard header
-        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-            return $_SERVER['HTTP_AUTHORIZATION'];
+        // Primary: read from request headers (covers standard + getallheaders)
+        $header = $request->headers->get('Authorization');
+        if ($header) {
+            return $header;
         }
 
-        // Check for Apache mod_rewrite workaround
+        // Fallback: Apache mod_rewrite sets REDIRECT_HTTP_AUTHORIZATION
+        // which may not appear in getallheaders()
         if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
             return $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
-        }
-
-        // Check for CGI/FastCGI workaround
-        if (function_exists('getallheaders')) {
-            $headers = getallheaders();
-            if (isset($headers['Authorization'])) {
-                return $headers['Authorization'];
-            }
-            // Case-insensitive check
-            foreach ($headers as $key => $value) {
-                if (strtolower($key) === 'authorization') {
-                    return $value;
-                }
-            }
         }
 
         return null;

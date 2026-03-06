@@ -42,11 +42,11 @@ class BearerAuthIntegrationTest extends TestCase
         parent::tearDown();
     }
 
-    private function createRequest(array $route = []): Request
+    private function createRequest(array $route = [], array $headers = []): Request
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';
 
-        $request = new Request();
+        $request = new Request(headers: $headers);
 
         // Set default route with middleware
         $defaultRoute = [
@@ -107,9 +107,7 @@ class BearerAuthIntegrationTest extends TestCase
      */
     public function testReturns401ForInvalidHeaderFormat(): void
     {
-        $_SERVER['HTTP_AUTHORIZATION'] = 'Basic abc123';
-
-        $request = $this->createRequest(['middleware' => ['api']]);
+        $request = $this->createRequest(['middleware' => ['api']], ['Authorization' => 'Basic abc123']);
         $response = $this->bearerAuth->handle($request, $this->createNextHandler());
 
         $this->assertEquals(401, $response->getStatusCode());
@@ -121,9 +119,7 @@ class BearerAuthIntegrationTest extends TestCase
      */
     public function testReturns401ForInvalidToken(): void
     {
-        $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer invalid_token_12345';
-
-        $request = $this->createRequest(['middleware' => ['api']]);
+        $request = $this->createRequest(['middleware' => ['api']], ['Authorization' => 'Bearer invalid_token_12345']);
 
         try {
             $response = $this->bearerAuth->handle($request, $this->createNextHandler());
@@ -136,13 +132,11 @@ class BearerAuthIntegrationTest extends TestCase
     }
 
     /**
-     * Test reads from HTTP_AUTHORIZATION server variable
+     * Test reads from Authorization request header
      */
     public function testReadsFromHttpAuthorizationHeader(): void
     {
-        $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer test_token';
-
-        $request = $this->createRequest(['middleware' => ['api']]);
+        $request = $this->createRequest(['middleware' => ['api']], ['Authorization' => 'Bearer test_token']);
 
         try {
             $response = $this->bearerAuth->handle($request, $this->createNextHandler());
@@ -155,7 +149,7 @@ class BearerAuthIntegrationTest extends TestCase
     }
 
     /**
-     * Test reads from REDIRECT_HTTP_AUTHORIZATION server variable
+     * Test reads from REDIRECT_HTTP_AUTHORIZATION server variable (Apache fallback)
      */
     public function testReadsFromRedirectHttpAuthorizationHeader(): void
     {
@@ -178,9 +172,7 @@ class BearerAuthIntegrationTest extends TestCase
      */
     public function testActivatesForBearerMiddleware(): void
     {
-        $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer test_token';
-
-        $request = $this->createRequest(['middleware' => ['bearer']]);
+        $request = $this->createRequest(['middleware' => ['bearer']], ['Authorization' => 'Bearer test_token']);
 
         try {
             $response = $this->bearerAuth->handle($request, $this->createNextHandler());
@@ -198,9 +190,7 @@ class BearerAuthIntegrationTest extends TestCase
      */
     public function testEmptyAuthHeaderPassesThrough(): void
     {
-        $_SERVER['HTTP_AUTHORIZATION'] = '';
-
-        $request = $this->createRequest(['middleware' => ['api']]);
+        $request = $this->createRequest(['middleware' => ['api']], ['Authorization' => '']);
         $response = $this->bearerAuth->handle($request, $this->createNextHandler());
 
         // Empty header doesn't match Bearer regex, passes through
@@ -212,9 +202,7 @@ class BearerAuthIntegrationTest extends TestCase
      */
     public function testBearerOnlyHeaderReturns401(): void
     {
-        $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer';
-
-        $request = $this->createRequest(['middleware' => ['api']]);
+        $request = $this->createRequest(['middleware' => ['api']], ['Authorization' => 'Bearer']);
         $response = $this->bearerAuth->handle($request, $this->createNextHandler());
 
         $this->assertEquals(401, $response->getStatusCode());
@@ -248,9 +236,7 @@ class BearerAuthIntegrationTest extends TestCase
             return new Response('OK', 200);
         };
 
-        $_SERVER['HTTP_AUTHORIZATION'] = 'Basic invalid';
-
-        $request = $this->createRequest(['middleware' => ['api']]);
+        $request = $this->createRequest(['middleware' => ['api']], ['Authorization' => 'Basic invalid']);
         $this->bearerAuth->handle($request, $nextHandler);
 
         $this->assertFalse($called);

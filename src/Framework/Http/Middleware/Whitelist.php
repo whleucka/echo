@@ -19,6 +19,10 @@ class Whitelist implements MiddlewareInterface
         $ip = $request->getClientIp();
 
         if (!empty($whitelist) && !in_array($ip, $whitelist)) {
+            logger()->channel('auth')->warning('Whitelist denied: IP not in allowlist', [
+                'ip' => $ip,
+                'path' => $request->getUri(),
+            ]);
             return new HttpResponse("Access denied", 403);
         }
 

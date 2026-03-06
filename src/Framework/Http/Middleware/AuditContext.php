@@ -41,6 +41,6 @@ class AuditContext implements MiddlewareInterface
      */
     private function getUserAgent(RequestInterface $request): ?string
     {
-        return $_SERVER['HTTP_USER_AGENT'] ?? null;
+        return $request->headers->get('User-Agent') ?: null;
     }
 }

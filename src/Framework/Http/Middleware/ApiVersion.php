@@ -46,7 +46,7 @@ class ApiVersion implements MiddlewareInterface
     private function parseVersion(RequestInterface $request): string
     {
         // 1. Check Accept header: application/vnd.echo.v1+json
-        $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+        $accept = $request->headers->get('Accept') ?? '';
         if (preg_match('/application\/vnd\.echo\.(v\d+)\+json/i', $accept, $matches)) {
             $version = strtolower($matches[1]);
             if ($this->isSupported($version)) {
@@ -55,7 +55,7 @@ class ApiVersion implements MiddlewareInterface
         }
 
         // 2. Check custom X-API-Version header
-        $headerVersion = $_SERVER['HTTP_X_API_VERSION'] ?? null;
+        $headerVersion = $request->headers->get('X-Api-Version') ?? $request->headers->get('X-API-Version') ?? null;
         if ($headerVersion && $this->isSupported($headerVersion)) {
             return strtolower($headerVersion);
         }
