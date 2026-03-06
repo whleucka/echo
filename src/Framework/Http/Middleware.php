@@ -57,16 +57,23 @@ class Middleware
     }
 
     /**
-     * Create a middleware layer, resolving through container for DI support
+     * Create a middleware layer, resolving through container for DI support.
+     *
+     * @throws \InvalidArgumentException if the layer does not implement MiddlewareInterface
      */
     private function createLayer($nextLayer, $layer): Closure
     {
-        // If it's a class name string, resolve through container
+        // Resolve class name strings through the DI container
         if (is_string($layer) && class_exists($layer)) {
             $layer = container()->get($layer);
-        } elseif (!($layer instanceof MiddlewareInterface)) {
-            // If it's not already an instance, create it directly
-            $layer = new $layer;
+        }
+
+        // Validate that the resolved layer implements the interface
+        if (!($layer instanceof MiddlewareInterface)) {
+            $type = is_object($layer) ? get_class($layer) : (is_string($layer) ? $layer : gettype($layer));
+            throw new \InvalidArgumentException(
+                "Middleware layer must implement MiddlewareInterface, got: {$type}"
+            );
         }
 
         return fn ($object) => $layer->handle($object, $nextLayer);

@@ -54,12 +54,16 @@ class BearerAuth implements MiddlewareInterface
             return $this->unauthorizedResponse('Invalid or expired token');
         }
 
-        // Set user in session for this request
+        // Set token info on request attributes (stateless — no session mutation)
         $request->setAttribute('api_token', $apiToken);
         $request->setAttribute('api_user_id', $apiToken->user_id);
 
-        // Also set in session so controllers can access user
-        session()->set('user_uuid', $apiToken->user_uuid);
+        // Resolve and set the user as a request attribute so the Kernel can
+        // call setUser() on the controller — same path as session-based Auth.
+        $user = User::find($apiToken->user_id);
+        if ($user) {
+            $request->setAttribute('user', $user);
+        }
 
         return $next($request);
     }
@@ -121,12 +125,6 @@ class BearerAuth implements MiddlewareInterface
             // Update last used timestamp
             $apiToken->last_used_at = date('Y-m-d H:i:s');
             $apiToken->save();
-
-            // Get user UUID for session
-            $user = User::find($apiToken->user_id);
-            if ($user) {
-                $apiToken->user_uuid = $user->uuid;
-            }
 
             return $apiToken;
         } catch (\Exception $e) {

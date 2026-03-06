@@ -7,6 +7,27 @@ use RuntimeException;
 
 class FileUploadHandler
 {
+    /**
+     * Default MIME types allowed for upload.
+     * Override via config('security.allowed_upload_mimes').
+     */
+    private const DEFAULT_ALLOWED_MIMES = [
+        // Images
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+        // Documents
+        'application/pdf',
+        'text/plain', 'text/csv',
+        // Office
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        // Archives
+        'application/zip',
+    ];
+
     public function handle(array $file): int|false
     {
         $upload_dir = config("paths.uploads");
@@ -31,6 +52,14 @@ class FileUploadHandler
         }
 
         $mime_type = mime_content_type($target_path);
+
+        // Validate MIME type against allowlist
+        $allowed = config('security.allowed_upload_mimes') ?? self::DEFAULT_ALLOWED_MIMES;
+        if (!in_array($mime_type, $allowed, true)) {
+            unlink($target_path);
+            throw new RuntimeException("File type not allowed: $mime_type");
+        }
+
         $file_size = filesize($target_path);
         $relative_path = sprintf("/uploads/%s", $unique_name);
 

@@ -24,39 +24,49 @@ class CORS implements MiddlewareInterface
             return $next($request);
         }
 
+        // Read request origin from headers (avoid direct $_SERVER access)
+        $origin = $request->headers->get('Origin') ?: null;
+
         // Handle preflight OPTIONS requests
         if ($request->getMethod() === 'OPTIONS') {
-            return $this->preflightResponse();
+            return $this->preflightResponse($origin);
         }
 
         // Process request and add CORS headers to response
         $response = $next($request);
-        return $this->addCorsHeaders($response);
+        return $this->addCorsHeaders($response, $origin);
     }
 
     /**
      * Handle preflight OPTIONS request
      */
-    private function preflightResponse(): ResponseInterface
+    private function preflightResponse(?string $origin): ResponseInterface
     {
         $response = new HttpResponse('', 204);
-        return $this->addCorsHeaders($response);
+        return $this->addCorsHeaders($response, $origin);
     }
 
     /**
      * Add CORS headers to response
      */
-    private function addCorsHeaders(ResponseInterface $response): ResponseInterface
+    private function addCorsHeaders(ResponseInterface $response, ?string $origin): ResponseInterface
     {
         $config = config('cors');
+        $allowCredentials = $config['allow_credentials'] ?? false;
 
         // Allowed origins
         $origins = $config['allowed_origins'] ?? ['*'];
-        $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
 
         if (in_array('*', $origins)) {
-            $response->setHeader('Access-Control-Allow-Origin', '*');
-        } elseif (in_array($origin, $origins)) {
+            if ($allowCredentials && $origin) {
+                // Wildcard + credentials is invalid per CORS spec.
+                // Reflect the specific request origin instead.
+                $response->setHeader('Access-Control-Allow-Origin', $origin);
+                $response->setHeader('Vary', 'Origin');
+            } else {
+                $response->setHeader('Access-Control-Allow-Origin', '*');
+            }
+        } elseif ($origin && in_array($origin, $origins)) {
             $response->setHeader('Access-Control-Allow-Origin', $origin);
             $response->setHeader('Vary', 'Origin');
         }
@@ -76,7 +86,7 @@ class CORS implements MiddlewareInterface
         }
 
         // Credentials
-        if ($config['allow_credentials'] ?? false) {
+        if ($allowCredentials) {
             $response->setHeader('Access-Control-Allow-Credentials', 'true');
         }
 

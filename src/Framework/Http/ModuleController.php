@@ -41,6 +41,9 @@ abstract class ModuleController extends Controller
     // --- Track whether Twig functions have been registered ---
     private bool $functionsRegistered = false;
 
+    // --- Track whether init() has been called (deferred from constructor) ---
+    private bool $initialized = false;
+
     // --- Active form renderer context (updated per registerFunctions call) ---
     private ?FormControlRenderer $activeFormRenderer = null;
     private bool $activeFormReadonly = false;
@@ -74,10 +77,8 @@ abstract class ModuleController extends Controller
         $this->defineForm($formBuilder);
         $this->formSchema = $formBuilder->build();
 
-        // Initialize components
+        // Initialize data source (init + state are deferred until first route method)
         $this->dataSource = new QueryBuilderDataSource();
-        $this->init();
-        $this->state = new ModuleState($this->moduleLink);
     }
 
     // =========================================================================
@@ -87,6 +88,7 @@ abstract class ModuleController extends Controller
     #[Get("/", "admin.index")]
     public function index(): string
     {
+        $this->ensureInitialized();
         // Hydrate state from URL query parameters (for shareable links)
         $actions = $this->state->hydrateFromQuery(
             $this->request->get->data(),
@@ -107,6 +109,7 @@ abstract class ModuleController extends Controller
     #[Get("/page/{page}", "admin.page")]
     public function page(int $page): string
     {
+        $this->ensureInitialized();
         $this->state->setPage($page);
         header("HX-Push-Url: " . $this->buildStateUrl());
         return $this->renderModule($this->getModuleData());
@@ -115,6 +118,7 @@ abstract class ModuleController extends Controller
     #[Get("/sort/{idx}", "admin.sort")]
     public function sort(int $idx): string
     {
+        $this->ensureInitialized();
         $columns = $this->tableSchema->columns;
         if (!isset($columns[$idx])) {
             return $this->renderModule($this->getModuleData());
@@ -137,6 +141,7 @@ abstract class ModuleController extends Controller
     #[Get("/per-page/{count}", "admin.per-page")]
     public function perPage(int $count): string
     {
+        $this->ensureInitialized();
         if (in_array($count, $this->tableSchema->pagination->perPageOptions)) {
             $this->state->setPerPage($count);
             $this->state->setPage(1);
@@ -148,6 +153,7 @@ abstract class ModuleController extends Controller
     #[Get("/export-csv", "admin.export-csv")]
     public function exportCsv(): mixed
     {
+        $this->ensureInitialized();
         if (!$this->hasExport()) {
             return $this->permissionDenied();
         }
@@ -179,6 +185,7 @@ abstract class ModuleController extends Controller
     #[Get("/modal/create", "admin.create")]
     public function create(): string
     {
+        $this->ensureInitialized();
         if (!$this->hasCreate()) {
             return $this->permissionDenied();
         }
@@ -188,12 +195,14 @@ abstract class ModuleController extends Controller
     #[Get("/modal/filter", "admin.render-filter")]
     public function showFilterModal(): string
     {
+        $this->ensureInitialized();
         return $this->renderFilter();
     }
 
     #[Get("/filter/link/{index}", "admin.filter-link")]
     public function filterLink(int $index): string
     {
+        $this->ensureInitialized();
         $this->state->setActiveFilterLink($index);
         $this->state->setPage(1);
         header("HX-Push-Url: " . $this->buildStateUrl());
@@ -203,6 +212,7 @@ abstract class ModuleController extends Controller
     #[Get("/filter/count/{index}", "admin.filter-count")]
     public function filterCount(int $index)
     {
+        $this->ensureInitialized();
         $filterLinks = $this->tableSchema->filterLinks;
         if (!isset($filterLinks[$index])) {
             return 0;
@@ -225,6 +235,7 @@ abstract class ModuleController extends Controller
     #[Post("/table-action", "admin.table-action")]
     public function tableAction(): string
     {
+        $this->ensureInitialized();
         $this->registerFunctions();
         $this->handleRequest($this->request->request);
         return $this->index();
@@ -233,6 +244,7 @@ abstract class ModuleController extends Controller
     #[Post("/modal/filter", "admin.set-filter")]
     public function setFilter(): string
     {
+        $this->ensureInitialized();
         $clear = isset($this->request->request->filter_clear);
         $valid = $this->validate([
             "filter_search" => [],
@@ -264,6 +276,7 @@ abstract class ModuleController extends Controller
     #[Get("/modal/{id}", "admin.show")]
     public function show(int $id): string
     {
+        $this->ensureInitialized();
         if (!$this->hasShow($id)) {
             return $this->permissionDenied();
         }
@@ -273,6 +286,7 @@ abstract class ModuleController extends Controller
     #[Get("/modal/{id}/edit", "admin.edit")]
     public function edit(int $id): string
     {
+        $this->ensureInitialized();
         if (!$this->hasEdit($id)) {
             return $this->permissionDenied();
         }
@@ -282,6 +296,7 @@ abstract class ModuleController extends Controller
     #[Post("/", "admin.store")]
     public function store(): string
     {
+        $this->ensureInitialized();
         if (!$this->hasCreate()) {
             return $this->permissionDenied();
         }
@@ -324,6 +339,7 @@ abstract class ModuleController extends Controller
     #[Post("/{id}/update", "admin.update")]
     public function update(int $id): string
     {
+        $this->ensureInitialized();
         if (!$this->hasEdit($id)) {
             return $this->permissionDenied();
         }
@@ -371,6 +387,7 @@ abstract class ModuleController extends Controller
     #[Post("/{id}/destroy", "admin.destroy")]
     public function destroy(int $id): string
     {
+        $this->ensureInitialized();
         if (!$this->hasDelete($id)) {
             return $this->permissionDenied();
         }
@@ -873,10 +890,18 @@ abstract class ModuleController extends Controller
     private function handleRequest(?object $request): void
     {
         if (isset($request->table_action)) {
-            $ids = $request->table_selection;
+            $ids = $request->table_selection ?? [];
             if ($ids) {
-                foreach ($ids as $id) {
-                    $this->handleTableAction($id, $request->table_action);
+                db()->beginTransaction();
+                try {
+                    foreach ($ids as $id) {
+                        $this->handleTableAction($id, $request->table_action);
+                    }
+                    db()->commit();
+                } catch (Throwable $ex) {
+                    db()->rollback();
+                    error_log($ex->getMessage());
+                    Flash::add("danger", "Bulk action failed. Check logs.");
                 }
             }
         }
@@ -942,8 +967,14 @@ abstract class ModuleController extends Controller
         $exec = match ($action) {
             "delete" => function ($id) {
                 if ($this->hasDelete($id)) {
+                    $pk = $this->tableSchema->primaryKey;
+                    $oldValues = db()->fetch(
+                        "SELECT * FROM {$this->tableName} WHERE {$pk} = ?",
+                        [$id]
+                    );
                     $result = $this->handleDestroy($id);
                     if ($result) {
+                        AuditLogger::logDeleted($this->tableName, $id, $oldValues ?: []);
                         Flash::add("success", "Successfully deleted record");
                     }
                 } else {
@@ -966,16 +997,23 @@ abstract class ModuleController extends Controller
     // Permissions
     // =========================================================================
 
-    private function hasPermission(): bool
+    /**
+     * Verify the current user has permission to access this module.
+     * Throws HttpForbiddenException if not.
+     */
+    private function ensurePermission(): void
     {
+        $currentUser = user();
+        if (!$currentUser) {
+            $this->permissionDenied();
+        }
         $module = $this->getModule();
-        if (user()->role !== 'admin') {
-            $permission = user()->hasPermission($module["id"]);
+        if ($currentUser->role !== 'admin') {
+            $permission = $currentUser->hasPermission($module["id"]);
             if (!$permission) {
                 $this->permissionDenied();
             }
         }
-        return true;
     }
 
     private function checkPermission(string $mode): bool
@@ -1105,9 +1143,23 @@ abstract class ModuleController extends Controller
         return '';
     }
 
+    /**
+     * Deferred initialization — called on first route method invocation,
+     * after the Kernel has set the request and user on the controller.
+     */
+    private function ensureInitialized(): void
+    {
+        if ($this->initialized) {
+            return;
+        }
+        $this->initialized = true;
+        $this->init();
+        $this->state = new ModuleState($this->moduleLink);
+    }
+
     private function init(): void
     {
-        $this->hasPermission();
+        $this->ensurePermission();
         $module = $this->getModule();
 
         if ($module) {

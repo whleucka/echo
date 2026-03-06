@@ -31,6 +31,7 @@ class SessionRateLimiter implements RateLimiter
             $data = [
                 'count' => 0,
                 'timestamp' => time(),
+                'decay_seconds' => $decaySeconds,
             ];
         }
 
@@ -61,9 +62,9 @@ class SessionRateLimiter implements RateLimiter
         if (!$data) {
             return 0;
         }
-        // We don't track decay_seconds in session, estimate 60 seconds
+        $decaySeconds = $data['decay_seconds'] ?? 60;
         $elapsed = time() - $data['timestamp'];
-        return max(0, 60 - $elapsed);
+        return max(0, $decaySeconds - $elapsed);
     }
 
     /**
