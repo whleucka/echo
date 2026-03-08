@@ -44,7 +44,7 @@ User::createBulk([
 ```php
 $user = User::find('1');                                       // by primary key
 $user = User::where('email', 'jane@example.com')->first();    // single result
-$users = User::where('active', 1)->get();                     // collection
+$users = User::where('active', 1)->get();                     // collection (returns [])
 
 // Operators: =, !=, >, >=, <, <=, is, not, like
 $users = User::where('dob', '>=', '1990-01-01')->get();
@@ -190,7 +190,7 @@ All CRUD operations dispatch events automatically:
 ```php
 // Get SQL without executing
 $info = User::where('active', 1)->orderBy('name')->sql();
-// ['query' => 'SELECT * FROM users WHERE active = ? ORDER BY name ASC LIMIT 1', 'params' => [1]]
+// ['query' => 'SELECT * FROM users WHERE ...', 'params' => [1]]
 ```
 
 ## QueryBuilder
@@ -198,25 +198,29 @@ $info = User::where('active', 1)->orderBy('name')->sql();
 For complex queries (JOINs, subqueries, raw SQL), use the `qb()` helper:
 
 ```php
-// SELECT
+// SELECT with JOINs
 $rows = qb()::select(['users.*', 'COUNT(posts.id) as post_count'])
     ->from('users')
-    ->where(['users.active = ?', 'posts.published = ?'], 1, 1)
+    ->leftJoin('posts', 'posts.user_id = users.id')
+    ->where(['users.active = ?'])
     ->groupBy(['users.id'])
     ->orderBy(['post_count DESC'])
     ->limit(10)
+    ->params([1])
     ->execute()
     ->fetchAll(PDO::FETCH_ASSOC);
 
 // INSERT
 qb()::insert(['name' => 'New Item', 'price' => 9.99])
     ->into('products')
+    ->params(['New Item', 9.99])
     ->execute();
 
 // UPDATE
 qb()::update(['status' => 'inactive'])
     ->table('users')
-    ->where(['last_login < ?'], '2024-01-01')
+    ->where(['last_login < ?'])
+    ->params(['inactive', '2024-01-01'])
     ->execute();
 
 // DELETE
@@ -226,23 +230,205 @@ qb()::delete()
     ->execute();
 ```
 
-### QueryBuilder Methods
+### JOINs
+
+```php
+// Typed joins
+$qb->join('users u', 'u.id = orders.user_id');          // INNER JOIN
+$qb->leftJoin('roles r', 'r.id = u.role_id');           // LEFT JOIN
+$qb->rightJoin('payments p', 'p.order_id = orders.id'); // RIGHT JOIN
+$qb->crossJoin('settings');                               // CROSS JOIN
+
+// Raw SQL join (for complex join conditions)
+$qb->joinRaw('LEFT JOIN users ON users.id = audits.user_id AND users.active = 1');
+
+// Multiple joins
+$rows = qb()::select(['o.id', 'u.name', 'p.amount'])
+    ->from('orders o')
+    ->join('users u', 'u.id = o.user_id')
+    ->leftJoin('payments p', 'p.order_id = o.id')
+    ->execute()
+    ->fetchAll();
+```
+
+JOINs also work with UPDATE and DELETE queries (MySQL syntax).
+
+### WHERE IN / NOT IN
+
+```php
+// Array of values
+$qb->whereIn('status', ['active', 'pending']);       // WHERE status IN (?, ?)
+$qb->whereNotIn('role', ['banned', 'suspended']);    // WHERE role NOT IN (?, ?)
+
+// Subquery
+$sub = qb()::select(['user_id'])->from('orders')->where(['total > ?'])->params([100]);
+$qb->whereIn('id', $sub);    // WHERE id IN (SELECT user_id FROM orders WHERE total > ?)
+
+// Empty array edge cases
+$qb->whereIn('id', []);      // WHERE 0 = 1 (always false)
+$qb->whereNotIn('id', []);   // WHERE 1 = 1 (always true)
+```
+
+### DISTINCT
+
+```php
+$qb = qb()::select(['email'])->distinct()->from('users');
+// SELECT DISTINCT email FROM users
+```
+
+### Raw Expressions
+
+Use `QueryBuilder::raw()` to embed raw SQL where values would normally be parameterized:
+
+```php
+use Echo\Framework\Database\QueryBuilder;
+
+// In SELECT
+$qb = qb()::select([
+    'id',
+    QueryBuilder::raw("CONCAT(first_name, ' ', last_name) AS full_name"),
+])->from('users');
+
+// In INSERT (e.g. database functions)
+qb()::insert([
+    'name' => 'test',
+    'created_at' => QueryBuilder::raw('NOW()'),
+])->into('users')->params(['test'])->execute();
+
+// In UPDATE (e.g. increment)
+qb()::update([
+    'views' => QueryBuilder::raw('views + 1'),
+])->table('posts')->where(['id = ?'])->params([42])->execute();
+```
+
+### Subqueries
+
+```php
+// Subquery in SELECT (correlated)
+$sub = qb()::select(['COUNT(*)'])->from('orders')->where(['orders.user_id = users.id']);
+$qb = qb()::select([
+    'users.*',
+    QueryBuilder::subquery($sub, 'order_count'),
+])->from('users');
+// SELECT users.*, (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) AS order_count FROM users
+
+// Subquery in WHERE IN (see WHERE IN section above)
+```
+
+### Upsert (INSERT ... ON DUPLICATE KEY UPDATE)
+
+```php
+// Update specific columns with their inserted values
+qb()::insert(['email' => 'a@b.com', 'name' => 'Test', 'login_count' => 1])
+    ->into('users')
+    ->onDuplicateKeyUpdate(['name', 'login_count'])
+    ->params(['a@b.com', 'Test', 1])
+    ->execute();
+// INSERT INTO ... ON DUPLICATE KEY UPDATE name = VALUES(name), login_count = VALUES(login_count)
+
+// Custom update expression (e.g. increment)
+qb()::insert(['email' => 'a@b.com', 'login_count' => 1])
+    ->into('users')
+    ->onDuplicateKeyUpdate([
+        'login_count' => QueryBuilder::raw('login_count + 1'),
+    ])
+    ->params(['a@b.com', 1])
+    ->execute();
+
+// Update with a specific value
+qb()::insert(['email' => 'a@b.com', 'name' => 'Test'])
+    ->into('users')
+    ->onDuplicateKeyUpdate(['name' => 'Updated Name'])
+    ->params(['a@b.com', 'Test'])
+    ->execute();
+```
+
+### UNION / UNION ALL
+
+```php
+$q1 = qb()::select(['name', 'email'])->from('users')->where(['active = ?'])->params([1]);
+$q2 = qb()::select(['name', 'email'])->from('admins')->where(['active = ?'])->params([1]);
+
+// UNION (deduplicated)
+$q1->union($q2)->execute();
+// (SELECT ... FROM users WHERE active = ?) UNION (SELECT ... FROM admins WHERE active = ?)
+
+// UNION ALL (keeps duplicates)
+$q1->unionAll($q2)->execute();
+
+// ORDER BY and LIMIT apply to the full union result
+$q1->union($q2)->orderBy(['name ASC'])->limit(10)->execute();
+
+// Multiple unions
+$q3 = qb()::select(['name', 'email'])->from('guests');
+$q1->union($q2)->unionAll($q3)->execute();
+```
+
+### Aggregate Helpers
+
+Terminal methods that execute the query and return a scalar value:
+
+```php
+$count = qb()::select()->from('users')->where(['active = ?'])->params([1])->count();        // int
+$total = qb()::select()->from('orders')->sum('total');        // float|int|null
+$avg   = qb()::select()->from('orders')->avg('total');        // float|int|null
+$min   = qb()::select()->from('orders')->min('created_at');   // mixed
+$max   = qb()::select()->from('orders')->max('total');        // mixed
+
+// With conditions
+$revenue = qb()::select()
+    ->from('orders')
+    ->where(['status = ?'])
+    ->params(['completed'])
+    ->sum('total');
+```
+
+### QueryBuilder Methods Reference
 
 | Method | Description |
 |---|---|
+| **Factory** | |
 | `select(array $columns)` | Start SELECT query |
 | `insert(array $data)` | Start INSERT query |
 | `update(array $data)` | Start UPDATE query |
 | `delete()` | Start DELETE query |
+| `raw(string $sql, array $bindings)` | Create a raw SQL expression |
+| `subquery(QueryBuilder $qb, string $alias)` | Create a subquery expression |
+| **Table** | |
 | `from(string $table)` | Table for SELECT/DELETE |
 | `into(string $table)` | Table for INSERT |
 | `table(string $table)` | Table for UPDATE |
-| `where(array $clauses, ...$params)` | WHERE conditions |
+| **JOINs** | |
+| `join(string $table, string $on, string $type)` | Add a JOIN (default INNER) |
+| `leftJoin(string $table, string $on)` | LEFT JOIN |
+| `rightJoin(string $table, string $on)` | RIGHT JOIN |
+| `crossJoin(string $table)` | CROSS JOIN (no ON) |
+| `joinRaw(string $sql)` | Raw SQL JOIN clause |
+| **WHERE** | |
+| `where(array $clauses, ...$params)` | WHERE conditions (AND) |
 | `orWhere(array $clauses, ...$params)` | OR WHERE conditions |
-| `having(array $clauses, ...$params)` | HAVING clause |
+| `whereIn(string $col, array\|QB $values)` | WHERE IN |
+| `whereNotIn(string $col, array\|QB $values)` | WHERE NOT IN |
+| **Grouping & Ordering** | |
 | `groupBy(array $columns)` | GROUP BY |
+| `having(array $clauses, ...$params)` | HAVING clause |
 | `orderBy(array $clauses)` | ORDER BY |
+| `distinct()` | SELECT DISTINCT |
+| **Pagination** | |
 | `limit(int $n)` | LIMIT |
 | `offset(int $n)` | OFFSET |
-| `execute()` | Execute and return PDOStatement |
+| **Upsert** | |
+| `onDuplicateKeyUpdate(array $cols)` | ON DUPLICATE KEY UPDATE |
+| **Union** | |
+| `union(QueryBuilder $qb)` | UNION |
+| `unionAll(QueryBuilder $qb)` | UNION ALL |
+| **Execution** | |
+| `params(array $params)` | Set all query parameters |
+| `execute()` | Execute, return PDOStatement |
 | `dump()` | Get `['query' => ..., 'params' => ...]` |
+| **Aggregates** (terminal) | |
+| `count(string $col)` | COUNT, returns int |
+| `sum(string $col)` | SUM, returns float\|int\|null |
+| `avg(string $col)` | AVG, returns float\|int\|null |
+| `min(string $col)` | MIN, returns mixed |
+| `max(string $col)` | MAX, returns mixed |

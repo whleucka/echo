@@ -17,7 +17,6 @@ class QueryBuilderDataSource implements TableDataSource
         array $whereConditions,
         array $whereParams,
     ): TableResult {
-        $from = $schema->table . ' ' . implode(' ', $schema->joins);
         $select = $schema->getSelectExpressions();
 
         // Ensure primary key is in the SELECT
@@ -26,12 +25,16 @@ class QueryBuilderDataSource implements TableDataSource
         }
 
         // Count total matching rows
-        $totalRows = $this->countRows($from, $whereConditions, $whereParams);
+        $totalRows = $this->countRows($schema, $whereConditions, $whereParams);
 
         // Fetch the page
         $offset = $perPage * ($page - 1);
-        $rows = qb()->select($select)
-            ->from($from)
+        $query = qb()->select($select)
+            ->from($schema->table);
+        foreach ($schema->joins as $join) {
+            $query->joinRaw($join);
+        }
+        $rows = $query
             ->where($whereConditions)
             ->params($whereParams)
             ->orderBy(["$orderBy $sort"])
@@ -53,10 +56,14 @@ class QueryBuilderDataSource implements TableDataSource
     /**
      * Count total rows matching the WHERE conditions (no limit/offset).
      */
-    private function countRows(string $from, array $whereConditions, array $whereParams): int
+    private function countRows(TableSchema $schema, array $whereConditions, array $whereParams): int
     {
-        $result = qb()->select(['COUNT(*) as cnt'])
-            ->from($from)
+        $query = qb()->select(['COUNT(*) as cnt'])
+            ->from($schema->table);
+        foreach ($schema->joins as $join) {
+            $query->joinRaw($join);
+        }
+        $result = $query
             ->where($whereConditions)
             ->params($whereParams)
             ->execute()

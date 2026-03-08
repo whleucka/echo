@@ -159,13 +159,16 @@ abstract class ModuleController extends Controller
         }
 
         [$where, $params] = $this->buildWhereConditions();
-        $from = $this->tableSchema->table . ' ' . implode(' ', $this->tableSchema->joins);
         $select = $this->tableSchema->getSelectExpressions();
         $orderBy = $this->state->getOrderBy($this->tableSchema->defaultOrderBy);
         $sort = $this->state->getSort($this->tableSchema->defaultSort);
 
-        $rows = qb()->select($select)
-            ->from($from)
+        $query = qb()->select($select)
+            ->from($this->tableSchema->table);
+        foreach ($this->tableSchema->joins as $join) {
+            $query->joinRaw($join);
+        }
+        $rows = $query
             ->where($where)
             ->params($params)
             ->orderBy(["$orderBy $sort"])
@@ -222,10 +225,13 @@ abstract class ModuleController extends Controller
         // only applies its own filter link condition (not the active one).
         [$where, $params] = $this->buildWhereConditions(includeFilterLink: false);
         $where[] = $filterLinks[$index]->condition;
-        $from = $this->tableSchema->table . ' ' . implode(' ', $this->tableSchema->joins);
 
-        return qb()->select(['COUNT(*) as cnt'])
-            ->from($from)
+        $query = qb()->select(['COUNT(*) as cnt'])
+            ->from($this->tableSchema->table);
+        foreach ($this->tableSchema->joins as $join) {
+            $query->joinRaw($join);
+        }
+        return $query
             ->where($where)
             ->params($params)
             ->execute()
