@@ -407,9 +407,8 @@ abstract class Model implements ModelInterface
      */
     public function count(string $column = '*'): int
     {
-        $col = $column === '*' ? '*' : self::validateIdentifier($column);
         $result = $this->qb
-            ->select(["COUNT($col) as aggregate"])
+            ->select(["COUNT($column) as aggregate"])
             ->from($this->tableName)
             ->where($this->where)
             ->orWhere($this->orWhere)
@@ -441,7 +440,6 @@ abstract class Model implements ModelInterface
      */
     public function max(string $column): mixed
     {
-        self::validateIdentifier($column);
         $result = $this->qb
             ->select(["MAX($column) as aggregate"])
             ->from($this->tableName)

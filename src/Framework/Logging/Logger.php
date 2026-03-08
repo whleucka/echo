@@ -178,7 +178,7 @@ class Logger
         $filename = sprintf('%s-%s.log', $this->channel, date('Y-m-d'));
         $filepath = $this->logPath . $filename;
 
-        file_put_contents($filepath, $entry, FILE_APPEND | LOCK_EX);
+        @file_put_contents($filepath, $entry, FILE_APPEND | LOCK_EX);
     }
 
     /**

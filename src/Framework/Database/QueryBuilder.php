@@ -3,6 +3,7 @@
 namespace Echo\Framework\Database;
 
 use PDOStatement;
+use RuntimeException;
 
 class QueryBuilder
 {
@@ -20,10 +21,9 @@ class QueryBuilder
     private int $limit = 0;
     private array $params = [];
 
-    public static function select(array $columns = []): QueryBuilder
+    public static function select(array $columns = []): static
     {
-        $class = get_called_class();
-        $qb = new $class();
+        $qb = new static();
         if (empty($columns)) {
             $columns = ["*"];
         }
@@ -32,33 +32,30 @@ class QueryBuilder
         return $qb;
     }
 
-    public static function insert(array $data = []): QueryBuilder
+    public static function insert(array $data = []): static
     {
-        $class = get_called_class();
-        $qb = new $class();
+        $qb = new static();
         $qb->mode = "insert";
         $qb->insert = $data;
         return $qb;
     }
 
-    public static function update(array $data = []): QueryBuilder
+    public static function update(array $data = []): static
     {
-        $class = get_called_class();
-        $qb = new $class();
+        $qb = new static();
         $qb->mode = "update";
         $qb->update = $data;
         return $qb;
     }
 
-    public static function delete(): QueryBuilder
+    public static function delete(): static
     {
-        $class = get_called_class();
-        $qb = new $class();
+        $qb = new static();
         $qb->mode = "delete";
         return $qb;
     }
 
-    public function getMode()
+    public function getMode(): string
     {
         return $this->mode;
     }
@@ -70,6 +67,9 @@ class QueryBuilder
             "insert" => $this->buildInsert(),
             "update" => $this->buildUpdate(),
             "delete" => $this->buildDelete(),
+            default => throw new RuntimeException(
+                "QueryBuilder mode not set. Use select(), insert(), update(), or delete()."
+            ),
         };
     }
 
@@ -78,7 +78,7 @@ class QueryBuilder
         return $this->params;
     }
 
-    public function dump()
+    public function dump(): array
     {
         return [
             "query" => $this->getQuery(),
@@ -86,70 +86,76 @@ class QueryBuilder
         ];
     }
 
-    public function from(string $table): QueryBuilder
+    public function from(string $table): static
     {
         $this->table = $table;
         return $this;
     }
 
-    public function into(string $table): QueryBuilder
+    public function into(string $table): static
     {
         $this->table = $table;
         return $this;
     }
 
-    public function table(string $table): QueryBuilder
+    public function table(string $table): static
     {
         $this->table = $table;
         return $this;
     }
 
-    public function where(array $clauses, ...$replacements): QueryBuilder
+    public function where(array $clauses, ...$replacements): static
     {
         $this->where = $clauses;
         $this->addQueryParams($replacements);
         return $this;
     }
 
-    public function orWhere(array $clauses, ...$replacements): QueryBuilder
+    public function orWhere(array $clauses, ...$replacements): static
     {
         $this->orWhere = $clauses;
         $this->addQueryParams($replacements);
         return $this;
     }
 
-    public function groupBy(array $clauses): QueryBuilder
+    public function groupBy(array $clauses): static
     {
         $this->groupBy = $clauses;
         return $this;
     }
 
-    public function having(array $clauses, ...$replacements): QueryBuilder
+    public function having(array $clauses, ...$replacements): static
     {
         $this->having = $clauses;
         $this->addQueryParams($replacements);
         return $this;
     }
 
-    public function orderBy(array $clauses): QueryBuilder
+    public function orderBy(array $clauses): static
     {
         $this->orderBy = $clauses;
         return $this;
     }
 
-    public function limit(int $limit): QueryBuilder
+    public function limit(int $limit): static
     {
         $this->limit = $limit;
         return $this;
     }
 
-    public function offset(int $offset): QueryBuilder
+    public function offset(int $offset): static
     {
         $this->offset = $offset;
         return $this;
     }
 
-    public function params(array $params): QueryBuilder
+    /**
+     * Set query parameters (overwrites any previously set params)
+     *
+     * This should be the last call in the chain when providing all
+     * parameter values at once, as it replaces existing params.
+     */
+    public function params(array $params): static
     {
         $this->params = $params;
         return $this;
@@ -169,21 +175,32 @@ class QueryBuilder
         }
     }
 
+    private function buildWhereClauses(): string
+    {
+        $sql = "";
+        if ($this->where) {
+            $sql .= " WHERE " . implode(" AND ", $this->where);
+        }
+        if ($this->orWhere) {
+            $sql .= ($this->where ? " OR " : " WHERE ") . implode(" OR ", $this->orWhere);
+        }
+        return $sql;
+    }
+
     private function buildSelect(): string
     {
-        if ($this->offset && $this->limit) {
-            $limit = " LIMIT $this->offset, $this->limit";
+        $limit = "";
+        if ($this->limit > 0 && $this->offset > 0) {
+            $limit = " LIMIT $this->limit OFFSET $this->offset";
         } elseif ($this->limit > 0) {
             $limit = " LIMIT $this->limit";
-        } else {
-            $limit = "";
         }
+
         $sql = sprintf(
-            "SELECT %s FROM %s%s%s%s%s%s%s",
+            "SELECT %s FROM %s%s%s%s%s%s",
             implode(", ", $this->select),
             $this->table,
-            $this->where ? " WHERE " . implode(" AND ", $this->where) : "",
-            $this->orWhere ? " OR " . implode(" OR ", $this->orWhere) : "",
+            $this->buildWhereClauses(),
             $this->groupBy
                 ? " GROUP BY " . implode(", ", $this->groupBy)
                 : "",
@@ -202,7 +219,7 @@ class QueryBuilder
             "INSERT INTO %s (%s) VALUES (%s)",
             $this->table,
             implode(", ", array_keys($this->insert)),
-            implode(",", array_fill(0, count($this->insert), "?"))
+            implode(", ", array_fill(0, count($this->insert), "?"))
         );
         return trim($sql);
     }
@@ -219,7 +236,7 @@ class QueryBuilder
                     array_keys($this->update)
                 )
             ),
-            $this->where ? " WHERE " . implode(" AND ", $this->where) : ""
+            $this->buildWhereClauses()
         );
         return trim($sql);
     }
@@ -229,7 +246,7 @@ class QueryBuilder
         $sql = sprintf(
             "DELETE FROM %s%s",
             $this->table,
-            $this->where ? " WHERE " . implode(" AND ", $this->where) : ""
+            $this->buildWhereClauses()
         );
         return trim($sql);
     }
