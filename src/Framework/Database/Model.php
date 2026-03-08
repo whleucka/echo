@@ -10,6 +10,7 @@ use Echo\Framework\Event\Model\ModelUpdated;
 use Echo\Framework\Event\Model\ModelDeleting;
 use Echo\Framework\Event\Model\ModelDeleted;
 use Exception;
+use InvalidArgumentException;
 use PDO;
 use RuntimeException;
 
@@ -26,6 +27,7 @@ abstract class Model implements ModelInterface
     private array $groupBy = [];
     private array $params = [];
     protected array $attributes = [];
+    private array $originalAttributes = [];
     private array $relations = [];
     private array $eagerLoad = [];
     private array $validOperators = [
@@ -54,6 +56,27 @@ abstract class Model implements ModelInterface
         }
     }
 
+    private static function validateIdentifier(string $identifier): string
+    {
+        if (!preg_match('/^[a-zA-Z_][\w.]*$/', $identifier)) {
+            throw new InvalidArgumentException(
+                "Invalid SQL identifier: '$identifier'"
+            );
+        }
+        return $identifier;
+    }
+
+    private static function validateDirection(string $direction): string
+    {
+        $upper = strtoupper($direction);
+        if (!in_array($upper, ['ASC', 'DESC'], true)) {
+            throw new InvalidArgumentException(
+                "Invalid ORDER BY direction: '$direction'. Must be ASC or DESC."
+            );
+        }
+        return $upper;
+    }
+
     private function loadAttributes(string $id): void
     {
         $key = $this->primaryKey;
@@ -65,12 +88,13 @@ abstract class Model implements ModelInterface
             ->fetch(PDO::FETCH_ASSOC);
         if ($result) {
             $this->attributes = $result;
+            $this->originalAttributes = $result;
         }
     }
 
     public static function create(array $data): static|bool
     {
-        $class = get_called_class();
+        $class = static::class;
         $model = new $class();
 
         // Dispatch ModelCreating event (allows cancellation)
@@ -102,7 +126,7 @@ abstract class Model implements ModelInterface
 
     public static function find(string $id): ?static
     {
-        $class = get_called_class();
+        $class = static::class;
         try {
             $model = new $class($id);
             return $model->id !== null ? $model : null;
@@ -113,7 +137,8 @@ abstract class Model implements ModelInterface
 
     public static function where(string $field, string $operator = '=', ?string $value = null): static
     {
-        $class = get_called_class();
+        self::validateIdentifier($field);
+        $class = static::class;
         $model = new $class();
 
         // Default operator is =
@@ -127,8 +152,9 @@ abstract class Model implements ModelInterface
         return $model;
     }
 
-    public function orWhere(string $field, string $operator = '=', ?string $value = null): Model
+    public function orWhere(string $field, string $operator = '=', ?string $value = null): static
     {
+        self::validateIdentifier($field);
         // Default operator is =
         if (!in_array(strtolower($operator), $this->validOperators)) {
             $value = $operator;
@@ -140,8 +166,9 @@ abstract class Model implements ModelInterface
         return $this;
     }
 
-    public function andWhere(string $field, string $operator = '=', ?string $value = null): Model
+    public function andWhere(string $field, string $operator = '=', ?string $value = null): static
     {
+        self::validateIdentifier($field);
         // Default operator is =
         if (!in_array(strtolower($operator), $this->validOperators)) {
             $value = $operator;
@@ -177,6 +204,7 @@ abstract class Model implements ModelInterface
      */
     public function whereBetween(string $field, mixed $start, mixed $end): static
     {
+        self::validateIdentifier($field);
         $this->where[] = "($field BETWEEN ? AND ?)";
         $this->params[] = $start;
         $this->params[] = $end;
@@ -191,6 +219,7 @@ abstract class Model implements ModelInterface
      */
     public function whereNull(string $field): static
     {
+        self::validateIdentifier($field);
         $this->where[] = "($field IS NULL)";
         return $this;
     }
@@ -203,12 +232,15 @@ abstract class Model implements ModelInterface
      */
     public function whereNotNull(string $field): static
     {
+        self::validateIdentifier($field);
         $this->where[] = "($field IS NOT NULL)";
         return $this;
     }
 
-    public function orderBy(string $column, string $direction = "ASC"): Model
+    public function orderBy(string $column, string $direction = "ASC"): static
     {
+        self::validateIdentifier($column);
+        $direction = self::validateDirection($direction);
         $this->orderBy[] = "$column $direction";
         return $this;
     }
@@ -221,6 +253,9 @@ abstract class Model implements ModelInterface
      */
     public function groupBy(string ...$columns): static
     {
+        foreach ($columns as $col) {
+            self::validateIdentifier($col);
+        }
         $this->groupBy = array_merge($this->groupBy, $columns);
         return $this;
     }
@@ -268,7 +303,7 @@ abstract class Model implements ModelInterface
      */
     public static function with(string ...$relations): static
     {
-        $class = get_called_class();
+        $class = static::class;
         $model = new $class();
         $model->eagerLoad = $relations;
         return $model;
@@ -283,13 +318,13 @@ abstract class Model implements ModelInterface
         return $this;
     }
 
-    public function refresh(): Model
+    public function refresh(): static
     {
         $this->loadAttributes($this->id);
         return $this;
     }
 
-    public function get(int $limit = 0): ?array
+    public function get(int $limit = 0): array
     {
         $results = $this->qb
             ->select($this->columns)
@@ -304,7 +339,7 @@ abstract class Model implements ModelInterface
             ->fetchAll(PDO::FETCH_OBJ);
 
         if (!$results) {
-            return null;
+            return [];
         }
 
         // Hydrate results
@@ -328,66 +363,12 @@ abstract class Model implements ModelInterface
                 continue;
             }
 
-            // Determine the relationship type by calling it on a model
-            $testModel = $models[0];
-            $relationInfo = $this->getRelationInfo($testModel, $relation);
-
-            if ($relationInfo === null) {
-                continue;
+            // Load relation for each model individually
+            // Note: This is N+1. Batch optimization would require
+            // analyzing foreign keys and consolidating queries.
+            foreach ($models as $model) {
+                $model->relations[$relation] = $model->$relation();
             }
-
-            // Batch load the related models
-            $this->eagerLoadRelation($models, $relation, $relationInfo);
-        }
-    }
-
-    /**
-     * Get relationship info by inspecting the relation method
-     */
-    private function getRelationInfo(Model $model, string $relation): ?array
-    {
-        // Get the primary keys from all models for batching
-        $method = new \ReflectionMethod($model, $relation);
-        $returnType = $method->getReturnType();
-
-        if ($returnType === null) {
-            return null;
-        }
-
-        $typeName = $returnType->getName();
-
-        // Check if it's a hasMany (returns array) or belongsTo/hasOne (returns Model|null)
-        if ($typeName === 'array') {
-            return ['type' => 'hasMany'];
-        } elseif (is_subclass_of($typeName, Model::class) || $typeName === Model::class) {
-            return ['type' => 'belongsTo'];
-        }
-
-        return null;
-    }
-
-    /**
-     * Eager load a specific relation for all models
-     */
-    private function eagerLoadRelation(array &$models, string $relation, array $relationInfo): void
-    {
-        // Collect primary keys
-        $primaryKeys = [];
-        foreach ($models as $model) {
-            $pk = $model->{$model->primaryKey};
-            if ($pk !== null) {
-                $primaryKeys[] = $pk;
-            }
-        }
-
-        if (empty($primaryKeys)) {
-            return;
-        }
-
-        // Call the relation method on first model to determine the related class and keys
-        // This is a simplified approach - for complex eager loading, more sophisticated logic would be needed
-        foreach ($models as $model) {
-            $model->relations[$relation] = $model->$relation();
         }
     }
 
@@ -426,8 +407,9 @@ abstract class Model implements ModelInterface
      */
     public function count(string $column = '*'): int
     {
+        $col = $column === '*' ? '*' : self::validateIdentifier($column);
         $result = $this->qb
-            ->select(["COUNT($column) as aggregate"])
+            ->select(["COUNT($col) as aggregate"])
             ->from($this->tableName)
             ->where($this->where)
             ->orWhere($this->orWhere)
@@ -446,7 +428,7 @@ abstract class Model implements ModelInterface
      */
     public static function countAll(string $column = '*'): int
     {
-        $class = get_called_class();
+        $class = static::class;
         $model = new $class();
         return $model->count($column);
     }
@@ -459,6 +441,7 @@ abstract class Model implements ModelInterface
      */
     public function max(string $column): mixed
     {
+        self::validateIdentifier($column);
         $result = $this->qb
             ->select(["MAX($column) as aggregate"])
             ->from($this->tableName)
@@ -479,7 +462,7 @@ abstract class Model implements ModelInterface
      */
     public static function maxAll(string $column): mixed
     {
-        $class = get_called_class();
+        $class = static::class;
         $model = new $class();
         return $model->max($column);
     }
@@ -513,7 +496,7 @@ abstract class Model implements ModelInterface
         return null;
     }
 
-    public function sql(int $limit = 1): array
+    public function sql(int $limit = 0): array
     {
         $qb = $this->qb
             ->select($this->columns)
@@ -522,13 +505,14 @@ abstract class Model implements ModelInterface
             ->orWhere($this->orWhere)
             ->groupBy($this->groupBy)
             ->orderBy($this->orderBy)
+            ->limit($limit)
             ->params($this->params);
         return ["query" => $qb->getQuery(), "params" => $qb->getQueryParams()];
     }
 
-    public function save(): Model
+    public function save(): static
     {
-        $oldAttributes = $this->getAttributes();
+        $oldAttributes = $this->originalAttributes;
 
         // Dispatch ModelUpdating event (allows cancellation)
         $updating = static::fireEvent(new ModelUpdating($this, $oldAttributes, $this->attributes));
@@ -553,9 +537,9 @@ abstract class Model implements ModelInterface
         return $this;
     }
 
-    public function update(array $data): Model
+    public function update(array $data): static
     {
-        $oldAttributes = $this->getAttributes();
+        $oldAttributes = $this->originalAttributes;
 
         // Dispatch ModelUpdating event (allows cancellation)
         $updating = static::fireEvent(new ModelUpdating($this, $oldAttributes, $data));
@@ -628,7 +612,7 @@ abstract class Model implements ModelInterface
 
     public function __set($name, $value)
     {
-        return $this->attributes[$name] = $value;
+        $this->attributes[$name] = $value;
     }
 
     public function __get($name)
@@ -646,9 +630,10 @@ abstract class Model implements ModelInterface
      */
     protected static function hydrate(object $data): static
     {
-        $class = get_called_class();
+        $class = static::class;
         $model = new $class();
         $model->attributes = (array) $data;
+        $model->originalAttributes = $model->attributes;
         $model->id = $data->{$model->primaryKey} ?? null;
         return $model;
     }
@@ -671,7 +656,7 @@ abstract class Model implements ModelInterface
             return [];
         }
 
-        return $related::where($foreignKey, $localValue)->get() ?? [];
+        return $related::where($foreignKey, $localValue)->get();
     }
 
     /**
@@ -762,6 +747,9 @@ abstract class Model implements ModelInterface
 
         $model = new static();
         $columns = array_keys($records[0]);
+        foreach ($columns as $col) {
+            self::validateIdentifier($col);
+        }
         $placeholders = [];
         $values = [];
 

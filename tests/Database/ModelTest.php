@@ -3,6 +3,7 @@
 namespace Tests\Database;
 
 use App\Models\User;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 class ModelTest extends TestCase
@@ -111,5 +112,74 @@ class ModelTest extends TestCase
             ->orderBy("count", "DESC")
             ->sql();
         $this->assertSame("SELECT role, COUNT(*) as count FROM users WHERE (id > ?) GROUP BY role ORDER BY count DESC", $sql["query"]);
+    }
+
+    public function testWhereRejectsInvalidIdentifier()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::where("email; DROP TABLE users", "test");
+    }
+
+    public function testOrWhereRejectsInvalidIdentifier()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::where("email", "test")->orWhere("name' OR '1'='1", "x");
+    }
+
+    public function testAndWhereRejectsInvalidIdentifier()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::where("email", "test")->andWhere("1=1; --", "x");
+    }
+
+    public function testOrderByRejectsInvalidDirection()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::where("email", "test")->orderBy("name", "SIDEWAYS");
+    }
+
+    public function testOrderByRejectsInvalidColumn()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::where("email", "test")->orderBy("name; DROP TABLE users");
+    }
+
+    public function testGroupByRejectsInvalidColumn()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::where("id", ">", "0")->groupBy("role; --");
+    }
+
+    public function testWhereBetweenRejectsInvalidField()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::where("id", ">", "0")->whereBetween("col' OR 1=1", "a", "b");
+    }
+
+    public function testWhereNullRejectsInvalidField()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::where("id", ">", "0")->whereNull("col; DROP TABLE users");
+    }
+
+    public function testWhereNotNullRejectsInvalidField()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::where("id", ">", "0")->whereNotNull("col)--");
+    }
+
+    public function testValidIdentifiersAccepted()
+    {
+        // Simple column
+        $sql = User::where("email", "test")->sql();
+        $this->assertStringContainsString("email", $sql["query"]);
+
+        // Column with underscore
+        $sql = User::where("first_name", "test")->sql();
+        $this->assertStringContainsString("first_name", $sql["query"]);
+
+        // Table-qualified column (dot notation)
+        $sql = User::where("users.email", "test")->sql();
+        $this->assertStringContainsString("users.email", $sql["query"]);
     }
 }
