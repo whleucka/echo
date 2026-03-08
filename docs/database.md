@@ -81,15 +81,15 @@ $users = User::where('role', 'admin')
     ->orWhere('role', 'superadmin')
     ->get();
 
-// Null checks
-$users = User::whereNull('deleted_at')->get();
-$users = User::whereNotNull('verified_at')->get();
+// Null checks (chain after where() or other static entry point)
+$users = User::where('active', 1)->whereNull('deleted_at')->get();
+$users = User::where('active', 1)->whereNotNull('verified_at')->get();
 
 // Between
-$users = User::whereBetween('created_at', '2025-01-01', '2025-12-31')->get();
+$users = User::where('active', 1)->whereBetween('created_at', '2025-01-01', '2025-12-31')->get();
 
 // Raw WHERE
-$users = User::whereRaw('YEAR(created_at) = ?', [2025])->get();
+$users = User::where('active', 1)->whereRaw('YEAR(created_at) = ?', [2025])->get();
 ```
 
 ## Ordering, Grouping & Limiting
@@ -202,25 +202,22 @@ For complex queries (JOINs, subqueries, raw SQL), use the `qb()` helper:
 $rows = qb()::select(['users.*', 'COUNT(posts.id) as post_count'])
     ->from('users')
     ->leftJoin('posts', 'posts.user_id = users.id')
-    ->where(['users.active = ?'])
+    ->where(['users.active = ?'], 1)
     ->groupBy(['users.id'])
     ->orderBy(['post_count DESC'])
     ->limit(10)
-    ->params([1])
     ->execute()
     ->fetchAll(PDO::FETCH_ASSOC);
 
 // INSERT
 qb()::insert(['name' => 'New Item', 'price' => 9.99])
     ->into('products')
-    ->params(['New Item', 9.99])
     ->execute();
 
 // UPDATE
 qb()::update(['status' => 'inactive'])
     ->table('users')
-    ->where(['last_login < ?'])
-    ->params(['inactive', '2024-01-01'])
+    ->where(['last_login < ?'], '2024-01-01')
     ->execute();
 
 // DELETE
@@ -261,7 +258,7 @@ $qb->whereIn('status', ['active', 'pending']);       // WHERE status IN (?, ?)
 $qb->whereNotIn('role', ['banned', 'suspended']);    // WHERE role NOT IN (?, ?)
 
 // Subquery
-$sub = qb()::select(['user_id'])->from('orders')->where(['total > ?'])->params([100]);
+$sub = qb()::select(['user_id'])->from('orders')->where(['total > ?'], 100);
 $qb->whereIn('id', $sub);    // WHERE id IN (SELECT user_id FROM orders WHERE total > ?)
 
 // Empty array edge cases
@@ -293,12 +290,12 @@ $qb = qb()::select([
 qb()::insert([
     'name' => 'test',
     'created_at' => QueryBuilder::raw('NOW()'),
-])->into('users')->params(['test'])->execute();
+])->into('users')->execute();
 
 // In UPDATE (e.g. increment)
 qb()::update([
     'views' => QueryBuilder::raw('views + 1'),
-])->table('posts')->where(['id = ?'])->params([42])->execute();
+])->table('posts')->where(['id = ?'], 42)->execute();
 ```
 
 ### Subqueries
@@ -322,7 +319,6 @@ $qb = qb()::select([
 qb()::insert(['email' => 'a@b.com', 'name' => 'Test', 'login_count' => 1])
     ->into('users')
     ->onDuplicateKeyUpdate(['name', 'login_count'])
-    ->params(['a@b.com', 'Test', 1])
     ->execute();
 // INSERT INTO ... ON DUPLICATE KEY UPDATE name = VALUES(name), login_count = VALUES(login_count)
 
@@ -332,22 +328,20 @@ qb()::insert(['email' => 'a@b.com', 'login_count' => 1])
     ->onDuplicateKeyUpdate([
         'login_count' => QueryBuilder::raw('login_count + 1'),
     ])
-    ->params(['a@b.com', 1])
     ->execute();
 
 // Update with a specific value
 qb()::insert(['email' => 'a@b.com', 'name' => 'Test'])
     ->into('users')
     ->onDuplicateKeyUpdate(['name' => 'Updated Name'])
-    ->params(['a@b.com', 'Test'])
     ->execute();
 ```
 
 ### UNION / UNION ALL
 
 ```php
-$q1 = qb()::select(['name', 'email'])->from('users')->where(['active = ?'])->params([1]);
-$q2 = qb()::select(['name', 'email'])->from('admins')->where(['active = ?'])->params([1]);
+$q1 = qb()::select(['name', 'email'])->from('users')->where(['active = ?'], 1);
+$q2 = qb()::select(['name', 'email'])->from('admins')->where(['active = ?'], 1);
 
 // UNION (deduplicated)
 $q1->union($q2)->execute();
@@ -369,7 +363,7 @@ $q1->union($q2)->unionAll($q3)->execute();
 Terminal methods that execute the query and return a scalar value:
 
 ```php
-$count = qb()::select()->from('users')->where(['active = ?'])->params([1])->count();        // int
+$count = qb()::select()->from('users')->where(['active = ?'], 1)->count();        // int
 $total = qb()::select()->from('orders')->sum('total');        // float|int|null
 $avg   = qb()::select()->from('orders')->avg('total');        // float|int|null
 $min   = qb()::select()->from('orders')->min('created_at');   // mixed
@@ -378,8 +372,7 @@ $max   = qb()::select()->from('orders')->max('total');        // mixed
 // With conditions
 $revenue = qb()::select()
     ->from('orders')
-    ->where(['status = ?'])
-    ->params(['completed'])
+    ->where(['status = ?'], 'completed')
     ->sum('total');
 ```
 
@@ -389,8 +382,8 @@ $revenue = qb()::select()
 |---|---|
 | **Factory** | |
 | `select(array $columns)` | Start SELECT query |
-| `insert(array $data)` | Start INSERT query |
-| `update(array $data)` | Start UPDATE query |
+| `insert(array $data)` | Start INSERT query (values auto-bound) |
+| `update(array $data)` | Start UPDATE query (values auto-bound) |
 | `delete()` | Start DELETE query |
 | `raw(string $sql, array $bindings)` | Create a raw SQL expression |
 | `subquery(QueryBuilder $qb, string $alias)` | Create a subquery expression |
@@ -423,8 +416,12 @@ $revenue = qb()::select()
 | `union(QueryBuilder $qb)` | UNION |
 | `unionAll(QueryBuilder $qb)` | UNION ALL |
 | **Execution** | |
-| `params(array $params)` | Set all query parameters |
+| `params(array $params)` | Set WHERE clause parameters (SELECT/DELETE) |
 | `execute()` | Execute, return PDOStatement |
+| **Inspection** | |
+| `getMode()` | Get query mode (select, insert, etc.) |
+| `getQuery()` | Get the compiled SQL string |
+| `getQueryParams()` | Get the bound parameter values |
 | `dump()` | Get `['query' => ..., 'params' => ...]` |
 | **Aggregates** (terminal) | |
 | `count(string $col)` | COUNT, returns int |

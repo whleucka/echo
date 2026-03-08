@@ -106,7 +106,6 @@ abstract class Model implements ModelInterface
         $result = $model->qb
             ->insert($data)
             ->into($model->tableName)
-            ->params(array_values($data))
             ->execute();
         if ($result && $model->autoIncrement) {
             $id = db()->lastInsertId();
@@ -519,12 +518,10 @@ abstract class Model implements ModelInterface
         }
 
         $key = $this->primaryKey;
-        $params = [...array_values($this->attributes), $this->id];
         $result = $this->qb
             ->update($this->attributes)
             ->table($this->tableName)
-            ->where(["$key = ?"])
-            ->params($params)
+            ->where(["$key = ?"], $this->id)
             ->execute();
         if ($result) {
             $this->loadAttributes($this->id);
@@ -546,12 +543,10 @@ abstract class Model implements ModelInterface
         }
 
         $key = $this->primaryKey;
-        $params = [...array_values($data), $this->id];
         $result = $this->qb
             ->update($data)
             ->table($this->tableName)
-            ->where(["$key = ?"])
-            ->params($params)
+            ->where(["$key = ?"], $this->id)
             ->execute();
         if ($result) {
             $this->loadAttributes($this->id);

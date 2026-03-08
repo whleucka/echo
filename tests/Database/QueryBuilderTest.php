@@ -110,8 +110,7 @@ class QueryBuilderTest extends TestCase
     public function testInsert()
     {
         $qb = QueryBuilder::insert(["name" => "test", "email" => "a@b.com"])
-            ->into("users")
-            ->params(["test", "a@b.com"]);
+            ->into("users");
         $this->assertSame("INSERT INTO users (name, email) VALUES (?, ?)", $qb->getQuery());
         $this->assertSame(["test", "a@b.com"], $qb->getQueryParams());
     }
@@ -122,22 +121,22 @@ class QueryBuilderTest extends TestCase
     {
         $qb = QueryBuilder::update(["name" => "new"])
             ->table("users")
-            ->where(["id = ?"])
-            ->params(["new", 1]);
+            ->where(["id = ?"], 1);
         $this->assertSame("UPDATE users SET name = ? WHERE id = ?", $qb->getQuery());
+        $this->assertSame(["new", 1], $qb->getQueryParams());
     }
 
     public function testUpdateWithOrWhere()
     {
         $qb = QueryBuilder::update(["status" => "inactive"])
             ->table("users")
-            ->where(["(role = ?)"])
-            ->orWhere(["(expired = ?)"])
-            ->params(["inactive", "guest", 1]);
+            ->where(["(role = ?)"], "guest")
+            ->orWhere(["(expired = ?)"], 1);
         $this->assertSame(
             "UPDATE users SET status = ? WHERE (role = ?) OR (expired = ?)",
             $qb->getQuery()
         );
+        $this->assertSame(["inactive", "guest", 1], $qb->getQueryParams());
     }
 
     // ─── DELETE ──────────────────────────────────────────────────
@@ -289,12 +288,12 @@ class QueryBuilderTest extends TestCase
         $qb = QueryBuilder::update(["orders.status" => "cancelled"])
             ->table("orders")
             ->join("users u", "u.id = orders.user_id")
-            ->where(["u.banned = ?"])
-            ->params(["cancelled", 1]);
+            ->where(["u.banned = ?"], 1);
         $this->assertSame(
             "UPDATE orders INNER JOIN users u ON u.id = orders.user_id SET orders.status = ? WHERE u.banned = ?",
             $qb->getQuery()
         );
+        $this->assertSame(["cancelled", 1], $qb->getQueryParams());
     }
 
     public function testJoinInDelete()
@@ -418,22 +417,24 @@ class QueryBuilderTest extends TestCase
         $qb = QueryBuilder::insert([
             "name" => "test",
             "created_at" => QueryBuilder::raw("NOW()"),
-        ])->into("users")->params(["test"]);
+        ])->into("users");
         $this->assertSame(
             "INSERT INTO users (name, created_at) VALUES (?, NOW())",
             $qb->getQuery()
         );
+        $this->assertSame(["test"], $qb->getQueryParams());
     }
 
     public function testRawExpressionInUpdate()
     {
         $qb = QueryBuilder::update([
             "views" => QueryBuilder::raw("views + 1"),
-        ])->table("posts")->where(["id = ?"])->params([42]);
+        ])->table("posts")->where(["id = ?"], 42);
         $this->assertSame(
             "UPDATE posts SET views = views + 1 WHERE id = ?",
             $qb->getQuery()
         );
+        $this->assertSame([42], $qb->getQueryParams());
     }
 
     // ─── Subqueries ──────────────────────────────────────────────
@@ -457,12 +458,12 @@ class QueryBuilderTest extends TestCase
     {
         $qb = QueryBuilder::insert(["email" => "a@b.com", "name" => "Test", "login_count" => 1])
             ->into("users")
-            ->onDuplicateKeyUpdate(["name", "login_count"])
-            ->params(["a@b.com", "Test", 1]);
+            ->onDuplicateKeyUpdate(["name", "login_count"]);
         $this->assertSame(
             "INSERT INTO users (email, name, login_count) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), login_count = VALUES(login_count)",
             $qb->getQuery()
         );
+        $this->assertSame(["a@b.com", "Test", 1], $qb->getQueryParams());
     }
 
     public function testInsertOnDuplicateKeyUpdateWithExpression()
@@ -471,27 +472,25 @@ class QueryBuilderTest extends TestCase
             ->into("users")
             ->onDuplicateKeyUpdate([
                 "login_count" => QueryBuilder::raw("login_count + 1"),
-            ])
-            ->params(["a@b.com", 1]);
+            ]);
         $this->assertSame(
             "INSERT INTO users (email, login_count) VALUES (?, ?) ON DUPLICATE KEY UPDATE login_count = login_count + 1",
             $qb->getQuery()
         );
+        $this->assertSame(["a@b.com", 1], $qb->getQueryParams());
     }
 
     public function testInsertOnDuplicateKeyUpdateWithValue()
     {
         $qb = QueryBuilder::insert(["email" => "a@b.com", "name" => "Test"])
             ->into("users")
-            ->onDuplicateKeyUpdate(["name" => "Updated"])
-            ->params(["a@b.com", "Test"]);
+            ->onDuplicateKeyUpdate(["name" => "Updated"]);
         $query = $qb->getQuery();
         $this->assertSame(
             "INSERT INTO users (email, name) VALUES (?, ?) ON DUPLICATE KEY UPDATE name = ?",
             $query
         );
-        // The "Updated" value is appended to params
-        $this->assertContains("Updated", $qb->getQueryParams());
+        $this->assertSame(["a@b.com", "Test", "Updated"], $qb->getQueryParams());
     }
 
     // ─── UNION ───────────────────────────────────────────────────

@@ -299,10 +299,11 @@ class QueryBuilder
     // ─── Parameters ──────────────────────────────────────────────
 
     /**
-     * Set query parameters (overwrites any previously set params)
+     * Set query parameters for WHERE clauses (overwrites any previously set params)
      *
-     * This should be the last call in the chain when providing all
-     * parameter values at once, as it replaces existing params.
+     * Note: INSERT and UPDATE values are auto-bound from the data array passed to
+     * insert()/update(). Use this method only for WHERE clause parameters in SELECT
+     * and DELETE queries, or when combining WHERE clauses with INSERT/UPDATE.
      */
     public function params(array $params): static
     {
@@ -469,16 +470,21 @@ class QueryBuilder
     {
         $columns = [];
         $placeholders = [];
+        $valueParams = [];
 
         foreach ($this->insert as $key => $value) {
             $columns[] = $key;
             if ($value instanceof Expression) {
                 $placeholders[] = $value->value;
-                $this->addQueryParams($value->bindings);
+                $valueParams = array_merge($valueParams, $value->bindings);
             } else {
                 $placeholders[] = "?";
+                $valueParams[] = $value;
             }
         }
+
+        // Prepend insert values before any existing params (e.g. ON DUPLICATE KEY UPDATE)
+        $this->params = array_merge($valueParams, $this->params);
 
         $sql = sprintf(
             "INSERT INTO %s (%s) VALUES (%s)",
@@ -518,14 +524,19 @@ class QueryBuilder
     private function buildUpdate(): string
     {
         $setParts = [];
+        $setParams = [];
         foreach ($this->update as $column => $value) {
             if ($value instanceof Expression) {
                 $setParts[] = "$column = $value->value";
-                $this->addQueryParams($value->bindings);
+                $setParams = array_merge($setParams, $value->bindings);
             } else {
                 $setParts[] = "$column = ?";
+                $setParams[] = $value;
             }
         }
+
+        // Prepend SET values before WHERE params
+        $this->params = array_merge($setParams, $this->params);
 
         $sql = sprintf(
             "UPDATE %s%s SET %s%s",

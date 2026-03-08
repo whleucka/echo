@@ -939,7 +939,6 @@ abstract class ModuleController extends Controller
     {
         $result = qb()->insert($request)
             ->into($this->tableName)
-            ->params(array_values($request))
             ->execute();
         if ($result) {
             return db()->lastInsertId();
@@ -951,7 +950,6 @@ abstract class ModuleController extends Controller
     {
         $pk = $this->tableSchema->primaryKey;
         $result = qb()->update($request)
-            ->params(array_values($request))
             ->table($this->tableName)
             ->where(["$pk = ?"], $id)
             ->execute();
