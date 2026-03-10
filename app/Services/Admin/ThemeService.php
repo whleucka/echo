@@ -17,7 +17,6 @@ class ThemeService
         if (user()) {
             $theme = $enabled ? 'dark' : 'light';
             qb()->update(['theme' => $theme])
-                ->params([$theme])
                 ->table('users')
                 ->where(['id = ?'], user()->id)
                 ->execute();
