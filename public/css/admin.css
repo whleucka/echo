@@ -543,3 +543,18 @@ nav#nav-sidebar header h4 {
 /** xl devices and lower */
 @media (max-width: 1199.98px) {
 }
+
+/**
+ * Footer
+ */
+#admin-footer {
+  height: 48px;
+  background-color: #fff;
+  border-top: 1px solid #ddd;
+}
+#admin-footer .container-fluid {
+  height: 100%;
+}
+#admin-footer i.bi-heart-fill {
+  font-size: 0.8rem;
+}

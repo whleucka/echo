@@ -1,0 +1,10 @@
+<footer id="admin-footer" class="mt-5 pt-3 pb-5 border-top">
+  <div class="container-fluid d-flex justify-content-between align-items-center px-4">
+    <div class="text-secondary small">
+      &copy; {{ "now"|date("Y") }} &mdash; <strong>{{ framework.name }}</strong> &bull; {{ framework.version }}
+    </div>
+    <div class="text-secondary small">
+      <span class="d-none d-sm-inline">Logged in as <strong>{{ user.email }}</strong></span> 
+    </div>
+  </div>
+</footer>

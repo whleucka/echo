@@ -314,3 +314,11 @@
   border-color: #313244;
   color: #cdd6f4;
 }
+
+/**
+ * Footer
+ */
+[data-bs-theme="dark"] #admin-footer {
+  background-color: #1e1e2e;
+  border-top-color: #313244;
+}
