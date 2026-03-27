@@ -218,6 +218,18 @@
 /**
  * Editor.js
  */
+[data-bs-theme="dark"] ::selection {
+  background: #073ba9;
+  color: #fff;
+}
+[data-bs-theme="dark"] .ce-block__content {
+  background: #073ba9;
+}
+[data-bs-theme="dark"] .ce-inline-tool-input {
+  background: #1e1e2e;
+  border-color: #313244;
+  color: #cdd6f4;
+}
 [data-bs-theme="dark"] .editorjs-container {
   background: #252536;
 }
