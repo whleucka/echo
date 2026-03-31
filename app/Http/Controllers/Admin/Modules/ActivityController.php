@@ -55,6 +55,6 @@ class ActivityController extends ModuleController
         }
 
         $code = strtolower($code);
-        return sprintf('<span class="badge bg-body-secondary border text-body"><span class="fi fi-%s" title="%s"></span> %s<span>', $code, strtoupper($code), strtoupper($code));
+        return sprintf('<span class="badge bg-body-secondary border text-body small text-muted"><span class="fi fi-%s" title="%s"></span> %s<span>', $code, strtoupper($code), strtoupper($code));
     }
 }
