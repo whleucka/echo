@@ -223,7 +223,7 @@
   color: #fff;
 }
 [data-bs-theme="dark"] .ce-block__content {
-  background: #073ba9;
+  background: #2a2a39;
 }
 [data-bs-theme="dark"] .ce-inline-tool-input {
   background: #1e1e2e;
