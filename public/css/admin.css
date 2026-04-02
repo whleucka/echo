@@ -550,7 +550,7 @@ nav#nav-sidebar header h4 {
 #admin-footer {
   height: 50px;
   border-radius: 6px;
-  background-color: #fff;
+  background-color: var(--bs-body-bg);
   border-top: 1px solid #ddd;
 }
 #admin-footer .container-fluid {
