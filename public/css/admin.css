@@ -435,8 +435,9 @@ nav#nav-sidebar header h4 {
   margin-right: auto;
 }
 #modal .modal-body {
-  max-height: 750px;
+  max-height: calc(100vh - 190px);
   overflow-y: auto;
+  height: 100%;
 }
 
 /**
