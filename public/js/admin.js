@@ -179,16 +179,6 @@ function applyTheme() {
   var toggle = document.querySelector('#theme-toggle i');
   var isDark = toggle && toggle.classList.contains('bi-sun-fill');
   document.documentElement.setAttribute('data-bs-theme', isDark ? 'dark' : 'light');
-  var link = document.getElementById('dark-theme-css');
-  if (isDark && !link) {
-    link = document.createElement('link');
-    link.id = 'dark-theme-css';
-    link.rel = 'stylesheet';
-    link.href = '/css/admin-dark.css';
-    document.head.appendChild(link);
-  } else if (!isDark && link) {
-    link.remove();
-  }
   updateMapTheme();
 }
 
