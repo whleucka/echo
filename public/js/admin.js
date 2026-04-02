@@ -190,5 +190,6 @@ document.addEventListener('htmx:afterSettle', function() {
 
 // Initialize on regular page load (non-HTMX)
 document.addEventListener('DOMContentLoaded', function() {
+  applyTheme();
   initActivityMap();
 });
