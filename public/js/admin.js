@@ -193,7 +193,7 @@ function applyTheme() {
 }
 
 // Initialize on HTMX content swaps (covers widget load, theme toggle, etc.)
-document.addEventListener('htmx:afterSwap', function() {
+document.addEventListener('htmx:afterSettle', function() {
   applyTheme();
   initActivityMap();
 });
