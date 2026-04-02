@@ -433,6 +433,8 @@ nav#nav-sidebar header h4 {
 #modal .modal-dialog {
   margin-left: auto;
   margin-right: auto;
+}
+#modal .modal-body {
   max-height: 750px;
   overflow-y: auto;
 }
