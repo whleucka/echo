@@ -275,7 +275,7 @@
  * Widget tables & lists (inside cards)
  */
 [data-bs-theme="dark"] #admin .card .table {
-  --bs-table-bg: transparent;
+  --bs-table-bg: #1e1e2e;
   --bs-table-color: #cdd6f4;
   --bs-table-border-color: #313244;
   --bs-table-hover-bg: #252536;
