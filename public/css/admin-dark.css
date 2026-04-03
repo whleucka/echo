@@ -316,6 +316,9 @@
 [data-bs-theme="dark"] .text-dark {
   color: #a6adc8 !important;
 }
+[data-bs-theme="dark"] .bg-warning.text-dark {
+  color: #444 !important;
+}
 
 
 /**
