@@ -28,7 +28,12 @@ class Kernel implements KernelInterface
 
         // If there is no route, then 404
         if (is_null($route)) {
-            return $this->renderer->renderNotFound($request);
+            $response = $this->renderer->renderNotFound($request);
+            try {
+                event(new ResponseSending($request, $response));
+            } catch (\Throwable) {
+            }
+            return $response;
         }
 
         // Set the current route in the request
@@ -50,7 +55,12 @@ class Kernel implements KernelInterface
 
             return $response;
         } catch (\Throwable $e) {
-            return $this->renderer->renderException($e, $request);
+            $response = $this->renderer->renderException($e, $request);
+            try {
+                event(new ResponseSending($request, $response));
+            } catch (\Throwable) {
+            }
+            return $response;
         }
     }
 

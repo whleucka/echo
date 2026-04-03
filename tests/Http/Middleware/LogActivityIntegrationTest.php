@@ -14,6 +14,10 @@ use PHPUnit\Framework\TestCase;
 /**
  * Integration tests for LogActivity middleware
  *
+ * Activity logging has moved to the ActivityListener on the ResponseSending
+ * event. This middleware is now a passthrough — these tests verify it still
+ * passes the request through the pipeline without interference.
+ *
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
  */
@@ -40,10 +44,10 @@ class LogActivityIntegrationTest extends TestCase
         return $request;
     }
 
-    private function createNextHandler(): Closure
+    private function createNextHandler(int $statusCode = 200): Closure
     {
-        return function ($request): ResponseInterface {
-            return new Response('OK', 200);
+        return function ($request) use ($statusCode): ResponseInterface {
+            return new Response('OK', $statusCode);
         };
     }
 
@@ -61,7 +65,7 @@ class LogActivityIntegrationTest extends TestCase
         $this->assertTrue($called);
     }
 
-    public function testSkipsBenchmarkRoutes(): void
+    public function testPassesThroughBenchmarkRoutes(): void
     {
         $called = false;
         $next = function ($request) use (&$called): ResponseInterface {
@@ -76,7 +80,7 @@ class LogActivityIntegrationTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testSkipsDebugRoutes(): void
+    public function testPassesThroughDebugRoutes(): void
     {
         $called = false;
         $next = function ($request) use (&$called): ResponseInterface {
@@ -99,12 +103,11 @@ class LogActivityIntegrationTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testHandlesEventDispatcherFailureGracefully(): void
+    public function testPreservesResponseStatusCode(): void
     {
-        // Even if event() throws, middleware should not break
         $request = $this->createRequest();
-        $response = $this->middleware->handle($request, $this->createNextHandler());
+        $response = $this->middleware->handle($request, $this->createNextHandler(404));
 
-        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals(404, $response->getStatusCode());
     }
 }

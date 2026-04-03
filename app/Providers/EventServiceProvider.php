@@ -14,7 +14,7 @@ use Echo\Framework\Event\EventServiceProvider as BaseEventServiceProvider;
 use Echo\Framework\Event\Model\ModelCreated;
 use Echo\Framework\Event\Model\ModelUpdated;
 use Echo\Framework\Event\Model\ModelDeleted;
-use Echo\Framework\Event\Http\RequestReceived;
+use Echo\Framework\Event\Http\ResponseSending;
 use Echo\Framework\Http\Listeners\ActivityListener;
 
 /**
@@ -38,8 +38,8 @@ class EventServiceProvider extends BaseEventServiceProvider
             AuditListener::class,
         ],
 
-        // HTTP activity logging
-        RequestReceived::class => [
+        // HTTP activity logging (on ResponseSending to capture status code)
+        ResponseSending::class => [
             ActivityListener::class,
         ],
 
