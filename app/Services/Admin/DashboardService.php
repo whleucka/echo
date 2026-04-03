@@ -1033,7 +1033,7 @@ class DashboardService
 
             // Recent error requests
             $recentErrors = db()->fetchAll(
-                "SELECT a.uri, a.status_code, a.created_at, u.first_name, u.last_name
+                "SELECT a.uri, a.status_code, a.created_at, u.first_name, u.surname
                 FROM activity a
                 LEFT JOIN users u ON u.id = a.user_id
                 WHERE a.created_at BETWEEN ? AND ?
@@ -1045,7 +1045,7 @@ class DashboardService
 
             $recent = [];
             foreach ($recentErrors as $row) {
-                $user = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
+                $user = trim(($row['first_name'] ?? '') . ' ' . ($row['surname'] ?? ''));
                 $recent[] = [
                     'uri' => $row['uri'],
                     'status_code' => (int)$row['status_code'],
