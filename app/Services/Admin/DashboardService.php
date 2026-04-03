@@ -980,4 +980,210 @@ class DashboardService
             ];
         });
     }
+
+    /**
+     * Get HTTP status code summary for the widget
+     */
+    public function getHttpStatusSummary(): array
+    {
+        return $this->cached('http_status_summary', function () {
+            $now = $this->now();
+            $todayStart = $now->setTime(0, 0, 0)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+            $todayEnd = $now->setTime(23, 59, 59)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+
+            // Today's counts by status category
+            $categories = db()->fetchAll(
+                "SELECT
+                    CASE
+                        WHEN status_code BETWEEN 200 AND 299 THEN '2xx'
+                        WHEN status_code BETWEEN 300 AND 399 THEN '3xx'
+                        WHEN status_code BETWEEN 400 AND 499 THEN '4xx'
+                        WHEN status_code BETWEEN 500 AND 599 THEN '5xx'
+                        ELSE 'other'
+                    END AS category,
+                    COUNT(*) AS total
+                FROM activity
+                WHERE created_at BETWEEN ? AND ?
+                    AND status_code IS NOT NULL
+                GROUP BY category",
+                [$todayStart, $todayEnd]
+            );
+
+            $byCategory = ['2xx' => 0, '3xx' => 0, '4xx' => 0, '5xx' => 0];
+            foreach ($categories as $row) {
+                if (isset($byCategory[$row['category']])) {
+                    $byCategory[$row['category']] = (int)$row['total'];
+                }
+            }
+
+            // Top error paths (4xx and 5xx) in last 7 days
+            $weekStart = $now->modify('-7 days')->setTime(0, 0, 0)
+                ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+
+            $topErrors = db()->fetchAll(
+                "SELECT uri, status_code, COUNT(*) AS total
+                FROM activity
+                WHERE created_at BETWEEN ? AND ?
+                    AND status_code >= 400
+                GROUP BY uri, status_code
+                ORDER BY total DESC
+                LIMIT 5",
+                [$weekStart, $todayEnd]
+            );
+
+            // Recent error requests
+            $recentErrors = db()->fetchAll(
+                "SELECT a.uri, a.status_code, a.created_at, u.first_name, u.last_name
+                FROM activity a
+                LEFT JOIN users u ON u.id = a.user_id
+                WHERE a.created_at BETWEEN ? AND ?
+                    AND a.status_code >= 400
+                ORDER BY a.created_at DESC
+                LIMIT 5",
+                [$weekStart, $todayEnd]
+            );
+
+            $recent = [];
+            foreach ($recentErrors as $row) {
+                $user = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
+                $recent[] = [
+                    'uri' => $row['uri'],
+                    'status_code' => (int)$row['status_code'],
+                    'user' => $user ?: 'Guest',
+                    'time_ago' => $this->timeAgo($row['created_at']),
+                ];
+            }
+
+            $errorTotal = $byCategory['4xx'] + $byCategory['5xx'];
+
+            return [
+                'by_category' => $byCategory,
+                'error_total' => $errorTotal,
+                'top_errors' => $topErrors,
+                'recent' => $recent,
+            ];
+        });
+    }
+
+    /**
+     * Get status code distribution chart data (last 7 days, stacked bar)
+     */
+    public function getStatusCodeChart(): array
+    {
+        $now = $this->now();
+        $tzOffset = $now->format('P');
+
+        $dayOfWeek = (int)$now->format('N');
+        $weekStart = $now->modify('-' . ($dayOfWeek - 1) . ' days')->setTime(0, 0, 0)
+            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $weekEnd = $now->modify('+' . (7 - $dayOfWeek) . ' days')->setTime(23, 59, 59)
+            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+
+        $data = db()->fetchAll(
+            "SELECT
+                DATE(CONVERT_TZ(created_at, '+00:00', ?)) AS day_date,
+                MIN(DAYNAME(CONVERT_TZ(created_at, '+00:00', ?))) AS day_name,
+                CASE
+                    WHEN status_code BETWEEN 200 AND 299 THEN '2xx'
+                    WHEN status_code BETWEEN 300 AND 399 THEN '3xx'
+                    WHEN status_code BETWEEN 400 AND 499 THEN '4xx'
+                    WHEN status_code BETWEEN 500 AND 599 THEN '5xx'
+                    ELSE 'other'
+                END AS category,
+                COUNT(*) AS total
+            FROM activity
+            WHERE created_at BETWEEN ? AND ?
+                AND status_code IS NOT NULL
+            GROUP BY day_date, category
+            ORDER BY day_date",
+            [$tzOffset, $tzOffset, $weekStart, $weekEnd]
+        );
+
+        $labels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        $series = [
+            '2xx' => array_fill(0, 7, 0),
+            '3xx' => array_fill(0, 7, 0),
+            '4xx' => array_fill(0, 7, 0),
+            '5xx' => array_fill(0, 7, 0),
+        ];
+
+        foreach ($data as $row) {
+            $index = array_search($row['day_name'], $labels);
+            if ($index !== false && isset($series[$row['category']])) {
+                $series[$row['category']][$index] = (int)$row['total'];
+            }
+        }
+
+        return [
+            'id' => 'status-code-chart',
+            'title' => 'Status Codes This Week',
+            'icon' => 'shield-check',
+            'refresh_url' => uri('dashboard.status.chart'),
+            'options' => json_encode([
+                'type' => 'bar',
+                'data' => (object)[
+                    'labels' => $labels,
+                    'datasets' => [
+                        (object)[
+                            'label' => '2xx Success',
+                            'data' => $series['2xx'],
+                            'backgroundColor' => 'rgba(34, 197, 94, 0.8)',
+                            'borderColor' => '#22c55e',
+                            'borderWidth' => 0,
+                            'borderRadius' => 4,
+                        ],
+                        (object)[
+                            'label' => '3xx Redirect',
+                            'data' => $series['3xx'],
+                            'backgroundColor' => 'rgba(59, 130, 246, 0.8)',
+                            'borderColor' => '#3b82f6',
+                            'borderWidth' => 0,
+                            'borderRadius' => 4,
+                        ],
+                        (object)[
+                            'label' => '4xx Client Error',
+                            'data' => $series['4xx'],
+                            'backgroundColor' => 'rgba(245, 158, 11, 0.8)',
+                            'borderColor' => '#f59e0b',
+                            'borderWidth' => 0,
+                            'borderRadius' => 4,
+                        ],
+                        (object)[
+                            'label' => '5xx Server Error',
+                            'data' => $series['5xx'],
+                            'backgroundColor' => 'rgba(239, 68, 68, 0.8)',
+                            'borderColor' => '#ef4444',
+                            'borderWidth' => 0,
+                            'borderRadius' => 4,
+                        ],
+                    ]
+                ],
+                'options' => (object)[
+                    'responsive' => true,
+                    'maintainAspectRatio' => false,
+                    'plugins' => (object)[
+                        'legend' => (object)[
+                            'display' => true,
+                            'position' => 'top',
+                        ],
+                    ],
+                    'scales' => (object)[
+                        'y' => (object)[
+                            'beginAtZero' => true,
+                            'stacked' => true,
+                            'grid' => (object)[
+                                'color' => 'rgba(0, 0, 0, 0.05)',
+                            ],
+                        ],
+                        'x' => (object)[
+                            'stacked' => true,
+                            'grid' => (object)[
+                                'display' => false,
+                            ],
+                        ],
+                    ],
+                ],
+            ]),
+        ];
+    }
 }

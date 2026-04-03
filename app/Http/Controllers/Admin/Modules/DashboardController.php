@@ -44,6 +44,12 @@ class DashboardController extends ModuleController
         return $this->render('admin/dashboard-chart.html.twig', $this->service->getYTDRequestsChart());
     }
 
+    #[Get("/status/chart", "status.chart")]
+    public function statusCodeChart()
+    {
+        return $this->render('admin/dashboard-chart.html.twig', $this->service->getStatusCodeChart());
+    }
+
     #[Get("/widgets/{id}", "widgets.render")]
     public function renderWidget(string $id): string
     {

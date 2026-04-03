@@ -24,6 +24,8 @@ class ActivityController extends ModuleController
             ->searchable()
             ->formatUsing(fn($col, $val) => $this->countryFlag($val));
         $builder->column('uri', 'URI', 'activity.uri')->searchable();
+        $builder->column('status_code', 'Status', 'activity.status_code')
+            ->formatUsing(fn($col, $val) => $this->statusBadge($val));
         $builder->column('created_at', 'Created', 'activity.created_at');
 
         $builder->filter('email', 'users.email')
@@ -41,8 +43,30 @@ class ActivityController extends ModuleController
         $builder->filterLink('Unauthenticated', "user_id IS NULL");
         $builder->filterLink('Authenticated', "user_id IS NOT NULL");
         $builder->filterLink('Me', sprintf("user_id = %s", user()->id));
+        $builder->filterLink('Errors', "status_code >= 400");
 
         $builder->toolbarAction('export');
+    }
+
+    /**
+     * Format an HTTP status code as a colored badge
+     */
+    private function statusBadge(?string $code): string
+    {
+        if (!$code) {
+            return '<span class="badge bg-secondary">-</span>';
+        }
+
+        $status = (int)$code;
+        $bg = match (true) {
+            $status >= 500 => 'bg-danger',
+            $status >= 400 => 'bg-warning text-dark',
+            $status >= 300 => 'bg-info',
+            $status >= 200 => 'bg-success',
+            default => 'bg-secondary',
+        };
+
+        return sprintf('<span class="badge %s">%d</span>', $bg, $status);
     }
 
     /**

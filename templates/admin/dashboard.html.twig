@@ -6,6 +6,10 @@
 
   <div id="charts">
     <div class="row">
+      <div class="col-12 mb-3" hx-get="{{ uri('dashboard.status.chart') }}" hx-trigger="load">
+      </div>
+    </div>
+    <div class="row">
       <div class="col-12 mb-3" hx-get="{{ uri('dashboard.requests.today.chart') }}" hx-trigger="load">
       </div>
     </div>
