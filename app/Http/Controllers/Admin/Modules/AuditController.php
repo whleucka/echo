@@ -104,7 +104,7 @@ class AuditController extends ModuleController
         );
     }
 
-    #[Get("/modal/{id}", "show")]
+    #[Get("/modal/{id}", "admin.show")]
     public function show(int $id): string
     {
         return $this->diff($id);
