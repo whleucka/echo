@@ -1,4 +1,4 @@
-<div class="col-12 col-lg-{{ widget.width }}{% if widget.width == 6 %} col-xl-4{% endif %} mb-4 d-none d-md-block" id="widget-{{ widget.id }}"
+<div class="col-12 col-lg-{{ widget.width }} mb-4 d-none d-md-block" id="widget-{{ widget.id }}"
   {% if widget.refresh_interval > 0 %}
   hx-get="{{ uri('dashboard.widgets.render', {id: widget.id}) }}?range={{ data.range }}"
   hx-trigger="every {{ widget.refresh_interval }}s"
