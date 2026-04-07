@@ -264,6 +264,11 @@ nav#nav-sidebar header h4 {
   flex: 1 1 calc(50% - 0.5rem);
   min-width: 300px;
 }
+@media (min-width: 1200px) {
+  #dashboard #widgets > div.col-lg-6 {
+    flex: 1 1 calc(33.333% - 0.667rem);
+  }
+}
 #dashboard #widgets > div.col-lg-12,
 #dashboard #widgets > div.col-12:not(.col-lg-6) {
   flex: 1 1 100%;
