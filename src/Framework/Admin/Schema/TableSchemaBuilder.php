@@ -29,6 +29,9 @@ class TableSchemaBuilder
 
     public function primaryKey(string $key): self
     {
+        if (!preg_match('/^[a-zA-Z0-9_.]+$/', $key)) {
+            throw new \RuntimeException("primaryKey contains invalid characters: $key");
+        }
         $this->primaryKey = $key;
         return $this;
     }

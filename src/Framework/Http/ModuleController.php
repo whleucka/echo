@@ -11,7 +11,6 @@ use Echo\Framework\Audit\AuditLogger;
 use Echo\Framework\Routing\Group;
 use Echo\Framework\Routing\Route\{Get, Post};
 use Echo\Framework\Session\Flash;
-use PDOStatement;
 use RuntimeException;
 use Throwable;
 use Twig\TwigFunction;
@@ -37,6 +36,9 @@ abstract class ModuleController extends Controller
 
     // --- Pivot data to sync after store/update ---
     private array $pendingPivotData = [];
+
+    // --- Pivot syncer (reused across store/update/form rendering) ---
+    private PivotSyncer $pivotSyncer;
 
     // --- Track whether Twig functions have been registered ---
     private bool $functionsRegistered = false;
@@ -67,6 +69,10 @@ abstract class ModuleController extends Controller
             throw new RuntimeException(static::class . " must define a tableName property");
         }
 
+        if ($this->tableName !== '' && !preg_match('/^[a-zA-Z0-9_]+$/', $this->tableName)) {
+            throw new RuntimeException(static::class . " tableName contains invalid characters");
+        }
+
         // Build table schema
         $tableBuilder = new TableSchemaBuilder($this->tableName);
         $this->defineTable($tableBuilder);
@@ -77,8 +83,9 @@ abstract class ModuleController extends Controller
         $this->defineForm($formBuilder);
         $this->formSchema = $formBuilder->build();
 
-        // Initialize data source (init + state are deferred until first route method)
+        // Initialize data source and pivot syncer (init + state are deferred until first route method)
         $this->dataSource = new QueryBuilderDataSource();
+        $this->pivotSyncer = new PivotSyncer();
     }
 
     // =========================================================================
@@ -182,7 +189,7 @@ abstract class ModuleController extends Controller
             );
             $exporter->stream($rows, $this->moduleLink . '_export.csv');
         }
-        return null;
+        return '';
     }
 
     #[Get("/modal/create", "admin.create")]
@@ -213,7 +220,7 @@ abstract class ModuleController extends Controller
     }
 
     #[Get("/filter/count/{index}", "admin.filter-count")]
-    public function filterCount(int $index)
+    public function filterCount(int $index): int
     {
         $this->ensureInitialized();
         $filterLinks = $this->tableSchema->filterLinks;
@@ -266,16 +273,12 @@ abstract class ModuleController extends Controller
             } else {
                 $this->handleRequest($valid);
             }
-            header("HX-Retarget: #module");
-            header("HX-Reselect: #module");
-            header("HX-Reswap: outerHTML");
-            header("HX-Push-Url: " . $this->buildStateUrl());
+            $this->setModuleSwapHeaders();
             return $this->renderModule($this->getModuleData());
         }
 
         Flash::add("warning", "Validation error");
-        header("HX-Retarget: .modal-dialog");
-        header("HX-Reselect: .modal-content");
+        $this->setModalSwapHeaders();
         return $this->showFilterModal();
     }
 
@@ -313,7 +316,7 @@ abstract class ModuleController extends Controller
             try {
                 $id = $this->handleStore($request);
                 if ($id) {
-                    (new PivotSyncer())->sync($id, $this->pendingPivotData);
+                    $this->pivotSyncer->sync($id, $this->pendingPivotData);
                     $this->pendingPivotData = [];
                     $newValues = db()->fetch(
                         "SELECT * FROM {$this->tableName} WHERE {$this->tableSchema->primaryKey} = ?",
@@ -322,10 +325,7 @@ abstract class ModuleController extends Controller
                     AuditLogger::logCreated($this->tableName, $id, $newValues ?: []);
                     db()->commit();
                     Flash::add("success", "Successfully created record");
-                    header("HX-Retarget: #module");
-                    header("HX-Reselect: #module");
-                    header("HX-Reswap: outerHTML");
-                    header("HX-Push-Url: " . $this->buildStateUrl());
+                    $this->setModuleSwapHeaders();
                     return $this->renderModule($this->getModuleData());
                 }
                 db()->rollback();
@@ -337,8 +337,7 @@ abstract class ModuleController extends Controller
         }
 
         Flash::add("warning", "Validation error");
-        header("HX-Retarget: .modal-dialog");
-        header("HX-Reselect: .modal-content");
+        $this->setModalSwapHeaders();
         return $this->create();
     }
 
@@ -361,7 +360,7 @@ abstract class ModuleController extends Controller
                 );
                 $result = $this->handleUpdate($id, $request);
                 if ($result) {
-                    (new PivotSyncer())->sync($id, $this->pendingPivotData);
+                    $this->pivotSyncer->sync($id, $this->pendingPivotData);
                     $this->pendingPivotData = [];
                     $newValues = db()->fetch(
                         "SELECT * FROM {$this->tableName} WHERE {$pk} = ?",
@@ -370,10 +369,7 @@ abstract class ModuleController extends Controller
                     AuditLogger::logUpdated($this->tableName, $id, $oldValues ?: [], $newValues ?: []);
                     db()->commit();
                     Flash::add("success", "Successfully updated record");
-                    header("HX-Retarget: #module");
-                    header("HX-Reselect: #module");
-                    header("HX-Reswap: outerHTML");
-                    header("HX-Push-Url: " . $this->buildStateUrl());
+                    $this->setModuleSwapHeaders();
                     return $this->renderModule($this->getModuleData());
                 }
                 db()->rollback();
@@ -385,8 +381,7 @@ abstract class ModuleController extends Controller
         }
 
         Flash::add("warning", "Validation error");
-        header("HX-Retarget: .modal-dialog");
-        header("HX-Reselect: .modal-content");
+        $this->setModalSwapHeaders();
         return $this->edit($id);
     }
 
@@ -417,10 +412,7 @@ abstract class ModuleController extends Controller
             error_log($ex->getMessage());
             Flash::add("danger", "Delete record failed. Check logs.");
         }
-        header("HX-Retarget: #module");
-        header("HX-Reselect: #module");
-        header("HX-Reswap: outerHTML");
-        header("HX-Push-Url: " . $this->buildStateUrl());
+        $this->setModuleSwapHeaders();
         return $this->renderModule($this->getModuleData());
     }
 
@@ -727,15 +719,15 @@ abstract class ModuleController extends Controller
         $data = $this->runFormQuery($id);
         $readonly = false;
 
+        $title = '';
+        $submit = false;
+
         if ($type === "edit") {
-            $data = $data->fetch();
             $data = $this->addPivotFieldPlaceholders($data);
             $data = $this->formOverride($id, $data);
             $title = "Edit $id";
             $submit = "Save Changes";
         } elseif ($type === "show") {
-            $submit = false;
-            $data = $data->fetch();
             $data = $this->addPivotFieldPlaceholders($data);
             $title = "View $id";
             $readonly = true;
@@ -762,7 +754,7 @@ abstract class ModuleController extends Controller
         ]);
     }
 
-    private function runFormQuery(?int $id): array|bool|PDOStatement
+    private function runFormQuery(?int $id): array
     {
         if (is_null($id)) {
             return $this->formSchema->getDefaults();
@@ -771,7 +763,8 @@ abstract class ModuleController extends Controller
         return qb()->select($this->formSchema->getSelectExpressions())
             ->from($this->tableName)
             ->where(["$pk = ?"], $id)
-            ->execute();
+            ->execute()
+            ->fetch();
     }
 
     protected function formOverride(?int $id, array $form): array
@@ -817,9 +810,13 @@ abstract class ModuleController extends Controller
 
             // Register control() with a closure that delegates to the current renderer,
             // so it can be updated for form context without re-registering.
-            $twig->addFunction(new TwigFunction("control",
+            $twig->addFunction(new TwigFunction(
+                "control",
                 fn(string $col, ?string $val) => $this->activeFormRenderer->render(
-                    $col, $val, $this->activeFormReadonly, $this->activeFormType
+                    $col,
+                    $val,
+                    $this->activeFormReadonly,
+                    $this->activeFormType
                 )
             ));
 
@@ -840,7 +837,7 @@ abstract class ModuleController extends Controller
             renderer: fn(string $t, array $d) => $this->render($t, $d),
             validationErrors: $this->getValidationErrors(),
             request: $this->request,
-            pivotSyncer: new PivotSyncer(),
+            pivotSyncer: $this->pivotSyncer,
             currentFormId: $this->currentFormId,
         );
     }
@@ -860,10 +857,10 @@ abstract class ModuleController extends Controller
             if ($value === "NULL") {
                 $request[$column] = null;
             }
-            if ($control == "checkbox") {
+            if ($control === "checkbox") {
                 $request[$column] = $value ? 1 : 0;
             }
-            if ($control == "multiselect" && $field->hasPivot()) {
+            if ($control === "multiselect" && $field->hasPivot()) {
                 // Store pivot data for later sync, remove from main request
                 $this->pendingPivotData[] = [
                     'field' => $field,
@@ -871,7 +868,7 @@ abstract class ModuleController extends Controller
                 ];
                 unset($request[$column]);
             }
-            if (in_array($control, ["file", "image"])) {
+            if (in_array($control, ["file", "image"], true)) {
                 $delete_file = $this->request->request->delete_file;
                 $is_upload = $this->request->files->$column ?? false;
                 if (isset($delete_file[$column])) {
@@ -987,9 +984,7 @@ abstract class ModuleController extends Controller
             },
             default => fn() => Flash::add("warning", "Unknown action"),
         };
-        if (is_callable($exec)) {
-            $exec($id);
-        }
+        $exec($id);
     }
 
     protected function exportOverride(array $row): array
@@ -1108,7 +1103,7 @@ abstract class ModuleController extends Controller
 
         $rules[$field] = array_filter(
             $rules[$field],
-            fn($rule) => explode(':', $rule, 2)[0] !== explode(':', $remove, 2)[0] || $rule !== $remove
+            fn($rule) => explode(':', $rule, 2)[0] !== explode(':', $remove, 2)[0]
         );
 
         if (empty($rules[$field])) {
@@ -1217,6 +1212,20 @@ abstract class ModuleController extends Controller
      * Build the canonical URL for the current module state.
      * Used for HX-Push-Url headers so the browser URL stays in sync.
      */
+    private function setModuleSwapHeaders(): void
+    {
+        header("HX-Retarget: #module");
+        header("HX-Reselect: #module");
+        header("HX-Reswap: outerHTML");
+        header("HX-Push-Url: " . $this->buildStateUrl());
+    }
+
+    private function setModalSwapHeaders(): void
+    {
+        header("HX-Retarget: .modal-dialog");
+        header("HX-Reselect: .modal-content");
+    }
+
     protected function buildStateUrl(): string
     {
         $base = uri("{$this->moduleLink}.admin.index");
@@ -1227,8 +1236,8 @@ abstract class ModuleController extends Controller
     protected function getCommonData(): array
     {
         $module = $this->getModule();
-        $sidebar_provider = new SidebarService();
-        $theme_provider = new ThemeService();
+        $sidebar_provider = container()->get(SidebarService::class);
+        $theme_provider = container()->get(ThemeService::class);
         return [
             "dark_mode" => $theme_provider->isDarkMode(),
             "sidebar" => [
@@ -1249,5 +1258,4 @@ abstract class ModuleController extends Controller
             ],
         ];
     }
-
 }
