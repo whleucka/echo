@@ -5,6 +5,7 @@ namespace Echo\Framework\Routing;
 class Router implements RouterInterface
 {
     private array $compiledPatterns = [];
+    private ?array $registeredSubdomains = null;
 
     public function __construct(private Collector $collector)
     {
@@ -24,14 +25,15 @@ class Router implements RouterInterface
     public function searchUri(string $name, ...$params): ?string
     {
         $routes = $this->collector->getRoutes();
-        foreach ($routes as $uri => $route) {
-            foreach ($route as $method => $info) {
-                if ($info['name'] === $name) {
-                    // Replace placeholders with actual values
-                    $uri = preg_replace_callback('/\{(\w+)\}/', function ($matches) use (&$params) {
-                        return array_shift($params) ?? $matches[0]; // Replace or keep original
-                    }, $uri);
-                    return $uri;
+        foreach ($routes as $uri => $methodGroups) {
+            foreach ($methodGroups as $candidates) {
+                foreach ($candidates as $info) {
+                    if ($info['name'] === $name) {
+                        $uri = preg_replace_callback('/\{(\w+)\}/', function ($matches) use (&$params) {
+                            return array_shift($params) ?? $matches[0];
+                        }, $uri);
+                        return $uri;
+                    }
                 }
             }
         }
@@ -44,10 +46,12 @@ class Router implements RouterInterface
     public function getRouteSubdomain(string $name): ?string
     {
         $routes = $this->collector->getRoutes();
-        foreach ($routes as $uri => $route) {
-            foreach ($route as $method => $info) {
-                if ($info['name'] === $name) {
-                    return $info['subdomain'] ?? null;
+        foreach ($routes as $methodGroups) {
+            foreach ($methodGroups as $candidates) {
+                foreach ($candidates as $info) {
+                    if ($info['name'] === $name) {
+                        return $info['subdomain'] ?? null;
+                    }
                 }
             }
         }
@@ -64,17 +68,15 @@ class Router implements RouterInterface
 
         // Check for an exact match first
         if (isset($routes[$uri][$method])) {
-            $route = $routes[$uri][$method];
-            if (!$this->matchesSubdomain($route, $host)) {
-                // Fall through to parameterized route check
-            } else {
-                $route['params'] = $this->getSubdomainParams($route, $host);
-                return $route;
+            $matched = $this->findBestSubdomainMatch($routes[$uri][$method], $host);
+            if ($matched) {
+                $matched['params'] = $this->getSubdomainParams($matched, $host);
+                return $matched;
             }
         }
 
         // Check for parameterized routes
-        foreach ($routes as $route => $methods) {
+        foreach ($routes as $route => $methodGroups) {
             // Use pre-compiled pattern if available, otherwise compile on the fly
             if (isset($this->compiledPatterns[$route])) {
                 $pattern = $this->compiledPatterns[$route];
@@ -88,36 +90,63 @@ class Router implements RouterInterface
                 }
 
                 if ($hasParams) {
-                    // Replace {param} placeholders with regex
                     $compiled = preg_replace('/\{(\w+)\}/', '([A-Za-z0-9_.-]+)', $route);
                     $pattern = "#^$compiled$#";
                 } else {
-                    // Route already contains regex pattern, just wrap it
                     $pattern = "#^$route$#";
                 }
             }
 
             if (preg_match($pattern, $uri, $matches)) {
                 // Ensure the requested method is valid for this route
-                if (!isset($methods[$method])) {
+                if (!isset($methodGroups[$method])) {
                     return null;
                 }
 
-                // Check subdomain constraint
-                if (!$this->matchesSubdomain($methods[$method], $host)) {
+                // Find best subdomain match from candidates
+                $matched = $this->findBestSubdomainMatch($methodGroups[$method], $host);
+                if (!$matched) {
                     continue;
                 }
 
                 // Remove the full match
                 array_shift($matches);
                 // Add subdomain params before URI params
-                $subdomainParams = $this->getSubdomainParams($methods[$method], $host);
-                $methods[$method]['params'] = array_merge($subdomainParams, $matches);
-                return $methods[$method];
+                $subdomainParams = $this->getSubdomainParams($matched, $host);
+                $matched['params'] = array_merge($subdomainParams, $matches);
+                return $matched;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Find the best subdomain match from a list of route candidates.
+     * Priority: exact subdomain > wildcard subdomain > unconstrained (null)
+     */
+    private function findBestSubdomainMatch(array $candidates, ?string $host): ?array
+    {
+        $unconstrained = null;
+        $wildcard = null;
+
+        foreach ($candidates as $route) {
+            if (!$this->matchesSubdomain($route, $host)) {
+                continue;
+            }
+
+            $subdomain = $route['subdomain'] ?? null;
+            if ($subdomain === null) {
+                $unconstrained = $route;
+            } elseif (preg_match('/^\{(\w+)\}$/', $subdomain)) {
+                $wildcard = $route;
+            } else {
+                // Exact subdomain match — highest priority
+                return $route;
+            }
+        }
+
+        return $wildcard ?? $unconstrained;
     }
 
     /**
@@ -127,8 +156,14 @@ class Router implements RouterInterface
     {
         $subdomain = $route['subdomain'] ?? null;
 
-        // No constraint — matches any host
+        // No constraint — matches hosts without a registered subdomain
         if ($subdomain === null) {
+            if ($host !== null) {
+                $hostSub = $this->extractSubdomain($host);
+                if ($hostSub !== null && isset($this->getRegisteredSubdomains()[$hostSub])) {
+                    return false;
+                }
+            }
             return true;
         }
 
@@ -136,17 +171,10 @@ class Router implements RouterInterface
             return false;
         }
 
-        // Strip port from host
-        $host = strtok($host, ':');
-
-        // Extract the leftmost label as the subdomain
-        $parts = explode('.', $host);
-        if (count($parts) < 2) {
-            // Host has no subdomain (e.g. "localhost")
+        $hostSub = $this->extractSubdomain($host);
+        if ($hostSub === null) {
             return false;
         }
-
-        $hostSubdomain = $parts[0];
 
         // Wildcard subdomain: {param} captures the value
         if (preg_match('/^\{(\w+)\}$/', $subdomain)) {
@@ -154,7 +182,41 @@ class Router implements RouterInterface
         }
 
         // Exact match
-        return $hostSubdomain === $subdomain;
+        return $hostSub === $subdomain;
+    }
+
+    /**
+     * Extract the subdomain label from a host string
+     */
+    private function extractSubdomain(string $host): ?string
+    {
+        $host = strtok($host, ':');
+        $parts = explode('.', $host);
+        if (count($parts) < 2) {
+            return null;
+        }
+        return $parts[0];
+    }
+
+    /**
+     * Build a set of all explicitly registered subdomain constraints
+     */
+    private function getRegisteredSubdomains(): array
+    {
+        if ($this->registeredSubdomains === null) {
+            $this->registeredSubdomains = [];
+            foreach ($this->collector->getRoutes() as $methodGroups) {
+                foreach ($methodGroups as $candidates) {
+                    foreach ($candidates as $route) {
+                        $sub = $route['subdomain'] ?? null;
+                        if ($sub !== null && !preg_match('/^\{(\w+)\}$/', $sub)) {
+                            $this->registeredSubdomains[$sub] = true;
+                        }
+                    }
+                }
+            }
+        }
+        return $this->registeredSubdomains;
     }
 
     /**

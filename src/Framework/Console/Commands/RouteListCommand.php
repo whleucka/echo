@@ -46,16 +46,20 @@ class RouteListCommand extends Command
         }
 
         foreach ($routes as $path => $methods) {
-            foreach ($methods as $method => $route) {
-                $middleware = !empty($route['middleware']) ? '[' . $this->formatMiddleware($route['middleware']) . ']' : '';
-                $output->writeln(sprintf(
-                    "  %-7s %-40s -> %s::%s %s",
-                    strtoupper($method),
-                    $path,
-                    $this->getShortClassName($route['controller']),
-                    $route['method'],
-                    $middleware
-                ));
+            foreach ($methods as $method => $candidates) {
+                foreach ($candidates as $route) {
+                    $middleware = !empty($route['middleware']) ? '[' . $this->formatMiddleware($route['middleware']) . ']' : '';
+                    $subdomain = isset($route['subdomain']) ? "({$route['subdomain']}.) " : '';
+                    $output->writeln(sprintf(
+                        "  %-7s %s%-40s -> %s::%s %s",
+                        strtoupper($method),
+                        $subdomain,
+                        $path,
+                        $this->getShortClassName($route['controller']),
+                        $route['method'],
+                        $middleware
+                    ));
+                }
             }
         }
 

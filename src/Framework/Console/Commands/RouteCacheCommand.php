@@ -44,7 +44,9 @@ class RouteCacheCommand extends Command
         if ($cache->cache($routes)) {
             $count = 0;
             foreach ($routes as $methods) {
-                $count += count($methods);
+                foreach ($methods as $candidates) {
+                    $count += count($candidates);
+                }
             }
             $output->writeln("<info>✓ Routes cached successfully ($count routes)</info>");
             $output->writeln("  Cache file: " . $cache->getCachePath());

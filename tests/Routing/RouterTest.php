@@ -176,16 +176,52 @@ class RouterTest extends TestCase
         $this->assertNull($route);
     }
 
-    public function testNoSubdomainMatchesAnyHost()
+    public function testNoSubdomainMatchesHostWithoutRegisteredSubdomain()
     {
+        // No subdomain in host — matches unconstrained routes
         $route = $this->dispatchRoute('/', 'GET');
         $this->assertNotNull($route);
 
         $router = $this->router();
+
+        // Host with unregistered subdomain — still matches unconstrained routes
         $route = $router->dispatch('/', 'GET', 'anything.example.com');
         $this->assertNotNull($route);
 
+        // Host without subdomain — matches
         $route = $router->dispatch('/', 'GET', 'example.com');
+        $this->assertNotNull($route);
+    }
+
+    public function testUnconstrainedRouteBlockedByRegisteredSubdomain()
+    {
+        // Register both unconstrained "/" and subdomain-constrained routes
+        $router = $this->router([Routes::class, ApiRoutes::class]);
+
+        // "api" is a registered subdomain, so unconstrained "/" should NOT match
+        $route = $router->dispatch('/', 'GET', 'api.example.com');
+        $this->assertNull($route);
+
+        // But subdomain-constrained routes still work
+        $route = $router->dispatch('/v1/status', 'GET', 'api.example.com');
+        $this->assertNotNull($route);
+    }
+
+    public function testUnconstrainedRouteStillMatchesUnregisteredSubdomain()
+    {
+        $router = $this->router([Routes::class, ApiRoutes::class]);
+
+        // "random" is NOT a registered subdomain, so unconstrained "/" matches
+        $route = $router->dispatch('/', 'GET', 'random.example.com');
+        $this->assertNotNull($route);
+    }
+
+    public function testUnconstrainedRouteMatchesPlainHost()
+    {
+        $router = $this->router([Routes::class, ApiRoutes::class]);
+
+        // No subdomain at all — unconstrained route matches
+        $route = $router->dispatch('/', 'GET', 'localhost');
         $this->assertNotNull($route);
     }
 
@@ -321,6 +357,46 @@ class RouterTest extends TestCase
         $subdomain = $router->getRouteSubdomain('nonexistent');
         $this->assertNull($subdomain);
     }
+
+    // ─── Same path, different subdomains ────────────────────────
+
+    public function testSamePathDifferentSubdomainsAllowed()
+    {
+        // Should not throw — same path "/" but different subdomains
+        $router = $this->router([Routes::class, AdminRootRoute::class]);
+        $this->assertNotNull($router);
+    }
+
+    public function testSamePathDifferentSubdomainsDispatchCorrectly()
+    {
+        $router = $this->router([Routes::class, AdminRootRoute::class]);
+
+        // Main domain gets unconstrained route
+        $route = $router->dispatch('/', 'GET', 'localhost');
+        $this->assertNotNull($route);
+        $this->assertSame('index', $route['method']);
+
+        // Admin subdomain gets admin-specific route
+        $route = $router->dispatch('/', 'GET', 'admin.localhost');
+        $this->assertNotNull($route);
+        $this->assertSame('adminIndex', $route['method']);
+    }
+
+    public function testSamePathSubdomainPrefersExactMatch()
+    {
+        $router = $this->router([Routes::class, AdminRootRoute::class]);
+
+        // Exact subdomain match should win over unconstrained
+        $route = $router->dispatch('/', 'GET', 'admin.localhost');
+        $this->assertSame('admin.root', $route['name']);
+    }
+
+    public function testDuplicatePathAndSubdomainThrows()
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Duplicate route detected');
+        $this->router([AdminRootRoute::class, AdminRootDuplicate::class]);
+    }
 }
 
 class Routes extends Controller
@@ -423,5 +499,25 @@ class OverrideRoutes extends Controller
     public function webhook()
     {
         return 'webhook';
+    }
+}
+
+#[Group(subdomain: "admin")]
+class AdminRootRoute extends Controller
+{
+    #[Get("/", "admin.root")]
+    public function adminIndex()
+    {
+        return 'admin-root';
+    }
+}
+
+#[Group(subdomain: "admin")]
+class AdminRootDuplicate extends Controller
+{
+    #[Get("/", "admin.root.dup")]
+    public function adminIndexDup()
+    {
+        return 'admin-root-dup';
     }
 }

@@ -44,9 +44,9 @@ class RouteCacheTest extends TestCase
     {
         $cache = $this->createCache();
         $routes = [
-            '/users/{id}' => ['GET' => ['controller' => 'UserController', 'method' => 'show']],
-            '/posts' => ['GET' => ['controller' => 'PostController', 'method' => 'index']],
-            '/posts/{id}/comments/{commentId}' => ['GET' => ['controller' => 'CommentController', 'method' => 'show']],
+            '/users/{id}' => ['GET' => [['controller' => 'UserController', 'method' => 'show']]],
+            '/posts' => ['GET' => [['controller' => 'PostController', 'method' => 'index']]],
+            '/posts/{id}/comments/{commentId}' => ['GET' => [['controller' => 'CommentController', 'method' => 'show']]],
         ];
 
         $compiled = $cache->compileRoutes($routes);
@@ -65,7 +65,7 @@ class RouteCacheTest extends TestCase
     {
         $cache = $this->createCache();
         $routes = [
-            '/users/{id}' => ['GET' => []],
+            '/users/{id}' => ['GET' => [['controller' => 'UserController']]],
         ];
 
         $compiled = $cache->compileRoutes($routes);
@@ -86,8 +86,8 @@ class RouteCacheTest extends TestCase
     {
         $cache = $this->createCache();
         $routes = [
-            '/users' => ['GET' => []],
-            '/posts' => ['GET' => []],
+            '/users' => ['GET' => [['controller' => 'UserController']]],
+            '/posts' => ['GET' => [['controller' => 'PostController']]],
         ];
 
         $compiled = $cache->compileRoutes($routes);
@@ -114,8 +114,8 @@ class RouteCacheTest extends TestCase
     {
         $cache = $this->createCache();
         $routes = [
-            '/users/{id}' => ['GET' => ['controller' => 'UserController']],
-            '/posts' => ['GET' => ['controller' => 'PostController']],
+            '/users/{id}' => ['GET' => [['controller' => 'UserController']]],
+            '/posts' => ['GET' => [['controller' => 'PostController']]],
         ];
 
         $result = $cache->cache($routes);
@@ -132,7 +132,7 @@ class RouteCacheTest extends TestCase
     public function testGetRoutesReturnsOnlyRoutes()
     {
         $cache = $this->createCache();
-        $routes = ['/users' => ['GET' => []]];
+        $routes = ['/users' => ['GET' => [['controller' => 'UserController']]]];
 
         $cache->cache($routes);
         $this->assertSame($routes, $cache->getRoutes());
@@ -141,7 +141,7 @@ class RouteCacheTest extends TestCase
     public function testGetPatternsReturnsOnlyPatterns()
     {
         $cache = $this->createCache();
-        $routes = ['/users/{id}' => ['GET' => []]];
+        $routes = ['/users/{id}' => ['GET' => [['controller' => 'UserController']]]];
 
         $cache->cache($routes);
         $patterns = $cache->getPatterns();
@@ -158,7 +158,7 @@ class RouteCacheTest extends TestCase
     public function testClearRemovesCacheFile()
     {
         $cache = $this->createCache();
-        $cache->cache(['/test' => ['GET' => []]]);
+        $cache->cache(['/test' => ['GET' => [['controller' => 'TestController']]]]);
         $this->assertTrue($cache->isCached());
 
         $result = $cache->clear();
@@ -187,7 +187,7 @@ class RouteCacheTest extends TestCase
         $prop = new \ReflectionProperty(RouteCache::class, 'cachePath');
         $prop->setValue($cache, $nestedPath);
 
-        $cache->cache(['/test' => ['GET' => []]]);
+        $cache->cache(['/test' => ['GET' => [['controller' => 'TestController']]]]);
         $this->assertFileExists($nestedPath);
 
         // Cleanup

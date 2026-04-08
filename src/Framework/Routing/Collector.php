@@ -77,17 +77,15 @@ class Collector
                     $fullName .= ($fullName ? '.' : '') . $instance->name;
                 }
 
-                // Check for duplicates
+                // Check for duplicate names
                 foreach ($this->routes as $routesByMethod) {
-                    foreach ($routesByMethod as $route) {
-                        if ($route['name'] === $fullName) {
-                            throw new \Exception("Duplicate route name detected: '{$fullName}'");
+                    foreach ($routesByMethod as $candidates) {
+                        foreach ($candidates as $route) {
+                            if ($route['name'] === $fullName) {
+                                throw new \Exception("Duplicate route name detected: '{$fullName}'");
+                            }
                         }
                     }
-                }
-
-                if (isset($this->routes[$fullPath][$httpMethod])) {
-                    throw new \Exception("Duplicate route detected: [$httpMethod] path: $fullPath");
                 }
 
                 $mergedMiddleware = array_merge($groupMiddleware, $instance->middleware);
@@ -95,7 +93,16 @@ class Collector
                 // Route-level subdomain overrides group-level
                 $subdomain = $instance->subdomain ?? $groupSubdomain;
 
-                $this->routes[$fullPath][$httpMethod] = [
+                // Check for duplicate path+method+subdomain
+                if (isset($this->routes[$fullPath][$httpMethod])) {
+                    foreach ($this->routes[$fullPath][$httpMethod] as $existing) {
+                        if (($existing['subdomain'] ?? null) === $subdomain) {
+                            throw new \Exception("Duplicate route detected: [$httpMethod] path: $fullPath (subdomain: " . ($subdomain ?? 'none') . ")");
+                        }
+                    }
+                }
+
+                $this->routes[$fullPath][$httpMethod][] = [
                     'controller' => $controller,
                     'method' => $method->getName(),
                     'middleware' => $mergedMiddleware,
