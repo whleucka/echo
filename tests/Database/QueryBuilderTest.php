@@ -548,4 +548,90 @@ class QueryBuilderTest extends TestCase
         $q1->getQuery(); // triggers param merging
         $this->assertSame([1, 1], $q1->getQueryParams());
     }
+
+    // ─── Multiple where() calls ─────────────────────────────────
+
+    public function testMultipleWhereCalls()
+    {
+        $qb = QueryBuilder::select()->from("users")
+            ->where(["active = ?"], 1)
+            ->where(["role = ?"], 'admin');
+        // Second where() overwrites the first clause, but params accumulate
+        $this->assertSame("SELECT * FROM users WHERE role = ?", $qb->getQuery());
+        $this->assertSame([1, 'admin'], $qb->getQueryParams());
+    }
+
+    public function testMultipleOrWhereCalls()
+    {
+        $qb = QueryBuilder::select()->from("users")
+            ->where(["active = ?"], 1)
+            ->orWhere(["role = ?"], 'admin')
+            ->orWhere(["status = ?"], 'pending');
+        // Second orWhere() overwrites the first
+        $this->assertSame("SELECT * FROM users WHERE active = ? OR status = ?", $qb->getQuery());
+    }
+
+    // ─── Params edge cases ──────────────────────────────────────
+
+    public function testParamsWithEmptyArray()
+    {
+        $qb = QueryBuilder::select()->from("users")->params([]);
+        $this->assertSame([], $qb->getQueryParams());
+    }
+
+    public function testParamsAfterWhereVariadic()
+    {
+        // where() with variadic params, then explicit params()
+        $qb = QueryBuilder::select()->from("users")
+            ->where(["id = ?"], 5)
+            ->params([99]);
+        // params() overwrites
+        $this->assertSame([99], $qb->getQueryParams());
+    }
+
+    // ─── Limit edge cases ───────────────────────────────────────
+
+    public function testLimitZeroIsIgnored()
+    {
+        $qb = QueryBuilder::select()->from("users")->limit(0);
+        $this->assertSame("SELECT * FROM users", $qb->getQuery());
+    }
+
+    // ─── Complex scenarios ──────────────────────────────────────
+
+    public function testSelectWithAllClauses()
+    {
+        $qb = QueryBuilder::select(["role", "COUNT(*) as cnt"])
+            ->from("users")
+            ->where(["active = ?"], 1)
+            ->groupBy(["role"])
+            ->having(["cnt > 5"])
+            ->orderBy(["cnt DESC"])
+            ->limit(10)
+            ->offset(20);
+        $this->assertSame(
+            "SELECT role, COUNT(*) as cnt FROM users WHERE active = ? GROUP BY role HAVING cnt > 5 ORDER BY cnt DESC LIMIT 10 OFFSET 20",
+            $qb->getQuery()
+        );
+    }
+
+    public function testDeleteWithMultipleConditions()
+    {
+        $qb = QueryBuilder::delete()->from("users")
+            ->where(["active = ?", "role = ?"], 0, 'guest');
+        $this->assertSame("DELETE FROM users WHERE active = ? AND role = ?", $qb->getQuery());
+        $this->assertSame([0, 'guest'], $qb->getQueryParams());
+    }
+
+    public function testUpdateWithMultipleConditions()
+    {
+        $qb = QueryBuilder::update(["status" => "inactive"])
+            ->table("users")
+            ->where(["role = ?", "last_login < ?"], 'guest', '2024-01-01');
+        $this->assertSame(
+            "UPDATE users SET status = ? WHERE role = ? AND last_login < ?",
+            $qb->getQuery()
+        );
+        $this->assertSame(["inactive", "guest", "2024-01-01"], $qb->getQueryParams());
+    }
 }

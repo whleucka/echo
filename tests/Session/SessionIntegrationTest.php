@@ -138,4 +138,40 @@ class SessionIntegrationTest extends TestCase
 
         $this->assertSame($instance1, $instance2);
     }
+
+    public function testGetDriverReturnsString(): void
+    {
+        $driver = $this->session->getDriver();
+        $this->assertIsString($driver);
+        $this->assertContains($driver, ['files', 'redis']);
+    }
+
+    public function testGetReturnsNullForMissingKeyAfterSet(): void
+    {
+        $this->session->set('exists', 'value');
+        $this->assertNull($this->session->get('does_not_exist'));
+    }
+
+    public function testDeleteIsIdempotent(): void
+    {
+        $this->session->delete('never_existed');
+        $this->assertFalse($this->session->has('never_existed'));
+    }
+
+    public function testSetOverwritesMaintainsType(): void
+    {
+        $this->session->set('typed', 42);
+        $this->assertSame(42, $this->session->get('typed'));
+
+        $this->session->set('typed', 'now a string');
+        $this->assertSame('now a string', $this->session->get('typed'));
+    }
+
+    public function testAllReturnsEmptyAfterDestroy(): void
+    {
+        $this->session->set('a', 1);
+        $this->session->set('b', 2);
+        $this->session->destroy();
+        $this->assertSame([], $this->session->all());
+    }
 }

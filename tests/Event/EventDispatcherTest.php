@@ -230,4 +230,100 @@ class EventDispatcherTest extends TestCase
         $this->assertTrue($eventACalled);
         $this->assertFalse($eventBCalled);
     }
+
+    /**
+     * Test same priority preserves registration order
+     */
+    public function testSamePriorityPreservesOrder(): void
+    {
+        $callOrder = [];
+
+        $this->dispatcher->listen(Event::class, function () use (&$callOrder) {
+            $callOrder[] = 'first';
+        }, 5);
+
+        $this->dispatcher->listen(Event::class, function () use (&$callOrder) {
+            $callOrder[] = 'second';
+        }, 5);
+
+        $this->dispatcher->listen(Event::class, function () use (&$callOrder) {
+            $callOrder[] = 'third';
+        }, 5);
+
+        $this->dispatcher->dispatch(new Event());
+
+        $this->assertEquals(['first', 'second', 'third'], $callOrder);
+    }
+
+    /**
+     * Test forget is idempotent
+     */
+    public function testForgetIdempotent(): void
+    {
+        $this->dispatcher->forget(Event::class);
+        $this->assertFalse($this->dispatcher->hasListeners(Event::class));
+    }
+
+    /**
+     * Test forget only removes targeted event
+     */
+    public function testForgetOnlyRemovesTargetedEvent(): void
+    {
+        $this->dispatcher->listen(Event::class, function () {});
+        $this->dispatcher->listen('OtherEvent', function () {});
+
+        $this->dispatcher->forget(Event::class);
+
+        $this->assertFalse($this->dispatcher->hasListeners(Event::class));
+        $this->assertTrue($this->dispatcher->hasListeners('OtherEvent'));
+    }
+
+    /**
+     * Test listener can modify event data
+     */
+    public function testListenerModifiesEvent(): void
+    {
+        $event = new Event();
+
+        $this->dispatcher->listen(Event::class, function (Event $event) {
+            $event->stopPropagation();
+        });
+
+        $result = $this->dispatcher->dispatch($event);
+
+        $this->assertTrue($result->isPropagationStopped());
+    }
+
+    /**
+     * Test getListeners count matches registered
+     */
+    public function testGetListenersCountMatchesRegistered(): void
+    {
+        $this->dispatcher->listen(Event::class, function () {}, 1);
+        $this->dispatcher->listen(Event::class, function () {}, 2);
+        $this->dispatcher->listen(Event::class, function () {}, 3);
+
+        $this->assertCount(3, $this->dispatcher->getListeners(Event::class));
+    }
+
+    /**
+     * Test default priority is 0
+     */
+    public function testDefaultPriorityIsZero(): void
+    {
+        $callOrder = [];
+
+        // Default priority (0) should fire before explicit priority 10
+        $this->dispatcher->listen(Event::class, function () use (&$callOrder) {
+            $callOrder[] = 'explicit_10';
+        }, 10);
+
+        $this->dispatcher->listen(Event::class, function () use (&$callOrder) {
+            $callOrder[] = 'default_0';
+        });
+
+        $this->dispatcher->dispatch(new Event());
+
+        $this->assertEquals(['default_0', 'explicit_10'], $callOrder);
+    }
 }

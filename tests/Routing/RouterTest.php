@@ -254,6 +254,73 @@ class RouterTest extends TestCase
         $route = $router->dispatch('/v1/status', 'GET', null);
         $this->assertNull($route);
     }
+
+    // ─── Pre-compiled patterns ──────────────────────────────────
+
+    public function testSetCompiledPatternsUsedInDispatch()
+    {
+        $router = $this->router();
+
+        // Pre-compile the pattern for /id/{id}
+        $patterns = [
+            '/id/{id}' => '#^/id/([A-Za-z0-9_.-]+)$#',
+        ];
+        $router->setCompiledPatterns($patterns);
+
+        $route = $router->dispatch('/id/42', 'GET');
+        $this->assertNotNull($route);
+        $this->assertSame('id', $route['method']);
+        $this->assertSame(['42'], $route['params']);
+    }
+
+    public function testSetCompiledPatternsStillMatchesStaticRoutes()
+    {
+        $router = $this->router();
+        $router->setCompiledPatterns([]);
+
+        $route = $router->dispatch('/', 'GET');
+        $this->assertNotNull($route);
+        $this->assertSame('index', $route['method']);
+    }
+
+    // ─── searchUri ──────────────────────────────────────────────
+
+    public function testSearchUriReturnsNullForUnknownName()
+    {
+        $router = $this->router();
+        $this->assertNull($router->searchUri('nonexistent.route'));
+    }
+
+    public function testSearchUriKeepsUnreplacedPlaceholders()
+    {
+        $router = $this->router();
+        // Route has {uuid} and {token}, but we only provide one param
+        $uri = $router->searchUri('routes.user', 'abc');
+        $this->assertSame('/user/abc/{token}', $uri);
+    }
+
+    // ─── getRouteSubdomain ──────────────────────────────────────
+
+    public function testGetRouteSubdomainReturnsConstraint()
+    {
+        $router = $this->router([ApiRoutes::class]);
+        $subdomain = $router->getRouteSubdomain('api.status');
+        $this->assertSame('api', $subdomain);
+    }
+
+    public function testGetRouteSubdomainReturnsNullForNoConstraint()
+    {
+        $router = $this->router();
+        $subdomain = $router->getRouteSubdomain('routes.index');
+        $this->assertNull($subdomain);
+    }
+
+    public function testGetRouteSubdomainReturnsNullForUnknownRoute()
+    {
+        $router = $this->router();
+        $subdomain = $router->getRouteSubdomain('nonexistent');
+        $this->assertNull($subdomain);
+    }
 }
 
 class Routes extends Controller
