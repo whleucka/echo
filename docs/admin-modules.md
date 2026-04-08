@@ -88,7 +88,7 @@ SQL expressions can include any valid SQL: `CONCAT()`, `COALESCE()`, `CASE WHEN`
 ```php
 $builder->defaultSort('id', 'DESC');        // default sort column and direction
 $builder->perPage(50);                      // rows per page (default: 15)
-$builder->dateColumn('created_at');         // enable date range filter
+$builder->dateColumn('audits.created_at');  // enable date range filter
 $builder->primaryKey('audits.id');          // qualified key when using JOINs
 ```
 

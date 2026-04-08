@@ -18,7 +18,14 @@ class TableSchemaBuilder
     private int $perPage = 15;
     private array $perPageOptions = [15, 25, 50, 75, 100, 500, 1000];
 
-    public function __construct(private ?string $table = null) {}
+    public function __construct(private ?string $table = null)
+    {
+        if ($table) {
+            $this->primaryKey = $table . '.id';
+            $this->defaultOrderBy = $table . '.id';
+            $this->dateColumn = $table . '.created_at';
+        }
+    }
 
     public function primaryKey(string $key): self
     {
