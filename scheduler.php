@@ -25,5 +25,10 @@ $scheduler->php($jobs . "/log_cleanup.php")
     ->daily('00:00')
     ->output($logs . "log-cleanup-" . date("Y-m-d") . ".log", true);
 
+// Sitemap - regenerate public/sitemap.xml daily
+$scheduler->php($jobs . "/sitemap_generate.php")
+    ->daily('03:00')
+    ->output($logs . "sitemap-generate-" . date("Y-m-d") . ".log", true);
+
 // Let the scheduler execute jobs which are due.
 $scheduler->run();

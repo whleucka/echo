@@ -72,5 +72,8 @@ class Kernel extends ConsoleKernel
 
         // Files
         Commands\FileCleanupCommand::class,
+
+        // Sitemap
+        Commands\SitemapGenerateCommand::class,
     ];
 }
