@@ -37,9 +37,10 @@ class SitemapGenerateCommand extends Command
 
         $routes = $this->loadRoutes();
         $urls = $this->buildUrls($routes, $baseUrl);
+        $urls = $this->mergeProviderUrls($urls, $baseUrl, $output);
 
         if (empty($urls)) {
-            $output->writeln('<comment>No public routes found to include in sitemap.</comment>');
+            $output->writeln('<comment>No URLs to include in sitemap.</comment>');
             return Command::FAILURE;
         }
 
@@ -121,6 +122,58 @@ class SitemapGenerateCommand extends Command
                 $seen[$loc] = true;
 
                 $urls[] = ['loc' => $loc, 'lastmod' => $now];
+            }
+        }
+
+        return $urls;
+    }
+
+    private function mergeProviderUrls(array $urls, string $baseUrl, OutputInterface $output): array
+    {
+        $providers = config('sitemap.providers') ?? [];
+        if (!is_array($providers)) {
+            return $urls;
+        }
+
+        $seen = [];
+        foreach ($urls as $entry) {
+            $seen[$entry['loc']] = true;
+        }
+        $now = date('Y-m-d');
+
+        foreach ($providers as $provider) {
+            try {
+                $items = is_callable($provider) ? $provider() : $provider;
+            } catch (\Throwable $e) {
+                $output->writeln('<error>Sitemap provider failed: ' . $e->getMessage() . '</error>');
+                continue;
+            }
+
+            if (!is_iterable($items)) {
+                continue;
+            }
+
+            foreach ($items as $item) {
+                if (is_string($item)) {
+                    $loc = $item;
+                    $lastmod = $now;
+                } elseif (is_array($item) && isset($item['loc'])) {
+                    $loc = $item['loc'];
+                    $lastmod = $item['lastmod'] ?? $now;
+                } else {
+                    continue;
+                }
+
+                // Allow relative paths — prefix with base URL.
+                if (!preg_match('#^https?://#i', $loc)) {
+                    $loc = $baseUrl . '/' . ltrim($loc, '/');
+                }
+
+                if (isset($seen[$loc])) {
+                    continue;
+                }
+                $seen[$loc] = true;
+                $urls[] = ['loc' => $loc, 'lastmod' => $lastmod];
             }
         }
 
