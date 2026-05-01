@@ -15,6 +15,8 @@ class ThemeController extends AdminController
     public function toggle(): string
     {
         $this->service->toggle();
+        header("Cache-Control: no-store, no-cache, must-revalidate");
+        header("Pragma: no-cache");
         return $this->render("admin/nav-top.html.twig", $this->getNavTopData());
     }
 
