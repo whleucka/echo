@@ -16,6 +16,7 @@ docker-compose up -d --build                      # php, nginx, db, redis
 ./bin/php composer install                        # enter php container
 ./echo migrate:fresh                              # migrate database
 ./echo storage:fix                                # fix permissions on storage and cache directories
+./echo key:generate                               # generate unique app key
 ```
 
 Open `http://localhost`.
