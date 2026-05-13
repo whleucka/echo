@@ -2,7 +2,7 @@
 
 use Echo\Framework\Database\{Schema, Blueprint, MigrationInterface};
 
-return new class implements Migration
+return new class implements MigrationInterface
 {
     private string $table = "{{ table }}";
 
