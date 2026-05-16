@@ -12,6 +12,7 @@ class Controller implements ControllerInterface
     protected ?User $user = null;
     protected ?RequestInterface $request = null;
     private array $headers = [];
+    private array $hxTriggers = [];
     private ?array $jsonBody = null;
     private ?Validator $validator = null;
 
@@ -71,13 +72,37 @@ class Controller implements ControllerInterface
 
     /**
      * HTMX Trigger
+     *
+     * Accumulates across calls. Accepts an event name, a list of event names,
+     * or an associative array of event => payload.
      */
     public function hxTrigger(array|string $opts): void
     {
-        if (is_array($opts)) {
-            $opts = json_encode($opts);
+        if (is_string($opts)) {
+            $this->hxTriggers[$opts] = null;
+        } else {
+            foreach ($opts as $key => $value) {
+                if (is_int($key)) {
+                    $this->hxTriggers[$value] = null;
+                } else {
+                    $this->hxTriggers[$key] = $value;
+                }
+            }
         }
-        $this->setHeader("HX-Trigger", $opts);
+
+        $hasPayload = false;
+        foreach ($this->hxTriggers as $value) {
+            if ($value !== null) {
+                $hasPayload = true;
+                break;
+            }
+        }
+
+        $header = $hasPayload
+            ? json_encode($this->hxTriggers)
+            : implode(", ", array_keys($this->hxTriggers));
+
+        $this->setHeader("HX-Trigger", $header);
     }
 
     public function validate(array $ruleset = [], mixed $id = null): mixed
