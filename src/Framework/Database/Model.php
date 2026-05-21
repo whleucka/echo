@@ -134,6 +134,16 @@ abstract class Model implements ModelInterface
         }
     }
 
+    /**
+     * Start an unfiltered query chain. Equivalent to (new static()) but reads
+     * better at call sites — preferred over anchor hacks like
+     * Model::where("id", ">", 0) when you just want to chain select/groupBy/etc.
+     */
+    public static function query(): static
+    {
+        return new static();
+    }
+
     public static function where(string $field, string $operator = '=', ?string $value = null): static
     {
         self::validateIdentifier($field);

@@ -120,6 +120,36 @@ class ModelTest extends TestCase
         $this->assertSame([1, 2, 3], $sql["params"]);
     }
 
+    // ─── query() factory ────────────────────────────────────────
+
+    public function testQueryStartsUnfilteredChain()
+    {
+        $sql = User::query()->sql();
+        $this->assertSame("SELECT * FROM users", $sql["query"]);
+        $this->assertSame([], $sql["params"]);
+    }
+
+    public function testQueryChainsIntoSelectGroupOrder()
+    {
+        $sql = User::query()
+            ->select(["role", "COUNT(*) as count"])
+            ->groupBy("role")
+            ->orderBy("count", "DESC")
+            ->sql();
+        $this->assertSame(
+            "SELECT role, COUNT(*) as count FROM users GROUP BY role ORDER BY count DESC",
+            $sql["query"]
+        );
+        $this->assertSame([], $sql["params"]);
+    }
+
+    public function testQueryChainsIntoAndWhere()
+    {
+        $sql = User::query()->andWhere("role", "admin")->sql();
+        $this->assertSame("SELECT * FROM users WHERE (role = ?)", $sql["query"]);
+        $this->assertSame(["admin"], $sql["params"]);
+    }
+
     public function testAndWhereInChained()
     {
         $sql = User::where("role", "admin")
