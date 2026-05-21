@@ -35,5 +35,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Add custom Echo extension
         $twig->addExtension(new TwigExtension());
+
+        // Add Twig string extension (provides the `u` filter, e.g. u.truncate)
+        $twig->addExtension(new \Twig\Extra\String\StringExtension());
     }
 }
