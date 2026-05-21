@@ -236,6 +236,55 @@ abstract class Model implements ModelInterface
         return $this;
     }
 
+    /**
+     * Start a query with a WHERE IN clause.
+     *
+     * Mirrors where()'s static-factory pattern. An empty $values produces a
+     * `0 = 1` condition so the query returns no rows (safer than returning all).
+     */
+    public static function whereIn(string $field, array $values): static
+    {
+        self::validateIdentifier($field);
+        $class = static::class;
+        $model = new $class();
+        $model->applyWhereIn($field, $values, negate: false);
+        return $model;
+    }
+
+    /**
+     * Add a WHERE IN clause to an existing query.
+     */
+    public function andWhereIn(string $field, array $values): static
+    {
+        self::validateIdentifier($field);
+        $this->applyWhereIn($field, $values, negate: false);
+        return $this;
+    }
+
+    /**
+     * Add a WHERE NOT IN clause to an existing query.
+     */
+    public function andWhereNotIn(string $field, array $values): static
+    {
+        self::validateIdentifier($field);
+        $this->applyWhereIn($field, $values, negate: true);
+        return $this;
+    }
+
+    private function applyWhereIn(string $field, array $values, bool $negate): void
+    {
+        if (empty($values)) {
+            $this->where[] = $negate ? "(1 = 1)" : "(0 = 1)";
+            return;
+        }
+        $placeholders = implode(', ', array_fill(0, count($values), '?'));
+        $op = $negate ? 'NOT IN' : 'IN';
+        $this->where[] = "($field $op ($placeholders))";
+        foreach ($values as $value) {
+            $this->params[] = $value;
+        }
+    }
+
     public function orderBy(string $column, string $direction = "ASC"): static
     {
         self::validateIdentifier($column);
@@ -353,20 +402,70 @@ abstract class Model implements ModelInterface
     }
 
     /**
-     * Load eager loaded relations for a collection of models
+     * Batch-load eager-loaded relations for a collection of models.
+     *
+     * One query per relation regardless of result set size: the relation
+     * method is invoked under captureRelation() to extract its descriptor
+     * without firing a query, then a single
+     * `WHERE related_column IN (parent_column_values...)` query is issued
+     * and results are grouped and stitched onto each parent. Each parent's
+     * cache (relations[$name]) is populated, so subsequent lazy method calls
+     * like $model->name() reuse the eager-loaded data.
      */
     private function loadRelations(array &$models): void
     {
+        if (empty($models)) {
+            return;
+        }
+
         foreach ($this->eagerLoad as $relation) {
             if (!method_exists($this, $relation)) {
                 continue;
             }
 
-            // Load relation for each model individually
-            // Note: This is N+1. Batch optimization would require
-            // analyzing foreign keys and consolidating queries.
+            $prototype = new static();
+            $descriptor = self::captureRelation(fn() => $prototype->$relation());
+            if ($descriptor === null) {
+                continue;
+            }
+
+            $isMany = $descriptor->type === Relation::HAS_MANY;
+            $empty = $isMany ? [] : null;
+
+            // Collect parent key values
+            $keys = [];
             foreach ($models as $model) {
-                $model->relations[$relation] = $model->$relation();
+                $value = $model->{$descriptor->parentColumn} ?? null;
+                if ($value !== null) {
+                    $keys[] = $value;
+                }
+            }
+            $keys = array_values(array_unique($keys));
+
+            // Group children by their join column
+            $grouped = [];
+            if (!empty($keys)) {
+                $relatedClass = $descriptor->related;
+                $children = $relatedClass::whereIn($descriptor->relatedColumn, $keys)->get();
+                foreach ($children as $child) {
+                    $childKey = $child->{$descriptor->relatedColumn} ?? null;
+                    if ($childKey === null) {
+                        continue;
+                    }
+                    if ($isMany) {
+                        $grouped[$childKey][] = $child;
+                    } else {
+                        $grouped[$childKey] ??= $child;
+                    }
+                }
+            }
+
+            // Stitch results onto each parent's relations cache
+            foreach ($models as $model) {
+                $value = $model->{$descriptor->parentColumn} ?? null;
+                $model->relations[$relation] = ($value !== null && isset($grouped[$value]))
+                    ? $grouped[$value]
+                    : $empty;
             }
         }
     }
@@ -610,12 +709,22 @@ abstract class Model implements ModelInterface
 
     public function __get($name)
     {
-        return $this->attributes[$name] ?? null;
+        // Column attribute wins over relations (e.g. a `user_id` FK column should
+        // not be shadowed by an eager-loaded `user` relation that happens to be
+        // accessed via the same name).
+        if (array_key_exists($name, $this->attributes)) {
+            return $this->attributes[$name];
+        }
+        if (array_key_exists($name, $this->relations)) {
+            return $this->relations[$name];
+        }
+        return null;
     }
 
     public function __isset($name): bool
     {
-        return isset($this->attributes[$name]);
+        return array_key_exists($name, $this->attributes)
+            || array_key_exists($name, $this->relations);
     }
 
     /**
@@ -632,67 +741,142 @@ abstract class Model implements ModelInterface
     }
 
     /**
-     * Define a one-to-many relationship
+     * Stack of capture slots used by the eager loader. When non-empty, the next
+     * hasOne / hasMany / belongsTo call stores its Relation descriptor into the
+     * top slot instead of executing a query.
+     */
+    private static array $captureStack = [];
+
+    /**
+     * Run $callback in "capture mode" and return the Relation descriptor that
+     * its hasOne / hasMany / belongsTo call built.
      *
-     * @param string $related The related model class
-     * @param string|null $foreignKey The foreign key on the related model
-     * @param string|null $localKey The local key on this model
-     * @return array Array of related models
+     * Used by the eager loader to introspect a relation method without
+     * executing a database query.
+     */
+    public static function captureRelation(callable $callback): ?Relation
+    {
+        self::$captureStack[] = null;
+        try {
+            $callback();
+        } finally {
+            $captured = array_pop(self::$captureStack);
+        }
+        return $captured instanceof Relation ? $captured : null;
+    }
+
+    private static function inCaptureMode(): bool
+    {
+        return !empty(self::$captureStack);
+    }
+
+    private static function capture(Relation $relation): void
+    {
+        $top = count(self::$captureStack) - 1;
+        self::$captureStack[$top] = $relation;
+    }
+
+    /**
+     * Inspect the call stack to identify the relation method that invoked
+     * hasOne / hasMany / belongsTo. Used as the cache key in $this->relations
+     * so eager-loaded data is reused by direct method calls.
+     */
+    private function callingRelationName(): ?string
+    {
+        // Frame 0 = this helper, 1 = hasOne/hasMany/belongsTo, 2 = the relation method
+        $frames = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+        return $frames[2]['function'] ?? null;
+    }
+
+    /**
+     * Define a one-to-many relationship.
      */
     public function hasMany(string $related, ?string $foreignKey = null, ?string $localKey = null): array
     {
-        $foreignKey = $foreignKey ?? $this->getForeignKey();
-        $localKey = $localKey ?? $this->primaryKey;
+        $foreignKey ??= $this->getForeignKey();
+        $localKey ??= $this->primaryKey;
+
+        if (self::inCaptureMode()) {
+            self::capture(new Relation(Relation::HAS_MANY, $this, $related, $localKey, $foreignKey));
+            return [];
+        }
+
+        $caller = $this->callingRelationName();
+        if ($caller !== null && array_key_exists($caller, $this->relations)) {
+            $cached = $this->relations[$caller];
+            return is_array($cached) ? $cached : [];
+        }
 
         $localValue = $this->$localKey;
         if ($localValue === null) {
             return [];
         }
-
-        return $related::where($foreignKey, $localValue)->get();
+        $result = $related::where($foreignKey, $localValue)->get();
+        if ($caller !== null) {
+            $this->relations[$caller] = $result;
+        }
+        return $result;
     }
 
     /**
-     * Define an inverse one-to-many or one-to-one relationship
-     *
-     * @param string $related The related model class
-     * @param string|null $foreignKey The foreign key on this model
-     * @param string|null $ownerKey The primary key on the related model
-     * @return Model|null The related model or null
+     * Define an inverse one-to-many or one-to-one relationship.
      */
     public function belongsTo(string $related, ?string $foreignKey = null, ?string $ownerKey = null): ?Model
     {
         $relatedInstance = new $related();
-        $foreignKey = $foreignKey ?? $relatedInstance->getForeignKey();
-        $ownerKey = $ownerKey ?? $relatedInstance->primaryKey;
+        $foreignKey ??= $relatedInstance->getForeignKey();
+        $ownerKey ??= $relatedInstance->primaryKey;
+
+        if (self::inCaptureMode()) {
+            self::capture(new Relation(Relation::BELONGS_TO, $this, $related, $foreignKey, $ownerKey));
+            return null;
+        }
+
+        $caller = $this->callingRelationName();
+        if ($caller !== null && array_key_exists($caller, $this->relations)) {
+            $cached = $this->relations[$caller];
+            return $cached instanceof Model ? $cached : null;
+        }
 
         $foreignValue = $this->$foreignKey;
         if ($foreignValue === null) {
             return null;
         }
-
-        return $related::where($ownerKey, $foreignValue)->first();
+        $result = $related::where($ownerKey, $foreignValue)->first();
+        if ($caller !== null) {
+            $this->relations[$caller] = $result;
+        }
+        return $result;
     }
 
     /**
-     * Define a one-to-one relationship
-     *
-     * @param string $related The related model class
-     * @param string|null $foreignKey The foreign key on the related model
-     * @param string|null $localKey The local key on this model
-     * @return Model|null The related model or null
+     * Define a one-to-one relationship.
      */
     public function hasOne(string $related, ?string $foreignKey = null, ?string $localKey = null): ?Model
     {
-        $foreignKey = $foreignKey ?? $this->getForeignKey();
-        $localKey = $localKey ?? $this->primaryKey;
+        $foreignKey ??= $this->getForeignKey();
+        $localKey ??= $this->primaryKey;
+
+        if (self::inCaptureMode()) {
+            self::capture(new Relation(Relation::HAS_ONE, $this, $related, $localKey, $foreignKey));
+            return null;
+        }
+
+        $caller = $this->callingRelationName();
+        if ($caller !== null && array_key_exists($caller, $this->relations)) {
+            $cached = $this->relations[$caller];
+            return $cached instanceof Model ? $cached : null;
+        }
 
         $localValue = $this->$localKey;
         if ($localValue === null) {
             return null;
         }
-
-        return $related::where($foreignKey, $localValue)->first();
+        $result = $related::where($foreignKey, $localValue)->first();
+        if ($caller !== null) {
+            $this->relations[$caller] = $result;
+        }
+        return $result;
     }
 
     /**

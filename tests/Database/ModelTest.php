@@ -111,6 +111,61 @@ class ModelTest extends TestCase
         $this->assertSame("SELECT * FROM users WHERE (email = ?) AND (verified_at IS NOT NULL)", $sql["query"]);
     }
 
+    // ─── Where In ───────────────────────────────────────────────
+
+    public function testWhereInStaticFactory()
+    {
+        $sql = User::whereIn("id", [1, 2, 3])->sql();
+        $this->assertSame("SELECT * FROM users WHERE (id IN (?, ?, ?))", $sql["query"]);
+        $this->assertSame([1, 2, 3], $sql["params"]);
+    }
+
+    public function testAndWhereInChained()
+    {
+        $sql = User::where("role", "admin")
+            ->andWhereIn("id", [10, 20])
+            ->sql();
+        $this->assertSame("SELECT * FROM users WHERE (role = ?) AND (id IN (?, ?))", $sql["query"]);
+        $this->assertSame(["admin", 10, 20], $sql["params"]);
+    }
+
+    public function testAndWhereNotInChained()
+    {
+        $sql = User::where("role", "admin")
+            ->andWhereNotIn("id", [1, 2])
+            ->sql();
+        $this->assertSame("SELECT * FROM users WHERE (role = ?) AND (id NOT IN (?, ?))", $sql["query"]);
+        $this->assertSame(["admin", 1, 2], $sql["params"]);
+    }
+
+    public function testWhereInEmptyArrayMatchesNothing()
+    {
+        $sql = User::whereIn("id", [])->sql();
+        $this->assertSame("SELECT * FROM users WHERE (0 = 1)", $sql["query"]);
+        $this->assertSame([], $sql["params"]);
+    }
+
+    public function testAndWhereNotInEmptyArrayMatchesEverything()
+    {
+        $sql = User::where("role", "admin")
+            ->andWhereNotIn("id", [])
+            ->sql();
+        $this->assertSame("SELECT * FROM users WHERE (role = ?) AND (1 = 1)", $sql["query"]);
+        $this->assertSame(["admin"], $sql["params"]);
+    }
+
+    public function testWhereInRejectsInvalidIdentifier()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::whereIn("id; DROP TABLE users", [1, 2]);
+    }
+
+    public function testAndWhereInRejectsInvalidIdentifier()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::where("role", "admin")->andWhereIn("col)--", [1]);
+    }
+
     // ─── Group By ───────────────────────────────────────────────
 
     public function testGroupBy()
