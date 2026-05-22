@@ -25,6 +25,7 @@ abstract class Model implements ModelInterface
     private array $orWhere = [];
     private array $orderBy = [];
     private array $groupBy = [];
+    private array $having = [];
     private array $params = [];
     protected array $attributes = [];
     private array $originalAttributes = [];
@@ -319,6 +320,66 @@ abstract class Model implements ModelInterface
     }
 
     /**
+     * Append a raw ORDER BY expression. Bypasses identifier validation, so use
+     * only for trusted SQL (function calls like COALESCE(), FIELD(), RAND()).
+     *
+     * Bindings, if any, are appended positionally to query params. Chain order
+     * matters: call after where() and after having(), since SQL is assembled
+     * WHERE -> HAVING -> ORDER BY.
+     */
+    public function orderByRaw(string $expr, array $bindings = []): static
+    {
+        $this->orderBy[] = $expr;
+        foreach ($bindings as $binding) {
+            $this->params[] = $binding;
+        }
+        return $this;
+    }
+
+    /**
+     * Append a raw GROUP BY expression. Bypasses identifier validation, so use
+     * only for trusted SQL (DATE(), YEAR(), etc.). Chain after where().
+     */
+    public function groupByRaw(string $expr, array $bindings = []): static
+    {
+        $this->groupBy[] = $expr;
+        foreach ($bindings as $binding) {
+            $this->params[] = $binding;
+        }
+        return $this;
+    }
+
+    /**
+     * Add HAVING clauses for use with groupBy(). Each clause is wrapped in
+     * parens and joined with AND, matching the where() convention.
+     *
+     * Chain after where() and before orderBy() to keep bindings positionally
+     * aligned with WHERE -> HAVING -> ORDER BY.
+     */
+    public function having(array $clauses, mixed ...$replacements): static
+    {
+        foreach ($clauses as $clause) {
+            $this->having[] = "($clause)";
+        }
+        foreach ($replacements as $replacement) {
+            $this->params[] = $replacement;
+        }
+        return $this;
+    }
+
+    /**
+     * Add a raw HAVING clause. Mirrors whereRaw().
+     */
+    public function havingRaw(string $sql, array $bindings = []): static
+    {
+        $this->having[] = "($sql)";
+        foreach ($bindings as $binding) {
+            $this->params[] = $binding;
+        }
+        return $this;
+    }
+
+    /**
      * Set custom select columns (for aggregates, expressions, etc.)
      *
      * @param array $columns Columns or expressions to select
@@ -344,6 +405,7 @@ abstract class Model implements ModelInterface
             ->where($this->where)
             ->orWhere($this->orWhere)
             ->groupBy($this->groupBy)
+            ->having($this->having)
             ->orderBy($this->orderBy)
             ->limit($limit)
             ->params($this->params)
@@ -393,6 +455,7 @@ abstract class Model implements ModelInterface
             ->where($this->where)
             ->orWhere($this->orWhere)
             ->groupBy($this->groupBy)
+            ->having($this->having)
             ->orderBy($this->orderBy)
             ->limit($limit)
             ->params($this->params)
@@ -507,6 +570,81 @@ abstract class Model implements ModelInterface
                 $allChildren[0]->loadRelations($allChildren, $nested);
             }
         }
+    }
+
+    /**
+     * Paginate the query and return a page of hydrated models with metadata.
+     *
+     * Runs a COUNT (respecting WHERE/orWhere) followed by a SELECT with
+     * LIMIT/OFFSET. Eager-loaded relations from with() are batched on the
+     * resulting page exactly as in get().
+     *
+     * Does NOT support groupBy() or having() — for grouped queries, compute
+     * the count manually and use getRaw() with limit().
+     *
+     * Returned shape: ['data', 'total', 'page', 'perPage', 'lastPage'].
+     *
+     * @throws InvalidArgumentException if $perPage is < 1
+     * @throws RuntimeException if groupBy() or having() is set
+     */
+    public function paginate(int $perPage, int $page = 1): array
+    {
+        if ($perPage < 1) {
+            throw new InvalidArgumentException(
+                "paginate(): perPage must be >= 1, got $perPage"
+            );
+        }
+        if (!empty($this->groupBy) || !empty($this->having)) {
+            throw new RuntimeException(
+                "paginate() does not support groupBy() or having(). "
+                . "Compute the count manually for grouped queries."
+            );
+        }
+        if ($page < 1) {
+            $page = 1;
+        }
+
+        $total = $this->count();
+
+        if ($total === 0) {
+            return [
+                'data' => [],
+                'total' => 0,
+                'page' => $page,
+                'perPage' => $perPage,
+                'lastPage' => 1,
+            ];
+        }
+
+        $offset = ($page - 1) * $perPage;
+
+        $results = $this->qb
+            ->select($this->columns)
+            ->from($this->tableName)
+            ->where($this->where)
+            ->orWhere($this->orWhere)
+            ->orderBy($this->orderBy)
+            ->limit($perPage)
+            ->offset($offset)
+            ->params($this->params)
+            ->execute()
+            ->fetchAll(PDO::FETCH_OBJ);
+
+        $models = $results
+            ? array_map(fn($row) => static::hydrate($row), $results)
+            : [];
+
+        if (!empty($this->eagerLoad) && !empty($models)) {
+            $this->loadRelations($models, $this->eagerLoad);
+        }
+
+        return [
+            'data' => $models,
+            'total' => $total,
+            'page' => $page,
+            'perPage' => $perPage,
+            'lastPage' => max(1, (int) ceil($total / $perPage)),
+        ];
     }
 
     /**
@@ -639,6 +777,7 @@ abstract class Model implements ModelInterface
             ->where($this->where)
             ->orWhere($this->orWhere)
             ->groupBy($this->groupBy)
+            ->having($this->having)
             ->orderBy($this->orderBy)
             ->limit($limit)
             ->params($this->params);

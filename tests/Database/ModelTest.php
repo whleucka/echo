@@ -63,6 +63,41 @@ class ModelTest extends TestCase
         );
     }
 
+    public function testOrderByRaw()
+    {
+        $sql = User::where("id", ">", "0")
+            ->orderByRaw("COALESCE(published_at, created_at) DESC")
+            ->sql();
+        $this->assertSame(
+            "SELECT * FROM users WHERE (id > ?) ORDER BY COALESCE(published_at, created_at) DESC",
+            $sql["query"]
+        );
+    }
+
+    public function testOrderByRawMixesWithOrderBy()
+    {
+        $sql = User::where("id", ">", "0")
+            ->orderBy("role", "ASC")
+            ->orderByRaw("RAND()")
+            ->sql();
+        $this->assertSame(
+            "SELECT * FROM users WHERE (id > ?) ORDER BY role ASC, RAND()",
+            $sql["query"]
+        );
+    }
+
+    public function testOrderByRawBindingsAppendedAfterWhere()
+    {
+        $sql = User::where("status", "active")
+            ->orderByRaw("FIELD(role, ?, ?)", ["admin", "user"])
+            ->sql();
+        $this->assertSame(
+            "SELECT * FROM users WHERE (status = ?) ORDER BY FIELD(role, ?, ?)",
+            $sql["query"]
+        );
+        $this->assertSame(["active", "admin", "user"], $sql["params"]);
+    }
+
     // ─── Where Chains ───────────────────────────────────────────
 
     public function testQueryChains()
@@ -253,6 +288,120 @@ class ModelTest extends TestCase
             ->groupBy("role", "status")
             ->sql();
         $this->assertSame("SELECT * FROM users WHERE (id > ?) GROUP BY role, status", $sql["query"]);
+    }
+
+    public function testGroupByRaw()
+    {
+        $sql = User::where("id", ">", "0")
+            ->groupByRaw("YEAR(created_at)")
+            ->sql();
+        $this->assertSame(
+            "SELECT * FROM users WHERE (id > ?) GROUP BY YEAR(created_at)",
+            $sql["query"]
+        );
+    }
+
+    public function testGroupByRawMixesWithGroupBy()
+    {
+        $sql = User::where("id", ">", "0")
+            ->groupBy("role")
+            ->groupByRaw("YEAR(created_at)")
+            ->sql();
+        $this->assertSame(
+            "SELECT * FROM users WHERE (id > ?) GROUP BY role, YEAR(created_at)",
+            $sql["query"]
+        );
+    }
+
+    // ─── Having ─────────────────────────────────────────────────
+
+    public function testHaving()
+    {
+        $sql = User::where("id", ">", "0")
+            ->select(["role", "COUNT(*) as cnt"])
+            ->groupBy("role")
+            ->having(["COUNT(*) > ?"], 5)
+            ->sql();
+        $this->assertSame(
+            "SELECT role, COUNT(*) as cnt FROM users WHERE (id > ?) GROUP BY role HAVING (COUNT(*) > ?)",
+            $sql["query"]
+        );
+        $this->assertSame(["0", 5], $sql["params"]);
+    }
+
+    public function testHavingMultipleClauses()
+    {
+        $sql = User::where("id", ">", "0")
+            ->groupBy("role")
+            ->having(["COUNT(*) > ?", "SUM(score) >= ?"], 5, 100)
+            ->sql();
+        $this->assertSame(
+            "SELECT * FROM users WHERE (id > ?) GROUP BY role HAVING (COUNT(*) > ?) AND (SUM(score) >= ?)",
+            $sql["query"]
+        );
+        $this->assertSame(["0", 5, 100], $sql["params"]);
+    }
+
+    public function testHavingRaw()
+    {
+        $sql = User::where("id", ">", "0")
+            ->groupBy("role")
+            ->havingRaw("COUNT(*) > ?", [5])
+            ->sql();
+        $this->assertSame(
+            "SELECT * FROM users WHERE (id > ?) GROUP BY role HAVING (COUNT(*) > ?)",
+            $sql["query"]
+        );
+        $this->assertSame(["0", 5], $sql["params"]);
+    }
+
+    public function testHavingParamsPositionedCorrectly()
+    {
+        // Chain order: where -> groupBy -> having -> orderByRaw
+        // SQL order:   WHERE -> GROUP BY -> HAVING -> ORDER BY
+        // Param order must match SQL order.
+        $sql = User::where("status", "active")
+            ->groupBy("role")
+            ->having(["COUNT(*) > ?"], 5)
+            ->orderByRaw("FIELD(role, ?)", ["admin"])
+            ->sql();
+        $this->assertSame(
+            "SELECT * FROM users WHERE (status = ?) GROUP BY role HAVING (COUNT(*) > ?) ORDER BY FIELD(role, ?)",
+            $sql["query"]
+        );
+        $this->assertSame(["active", 5, "admin"], $sql["params"]);
+    }
+
+    // ─── Paginate (input validation) ────────────────────────────
+
+    public function testPaginateRejectsZeroPerPage()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::where("id", ">", "0")->paginate(0);
+    }
+
+    public function testPaginateRejectsNegativePerPage()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::where("id", ">", "0")->paginate(-1);
+    }
+
+    public function testPaginateThrowsWithGroupBy()
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage("paginate() does not support groupBy()");
+        User::where("id", ">", "0")
+            ->groupBy("role")
+            ->paginate(10);
+    }
+
+    public function testPaginateThrowsWithHaving()
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage("paginate() does not support groupBy()");
+        User::where("id", ">", "0")
+            ->havingRaw("COUNT(*) > 5")
+            ->paginate(10);
     }
 
     // ─── Select Columns ─────────────────────────────────────────

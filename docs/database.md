@@ -49,7 +49,13 @@ $users = User::where('active', 1)->get();                     // collection (ret
 // Operators: =, !=, >, >=, <, <=, is, not, like
 $users = User::where('dob', '>=', '1990-01-01')->get();
 $users = User::where('name', 'like', '%jane%')->get();
+
+// Unfiltered chain — use query() instead of where('id', '>', 0) hacks
+$users = User::query()->orderBy('created_at', 'DESC')->get(10);
+$stats = User::query()->select(['role', 'COUNT(*) as count'])->groupBy('role')->getRaw();
 ```
+
+Static factories that start a chain: `query()`, `where()`, `whereIn()`, `find()`. Everything else (`andWhere`, `whereRaw`, `orderBy`, `orderByRaw`, `groupBy`, `groupByRaw`, `having`, `havingRaw`, `paginate`, `with`, ...) is instance-only and mutates the builder.
 
 ### Update
 
@@ -90,6 +96,16 @@ $users = User::where('active', 1)->whereBetween('created_at', '2025-01-01', '202
 
 // Raw WHERE
 $users = User::where('active', 1)->whereRaw('YEAR(created_at) = ?', [2025])->get();
+
+// WHERE IN — static factory or chained
+$users = User::whereIn('id', [1, 2, 3])->get();
+$users = User::where('active', 1)->andWhereIn('role', ['admin', 'editor'])->get();
+$users = User::where('active', 1)->andWhereNotIn('role', ['banned'])->get();
+
+// Empty array edge cases (Model-level, mirrors QueryBuilder)
+User::whereIn('id', [])->get();                      // WHERE 0 = 1  → []
+User::where('active', 1)->andWhereNotIn('id', [])    // WHERE active = ? AND 1 = 1
+    ->get();
 ```
 
 ## Ordering, Grouping & Limiting
@@ -109,6 +125,63 @@ $stats = User::where('active', 1)
     ->getRaw();                         // returns raw arrays, not models
 ```
 
+### Raw expressions in ORDER BY / GROUP BY
+
+`orderBy` and `groupBy` only accept plain identifiers (validated against
+`^[a-zA-Z_][\w.]*$`). For function calls, `COALESCE`, `RAND`, `FIELD`, `DATE`,
+etc., use the raw variants — they skip identifier validation, so the input
+must be trusted SQL.
+
+```php
+// COALESCE in ORDER BY (common for "fall back to created_at when null")
+User::where('status', 'published')
+    ->orderByRaw('COALESCE(published_at, created_at) DESC')
+    ->get();
+
+// Bindings work like whereRaw — they're appended positionally to params
+User::where('status', 'active')
+    ->orderByRaw('FIELD(role, ?, ?)', ['admin', 'user'])
+    ->get();
+
+// GROUP BY a derived value
+$counts = Post::query()
+    ->select(['YEAR(created_at) as yr', 'COUNT(*) as cnt'])
+    ->groupByRaw('YEAR(created_at)')
+    ->getRaw();
+```
+
+**Param ordering note.** Model collects bindings in the order methods are
+called, while SQL is assembled `WHERE` → `HAVING` → `ORDER BY`. To keep
+placeholders aligned, chain in that order: `where()` → `having()` →
+`orderByRaw()`.
+
+### HAVING
+
+`having()` filters grouped rows. Each clause is wrapped in parens and joined
+with `AND`, matching the `where()` convention. Replacements are appended
+positionally to params.
+
+```php
+// Roles with more than 5 active users
+User::where('active', 1)
+    ->select(['role', 'COUNT(*) as cnt'])
+    ->groupBy('role')
+    ->having(['COUNT(*) > ?'], 5)
+    ->getRaw();
+
+// Multiple clauses, multiple bindings
+User::where('active', 1)
+    ->groupBy('role')
+    ->having(['COUNT(*) > ?', 'AVG(score) >= ?'], 5, 80)
+    ->getRaw();
+
+// Free-form raw clause
+User::where('active', 1)
+    ->groupBy('role')
+    ->havingRaw('COUNT(*) > AVG(score)')
+    ->getRaw();
+```
+
 ## Aggregates
 
 ```php
@@ -117,6 +190,37 @@ $total = User::countAll();                      // all rows
 $maxId = User::where('role', 'admin')->max('id');
 $maxId = User::maxAll('id');                    // across all rows
 ```
+
+## Pagination
+
+`paginate(int $perPage, int $page = 1)` returns a single page of hydrated
+models along with metadata, doing the `COUNT` and the `SELECT` for you. It
+respects `where`, `orWhere`, `orderBy`/`orderByRaw`, and any `with()` eager
+loading.
+
+```php
+$result = BlogPost::where('status', 'published')
+    ->orderByRaw('COALESCE(published_at, created_at) DESC')
+    ->with('author')
+    ->paginate(perPage: 10, page: $page);
+
+// Returned shape (plain array, Twig-friendly):
+// [
+//     'data'     => BlogPost[],   // the page of hydrated models
+//     'total'    => int,          // total matching rows (ignores LIMIT/OFFSET)
+//     'page'     => int,          // current page (clamped to >= 1)
+//     'perPage'  => int,
+//     'lastPage' => int,          // ceil(total / perPage); always >= 1
+// ]
+```
+
+**Constraints.**
+- `perPage` must be `>= 1` — otherwise throws `InvalidArgumentException`.
+- `page < 1` is silently clamped to 1.
+- `paginate()` does **not** support `groupBy()` or `having()` — it would need a
+  subquery to count grouped rows correctly. For grouped pagination, compute
+  the count manually and use `getRaw()` with `limit()`/`offset()` (exposed on
+  QueryBuilder).
 
 ## Relationships
 
@@ -156,22 +260,62 @@ $this->hasMany(Post::class, 'author_id', 'id');    // foreignKey, localKey
 $this->belongsTo(User::class, 'author_id', 'id');  // foreignKey, ownerKey
 ```
 
-### Eager Loading
+### Lazy Access
+
+Calling a relation method runs a query the first time and caches the result on the model. Subsequent calls reuse the cached value, including after eager loading populates the cache up front.
 
 ```php
-// Eager load during query (avoids N+1)
-$users = User::with('posts', 'profile')
-    ->where('active', 1)
-    ->get();
+$post = Post::find('42');
+$post->author();   // 1 query
+$post->author();   // cache hit, no query
+```
 
-// Access eager-loaded relations
-foreach ($users as $user) {
-    $posts = $user->getRelation('posts');
+### Eager Loading
+
+`with()` is an instance method that flags relations for batched loading; `.get()` then fires a single `WHERE … IN (…)` per relation regardless of result set size.
+
+```php
+// Single-hop — 1 query for posts + 1 query for all authors batched
+$posts = Post::query()->with('author')->get();
+foreach ($posts as $post) {
+    echo $post->author()->name;   // cache hit, no extra query
 }
 
-// Lazy eager load on existing query
-$users = User::where('active', 1)->load('posts')->get();
+// Combine with WHERE / WHERE IN
+$posts = Post::where('status', 'published')->with('author')->get();
+$posts = Post::whereIn('id', [1, 2, 3])->with('author', 'tags')->get();
 ```
+
+Eager loading is one query *per relation*, not per row. Loading three relations on 1,000 rows is 4 queries total.
+
+### Nested Eager Loading
+
+Dotted paths chain across multiple hops in a single declaration. Shared first segments are deduplicated — `with('author.profile', 'author.team')` runs one batched query for authors, then recurses with `[profile, team]` on those authors.
+
+```php
+$posts = Post::query()
+    ->with('author.profile', 'tags')
+    ->get();
+
+foreach ($posts as $post) {
+    $post->author()->profile()->bio;   // all cache hits
+    foreach ($post->tags() as $tag) { /* ... */ }
+}
+```
+
+Paths can go arbitrarily deep: `with('author.team.organization')` is three hops, four queries.
+
+### load() — alias of with()
+
+`load()` exists as a back-compat alias for `with()`. Identical behavior; pick whichever reads better at the call site.
+
+```php
+$posts = Post::query()->load('author')->get();   // same as with('author')
+```
+
+### Why with() is instance-only
+
+There is **no** `Model::with(...)` static factory. This was a deliberate API choice — a static `with()` allowed the foot-gun `Model::with('x')->where(...)` where the subsequent static `where()` created a fresh builder and silently dropped the eager load. Chains must start with `query()`, `where()`, `whereIn()`, or `find()`, then add `with()` later. The broken spelling can no longer be written.
 
 ## Model Events
 
