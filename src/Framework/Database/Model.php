@@ -408,7 +408,7 @@ abstract class Model implements ModelInterface
 
         // Perform eager loading if specified
         if (!empty($this->eagerLoad)) {
-            $this->loadRelations($models);
+            $this->loadRelations($models, $this->eagerLoad);
         }
 
         return $models;
@@ -424,20 +424,38 @@ abstract class Model implements ModelInterface
      * and results are grouped and stitched onto each parent. Each parent's
      * cache (relations[$name]) is populated, so subsequent lazy method calls
      * like $model->name() reuse the eager-loaded data.
+     *
+     * Dotted paths (e.g. `track.meta`) trigger nested loading: after the
+     * first-hop children are stitched, this method recurses on the children
+     * with the remainder of the path. Shared first segments are deduplicated
+     * — `with('track.meta', 'track.artist', 'client')` runs one batched
+     * query for tracks, then recurses with `[meta, artist]` on those tracks,
+     * plus one batched query for clients.
      */
-    private function loadRelations(array &$models): void
+    private function loadRelations(array &$models, array $eagerLoad): void
     {
-        if (empty($models)) {
+        if (empty($models) || empty($eagerLoad)) {
             return;
         }
 
-        foreach ($this->eagerLoad as $relation) {
-            if (!method_exists($this, $relation)) {
+        // Group dotted paths by their first segment so a shared first hop only
+        // runs one batched query regardless of how many nested paths use it.
+        $grouped = [];
+        foreach ($eagerLoad as $path) {
+            [$first, $rest] = array_pad(explode('.', $path, 2), 2, null);
+            $grouped[$first] ??= [];
+            if ($rest !== null) {
+                $grouped[$first][] = $rest;
+            }
+        }
+
+        foreach ($grouped as $first => $nested) {
+            if (!method_exists($this, $first)) {
                 continue;
             }
 
             $prototype = new static();
-            $descriptor = self::captureRelation(fn() => $prototype->$relation());
+            $descriptor = self::captureRelation(fn() => $prototype->$first());
             if ($descriptor === null) {
                 continue;
             }
@@ -455,30 +473,38 @@ abstract class Model implements ModelInterface
             }
             $keys = array_values(array_unique($keys));
 
-            // Group children by their join column
-            $grouped = [];
+            // Group children by their join column; also build a flat list for
+            // nested recursion.
+            $childrenByKey = [];
+            $allChildren = [];
             if (!empty($keys)) {
                 $relatedClass = $descriptor->related;
-                $children = $relatedClass::whereIn($descriptor->relatedColumn, $keys)->get();
-                foreach ($children as $child) {
+                $childModels = $relatedClass::whereIn($descriptor->relatedColumn, $keys)->get();
+                foreach ($childModels as $child) {
                     $childKey = $child->{$descriptor->relatedColumn} ?? null;
                     if ($childKey === null) {
                         continue;
                     }
                     if ($isMany) {
-                        $grouped[$childKey][] = $child;
+                        $childrenByKey[$childKey][] = $child;
                     } else {
-                        $grouped[$childKey] ??= $child;
+                        $childrenByKey[$childKey] ??= $child;
                     }
+                    $allChildren[] = $child;
                 }
             }
 
             // Stitch results onto each parent's relations cache
             foreach ($models as $model) {
                 $value = $model->{$descriptor->parentColumn} ?? null;
-                $model->relations[$relation] = ($value !== null && isset($grouped[$value]))
-                    ? $grouped[$value]
+                $model->relations[$first] = ($value !== null && isset($childrenByKey[$value]))
+                    ? $childrenByKey[$value]
                     : $empty;
+            }
+
+            // Recurse for nested paths on the loaded children
+            if (!empty($nested) && !empty($allChildren)) {
+                $allChildren[0]->loadRelations($allChildren, $nested);
             }
         }
     }
