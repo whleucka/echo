@@ -57,6 +57,42 @@ $stats = User::query()->select(['role', 'COUNT(*) as count'])->groupBy('role')->
 
 Static factories that start a chain: `query()`, `where()`, `whereIn()`, `find()`. Everything else (`andWhere`, `whereRaw`, `orderBy`, `orderByRaw`, `groupBy`, `groupByRaw`, `having`, `havingRaw`, `paginate`, `with`, ...) is instance-only and mutates the builder.
 
+#### Or-Fail variants
+
+`findOrFail()` and `firstOrFail()` throw `Echo\Framework\Database\ModelNotFoundException` when no row matches — use these in controller paths where a missing row is a 404, not a recoverable nil. The exception carries the model class and (for `findOrFail`) the lookup id so the handler can render a meaningful response without re-running the query.
+
+```php
+$user = User::findOrFail($id);                                  // throws on miss
+$user = User::where('email', $email)->firstOrFail();            // throws on miss
+
+try {
+    $user = User::findOrFail($id);
+} catch (ModelNotFoundException $e) {
+    // $e->modelClass, $e->id
+}
+```
+
+#### Existence checks
+
+`exists()` short-circuits via `LIMIT 1` and is cheaper than `count() > 0` for "is there at least one?" questions. `doesntExist()` is the inverse.
+
+```php
+if (User::where('email', $email)->exists()) { /* ... */ }
+if (BlogPost::where('slug', $slug)->doesntExist()) { /* 404 */ }
+```
+
+#### Scalar reads
+
+`value(string $column)` returns a single column from the first matching row without hydrating the full model. `pluck(string $column)` returns a flat positionally-indexed array of one column's values across all matching rows. `keyBy(string $column)` returns hydrated models indexed by a column.
+
+```php
+$email = User::find($id)->value('email');               // null if no row
+$ids   = User::where('active', 1)->pluck('id');         // [1, 4, 7, ...]
+$byId  = User::whereIn('id', $ids)->keyBy('id');        // ['1' => User, '4' => User, ...]
+```
+
+`keyBy()` skips rows whose key column is null and lets later rows overwrite duplicates.
+
 ### Update
 
 ```php
@@ -117,6 +153,10 @@ $users = User::where('active', 1)
 
 $first = User::orderBy('id', 'ASC')->first();
 $last = User::orderBy('id', 'ASC')->last();     // reverses to get last
+
+// latest() / oldest() — sugar for the common timestamp-ordering pattern
+$recent = User::query()->latest()->get(10);                  // ORDER BY created_at DESC
+$first  = BlogPost::where('status', 'published')->oldest('published_at')->first();
 
 // Group by with custom select
 $stats = User::where('active', 1)
@@ -187,9 +227,21 @@ User::where('active', 1)
 ```php
 $count = User::where('active', 1)->count();
 $total = User::countAll();                      // all rows
+
 $maxId = User::where('role', 'admin')->max('id');
 $maxId = User::maxAll('id');                    // across all rows
+
+$minId = User::where('active', 1)->min('id');
+$minId = User::minAll('id');
+
+$totalScore = Track::where('artist', $name)->sum('play_count');
+$totalScore = Track::sumAll('play_count');
+
+$avgDuration = Track::where('genre', 'jazz')->avg('duration_ms');
+$avgDuration = Track::avgAll('duration_ms');
 ```
+
+`min/max/sum/avg/count` honor the current `where` chain; their `*All` static counterparts run against the unfiltered table. `sum` and `avg` return numeric strings from MySQL — cast at the call site if you need `int`/`float`.
 
 ## Pagination
 

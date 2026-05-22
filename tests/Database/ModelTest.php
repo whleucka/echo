@@ -3,7 +3,9 @@
 namespace Tests\Database;
 
 use App\Models\User;
+use Echo\Framework\Database\ModelNotFoundException;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 
 class ModelTest extends TestCase
@@ -624,5 +626,102 @@ class ModelTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         User::where("123col", "test");
+    }
+
+    // ─── latest() / oldest() ────────────────────────────────────
+
+    public function testLatestDefaultsToCreatedAtDesc()
+    {
+        $sql = User::query()->latest()->sql();
+        $this->assertSame("SELECT * FROM users ORDER BY created_at DESC", $sql["query"]);
+    }
+
+    public function testLatestAcceptsColumn()
+    {
+        $sql = User::query()->latest("updated_at")->sql();
+        $this->assertSame("SELECT * FROM users ORDER BY updated_at DESC", $sql["query"]);
+    }
+
+    public function testOldestDefaultsToCreatedAtAsc()
+    {
+        $sql = User::query()->oldest()->sql();
+        $this->assertSame("SELECT * FROM users ORDER BY created_at ASC", $sql["query"]);
+    }
+
+    public function testOldestAcceptsColumn()
+    {
+        $sql = User::where("role", "admin")->oldest("registered_at")->sql();
+        $this->assertSame(
+            "SELECT * FROM users WHERE (role = ?) ORDER BY registered_at ASC",
+            $sql["query"]
+        );
+    }
+
+    public function testLatestRejectsInvalidColumn()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::query()->latest("col; DROP TABLE users");
+    }
+
+    public function testOldestRejectsInvalidColumn()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::query()->oldest("col)--");
+    }
+
+    // ─── pluck / keyBy / value identifier validation ────────────
+
+    public function testPluckRejectsInvalidColumn()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::query()->pluck("col; DROP TABLE users");
+    }
+
+    public function testKeyByRejectsInvalidColumn()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::query()->keyBy("col)--");
+    }
+
+    public function testValueRejectsInvalidColumn()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::query()->value("1=1; --");
+    }
+
+    // ─── findOrFail / firstOrFail ───────────────────────────────
+
+    /**
+     * Integration test: requires a working MySQL connection (id 99999999 must
+     * not exist). Skipped on hosts without the pdo_mysql driver — host PHP
+     * during local-only test runs without docker, for example.
+     */
+    #[RequiresPhpExtension('pdo_mysql')]
+    public function testFindOrFailThrowsWhenNotFound()
+    {
+        try {
+            User::findOrFail("99999999");
+            $this->fail("Expected ModelNotFoundException");
+        } catch (ModelNotFoundException $e) {
+            $this->assertSame(User::class, $e->modelClass);
+            $this->assertSame("99999999", $e->id);
+            $this->assertStringContainsString("with id [99999999]", $e->getMessage());
+        }
+    }
+
+    public function testModelNotFoundExceptionMessageFormat()
+    {
+        $withId = new ModelNotFoundException(User::class, "42");
+        $this->assertSame(
+            "No query results for model [App\\Models\\User] with id [42]",
+            $withId->getMessage()
+        );
+
+        $withoutId = new ModelNotFoundException(User::class);
+        $this->assertSame(
+            "No query results for model [App\\Models\\User]",
+            $withoutId->getMessage()
+        );
+        $this->assertNull($withoutId->id);
     }
 }

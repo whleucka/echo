@@ -41,14 +41,7 @@ class AuditListCommand extends Command
                 $query = $query->andWhere('auditable_type', 'LIKE', "%$model%");
             }
 
-            $result = $query->orderBy('created_at', 'DESC')->get($limit);
-
-            // Normalize to array
-            if (is_null($result)) {
-                $audits = [];
-            } else {
-                $audits = is_array($result) ? $result : [$result];
-            }
+            $audits = $query->latest()->get($limit);
         } catch (\Exception $e) {
             $output->writeln("<error>Error fetching audits: " . $e->getMessage() . "</error>");
             return Command::FAILURE;

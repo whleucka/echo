@@ -510,13 +510,10 @@ class DashboardService
             }
 
             // Use ORM for recent audits - models can access relations
-            $recentAuditModels = Audit::where('id', '>', '0')
-                ->orderBy('created_at', 'DESC')
-                ->get(5);
+            $recentAuditModels = Audit::query()->latest()->get(5);
 
             $recent = [];
-            $audits = is_array($recentAuditModels) ? $recentAuditModels : ($recentAuditModels ? [$recentAuditModels] : []);
-            foreach ($audits as $audit) {
+            foreach ($recentAuditModels as $audit) {
                 $user = $audit->user();
                 $userName = $user ? trim($user->first_name . ' ' . $user->surname) : 'System';
                 $recent[] = [
@@ -588,13 +585,10 @@ class DashboardService
             ->count();
 
         // Recent users (last 5 signups) - use ORM
-        $recentUserModels = User::where('id', '>', '0')
-            ->orderBy('created_at', 'DESC')
-            ->get(5);
+        $recentUserModels = User::query()->latest()->get(5);
 
         $recent = [];
-        $users = is_array($recentUserModels) ? $recentUserModels : ($recentUserModels ? [$recentUserModels] : []);
-        foreach ($users as $user) {
+        foreach ($recentUserModels as $user) {
             $recent[] = [
                 'id' => $user->id,
                 'name' => $user->fullName(),
@@ -694,13 +688,10 @@ class DashboardService
             ->count();
 
         // Recent jobs (last 5) - use ORM
-        $recentJobModels = EmailJob::where('id', '>', '0')
-            ->orderBy('created_at', 'DESC')
-            ->get(5);
+        $recentJobModels = EmailJob::query()->latest()->get(5);
 
         $recent = [];
-        $jobs = is_array($recentJobModels) ? $recentJobModels : ($recentJobModels ? [$recentJobModels] : []);
-        foreach ($jobs as $job) {
+        foreach ($recentJobModels as $job) {
             $recent[] = [
                 'id' => $job->id,
                 'to' => $job->to_address,
@@ -956,13 +947,10 @@ class DashboardService
             }
 
             // Recent uploads (last 5)
-            $recentFiles = FileInfo::where('id', '>', '0')
-                ->orderBy('created_at', 'DESC')
-                ->get(5);
+            $recentFiles = FileInfo::query()->latest()->get(5);
 
             $recent = [];
-            $files = is_array($recentFiles) ? $recentFiles : ($recentFiles ? [$recentFiles] : []);
-            foreach ($files as $file) {
+            foreach ($recentFiles as $file) {
                 $recent[] = [
                     'id' => $file->id,
                     'name' => $file->original_name,

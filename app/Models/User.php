@@ -29,19 +29,17 @@ class User extends Model
 
     public function hasPermission(int $module_id): bool
     {
-        $permission = UserPermission::where("user_id", $this->id)
+        return UserPermission::where("user_id", $this->id)
             ->andWhere("module_id", $module_id)
-            ->first();
-        return $permission !== null;
+            ->exists();
     }
 
     public function hasModePermission(int $module_id, string $mode): bool
     {
-        $permission = UserPermission::where("user_id", $this->id)
+        return UserPermission::where("user_id", $this->id)
             ->andWhere("module_id", $module_id)
             ->andWhere($mode, 1)
-            ->first();
-        return $permission !== null;
+            ->exists();
     }
 
     /**

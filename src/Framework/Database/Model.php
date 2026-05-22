@@ -9,7 +9,6 @@ use Echo\Framework\Event\Model\ModelUpdating;
 use Echo\Framework\Event\Model\ModelUpdated;
 use Echo\Framework\Event\Model\ModelDeleting;
 use Echo\Framework\Event\Model\ModelDeleted;
-use Exception;
 use InvalidArgumentException;
 use PDO;
 use RuntimeException;
@@ -129,10 +128,28 @@ abstract class Model implements ModelInterface
         $class = static::class;
         try {
             $model = new $class($id);
-            return $model->id !== null ? $model : null;
-        } catch (Exception) {
+            // $model->id is the constructor argument, set whether or not a
+            // row was found. Confirm the row actually loaded by checking that
+            // attributes contain the primary key.
+            $loaded = $model->attributes[$model->primaryKey] ?? null;
+            return $loaded !== null ? $model : null;
+        } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * Find a row by primary key or throw ModelNotFoundException. The exception
+     * carries the model class and id so controllers can render a 404 without
+     * re-running the query.
+     */
+    public static function findOrFail(string $id): static
+    {
+        $model = static::find($id);
+        if ($model === null) {
+            throw new ModelNotFoundException(static::class, $id);
+        }
+        return $model;
     }
 
     /**
@@ -337,6 +354,23 @@ abstract class Model implements ModelInterface
     }
 
     /**
+     * Order by a timestamp column descending. Defaults to created_at — sugar
+     * for the most common "newest first" listing pattern.
+     */
+    public function latest(string $column = 'created_at'): static
+    {
+        return $this->orderBy($column, 'DESC');
+    }
+
+    /**
+     * Order by a timestamp column ascending. Defaults to created_at.
+     */
+    public function oldest(string $column = 'created_at'): static
+    {
+        return $this->orderBy($column, 'ASC');
+    }
+
+    /**
      * Append a raw GROUP BY expression. Bypasses identifier validation, so use
      * only for trusted SQL (DATE(), YEAR(), etc.). Chain after where().
      */
@@ -413,6 +447,90 @@ abstract class Model implements ModelInterface
             ->fetchAll(PDO::FETCH_ASSOC);
 
         return $results ?: [];
+    }
+
+    /**
+     * Return a flat array of a single column's values from the current chain.
+     *
+     * Mirrors Laravel's pluck(): runs a `SELECT $column` honoring where /
+     * groupBy / having / orderBy, then collapses to a positionally-indexed
+     * array. Replaces the common `array_column(Model::...->getRaw(), $col)`
+     * idiom at call sites.
+     *
+     * Dotted aliases (e.g. "u.name") are resolved using the trailing segment
+     * as the result key.
+     */
+    public function pluck(string $column): array
+    {
+        self::validateIdentifier($column);
+        $results = $this->qb
+            ->select([$column])
+            ->from($this->tableName)
+            ->where($this->where)
+            ->orWhere($this->orWhere)
+            ->groupBy($this->groupBy)
+            ->having($this->having)
+            ->orderBy($this->orderBy)
+            ->params($this->params)
+            ->execute()
+            ->fetchAll(PDO::FETCH_ASSOC);
+
+        if (!$results) {
+            return [];
+        }
+        $key = str_contains($column, '.') ? substr(strrchr($column, '.'), 1) : $column;
+        return array_column($results, $key);
+    }
+
+    /**
+     * Run the chain and return hydrated models indexed by $column. Replaces
+     * the common `foreach ($models as $m) { $map[$m->id] = $m; }` idiom.
+     *
+     * Rows where $column is null are skipped. If duplicate keys appear, the
+     * later row wins (matching array-assignment semantics).
+     */
+    public function keyBy(string $column): array
+    {
+        self::validateIdentifier($column);
+        $models = $this->get();
+        if (empty($models)) {
+            return [];
+        }
+        $bare = str_contains($column, '.') ? substr(strrchr($column, '.'), 1) : $column;
+        $keyed = [];
+        foreach ($models as $model) {
+            $value = $model->$bare ?? null;
+            if ($value !== null) {
+                $keyed[$value] = $model;
+            }
+        }
+        return $keyed;
+    }
+
+    /**
+     * Return a single column's value from the first matching row, or null if
+     * no row matches. Sugar for `first()?->$column` that avoids hydrating the
+     * full row when only one column is needed.
+     */
+    public function value(string $column): mixed
+    {
+        self::validateIdentifier($column);
+        $result = $this->qb
+            ->select([$column])
+            ->from($this->tableName)
+            ->where($this->where)
+            ->orWhere($this->orWhere)
+            ->orderBy($this->orderBy)
+            ->limit(1)
+            ->params($this->params)
+            ->execute()
+            ->fetch(PDO::FETCH_ASSOC);
+
+        if (!$result) {
+            return null;
+        }
+        $key = str_contains($column, '.') ? substr(strrchr($column, '.'), 1) : $column;
+        return $result[$key] ?? null;
     }
 
     /**
@@ -675,6 +793,49 @@ abstract class Model implements ModelInterface
     }
 
     /**
+     * Return the first matching row or throw ModelNotFoundException. Use in
+     * controller paths where a missing row is a 404, not a recoverable nil.
+     */
+    public function firstOrFail(): static
+    {
+        $result = $this->first();
+        if ($result === null) {
+            throw new ModelNotFoundException(static::class);
+        }
+        return $result;
+    }
+
+    /**
+     * Return true if any row matches the current chain. Honors where /
+     * orWhere / groupBy / having; cheaper than count() since it short-circuits
+     * via LIMIT 1.
+     */
+    public function exists(): bool
+    {
+        $result = $this->qb
+            ->select(["1"])
+            ->from($this->tableName)
+            ->where($this->where)
+            ->orWhere($this->orWhere)
+            ->groupBy($this->groupBy)
+            ->having($this->having)
+            ->limit(1)
+            ->params($this->params)
+            ->execute()
+            ->fetch(PDO::FETCH_ASSOC);
+
+        return $result !== false && $result !== null;
+    }
+
+    /**
+     * Inverse of exists().
+     */
+    public function doesntExist(): bool
+    {
+        return !$this->exists();
+    }
+
+    /**
      * Count records matching the query
      *
      * @param string $column Column to count (default '*')
@@ -738,6 +899,90 @@ abstract class Model implements ModelInterface
         $class = static::class;
         $model = new $class();
         return $model->max($column);
+    }
+
+    /**
+     * Minimum value of $column across rows matching the current chain.
+     */
+    public function min(string $column): mixed
+    {
+        $result = $this->qb
+            ->select(["MIN($column) as aggregate"])
+            ->from($this->tableName)
+            ->where($this->where)
+            ->orWhere($this->orWhere)
+            ->params($this->params)
+            ->execute()
+            ->fetch(PDO::FETCH_ASSOC);
+
+        return $result['aggregate'] ?? null;
+    }
+
+    /**
+     * Static min with no conditions.
+     */
+    public static function minAll(string $column): mixed
+    {
+        $class = static::class;
+        $model = new $class();
+        return $model->min($column);
+    }
+
+    /**
+     * Sum of $column across rows matching the current chain. Returns a numeric
+     * string (PDO's native MySQL type for SUM); cast at the call site if you
+     * need int/float.
+     */
+    public function sum(string $column): mixed
+    {
+        $result = $this->qb
+            ->select(["SUM($column) as aggregate"])
+            ->from($this->tableName)
+            ->where($this->where)
+            ->orWhere($this->orWhere)
+            ->params($this->params)
+            ->execute()
+            ->fetch(PDO::FETCH_ASSOC);
+
+        return $result['aggregate'] ?? null;
+    }
+
+    /**
+     * Static sum with no conditions.
+     */
+    public static function sumAll(string $column): mixed
+    {
+        $class = static::class;
+        $model = new $class();
+        return $model->sum($column);
+    }
+
+    /**
+     * Average of $column across rows matching the current chain. Returns a
+     * numeric string from MySQL; cast at the call site if needed.
+     */
+    public function avg(string $column): mixed
+    {
+        $result = $this->qb
+            ->select(["AVG($column) as aggregate"])
+            ->from($this->tableName)
+            ->where($this->where)
+            ->orWhere($this->orWhere)
+            ->params($this->params)
+            ->execute()
+            ->fetch(PDO::FETCH_ASSOC);
+
+        return $result['aggregate'] ?? null;
+    }
+
+    /**
+     * Static avg with no conditions.
+     */
+    public static function avgAll(string $column): mixed
+    {
+        $class = static::class;
+        $model = new $class();
+        return $model->avg($column);
     }
 
     public function last(): ?static
