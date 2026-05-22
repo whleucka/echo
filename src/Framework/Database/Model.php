@@ -10,10 +10,11 @@ use Echo\Framework\Event\Model\ModelUpdated;
 use Echo\Framework\Event\Model\ModelDeleting;
 use Echo\Framework\Event\Model\ModelDeleted;
 use InvalidArgumentException;
+use JsonSerializable;
 use PDO;
 use RuntimeException;
 
-abstract class Model implements ModelInterface
+abstract class Model implements ModelInterface, JsonSerializable
 {
     protected string $tableName;
     protected string $primaryKey = "id";
@@ -123,6 +124,68 @@ abstract class Model implements ModelInterface
         return false;
     }
 
+    /**
+     * Build a chain matching all $find columns with AND. Returns null when
+     * $find is empty so callers can decide what to do.
+     */
+    private static function buildLookupChain(array $find): ?static
+    {
+        if (empty($find)) {
+            return null;
+        }
+        $chain = null;
+        foreach ($find as $column => $value) {
+            self::validateIdentifier((string) $column);
+            $chain = $chain === null
+                ? static::where($column, $value)
+                : $chain->andWhere($column, $value);
+        }
+        return $chain;
+    }
+
+    /**
+     * Find a row matching $find or create one with $find + $attributes. Use
+     * for idempotent seeders, "ensure this exists" job logic, etc.
+     *
+     * @throws InvalidArgumentException if $find is empty
+     */
+    public static function firstOrCreate(array $find, array $attributes = []): static|bool
+    {
+        if (empty($find)) {
+            throw new InvalidArgumentException(
+                "firstOrCreate(): \$find must contain at least one column => value pair"
+            );
+        }
+        $existing = self::buildLookupChain($find)?->first();
+        if ($existing !== null) {
+            return $existing;
+        }
+        return static::create([...$find, ...$attributes]);
+    }
+
+    /**
+     * Find a row matching $find and apply $attributes via update(), or create
+     * a new row with $find + $attributes. Returns the live model.
+     *
+     * @throws InvalidArgumentException if $find is empty
+     */
+    public static function updateOrCreate(array $find, array $attributes = []): static|bool
+    {
+        if (empty($find)) {
+            throw new InvalidArgumentException(
+                "updateOrCreate(): \$find must contain at least one column => value pair"
+            );
+        }
+        $existing = self::buildLookupChain($find)?->first();
+        if ($existing !== null) {
+            if (!empty($attributes)) {
+                $existing->update($attributes);
+            }
+            return $existing;
+        }
+        return static::create([...$find, ...$attributes]);
+    }
+
     public static function find(string $id): ?static
     {
         $class = static::class;
@@ -160,6 +223,40 @@ abstract class Model implements ModelInterface
     public static function query(): static
     {
         return new static();
+    }
+
+    /**
+     * Conditionally apply $callback to the chain when $value is truthy.
+     * The callback receives ($this, $value) and may return either the
+     * chained instance or void/null (which falls back to $this).
+     *
+     * Replaces the verbose `if ($filter) { $q = $q->where(...); }` pattern in
+     * controllers that build queries from request input.
+     *
+     *   User::query()
+     *       ->when($search, fn($q, $v) => $q->where('name', 'like', "%$v%"))
+     *       ->when($role,   fn($q, $v) => $q->where('role', $v))
+     *       ->paginate(20);
+     */
+    public function when(mixed $value, callable $callback, ?callable $default = null): static
+    {
+        if ($value) {
+            $result = $callback($this, $value);
+            return $result instanceof static ? $result : $this;
+        }
+        if ($default !== null) {
+            $result = $default($this, $value);
+            return $result instanceof static ? $result : $this;
+        }
+        return $this;
+    }
+
+    /**
+     * Inverse of when(): apply $callback when $value is falsy.
+     */
+    public function unless(mixed $value, callable $callback, ?callable $default = null): static
+    {
+        return $this->when(!$value, $callback, $default);
     }
 
     public static function where(string $field, string $operator = '=', ?string $value = null): static
@@ -261,6 +358,87 @@ abstract class Model implements ModelInterface
     {
         self::validateIdentifier($field);
         $this->where[] = "($field IS NOT NULL)";
+        return $this;
+    }
+
+    /**
+     * Add a WHERE NOT BETWEEN clause — complement of whereBetween().
+     */
+    public function whereNotBetween(string $field, mixed $start, mixed $end): static
+    {
+        self::validateIdentifier($field);
+        $this->where[] = "($field NOT BETWEEN ? AND ?)";
+        $this->params[] = $start;
+        $this->params[] = $end;
+        return $this;
+    }
+
+    /**
+     * Filter by DATE($column) using MySQL's DATE() function. Operator accepts
+     * the same set as where(); a non-operator second arg is treated as the
+     * value (defaults to =).
+     *
+     *   $q->whereDate('created_at', '2026-05-22');
+     *   $q->whereDate('created_at', '>=', '2026-01-01');
+     */
+    public function whereDate(string $column, string $operator, ?string $date = null): static
+    {
+        self::validateIdentifier($column);
+        if (!in_array(strtolower($operator), $this->validOperators)) {
+            $date = $operator;
+            $operator = "=";
+        }
+        $this->where[] = "(DATE($column) $operator ?)";
+        $this->params[] = $date;
+        return $this;
+    }
+
+    /**
+     * Filter by YEAR($column).
+     */
+    public function whereYear(string $column, int|string $year): static
+    {
+        self::validateIdentifier($column);
+        $this->where[] = "(YEAR($column) = ?)";
+        $this->params[] = $year;
+        return $this;
+    }
+
+    /**
+     * Filter by MONTH($column). Pass 1-12.
+     */
+    public function whereMonth(string $column, int|string $month): static
+    {
+        self::validateIdentifier($column);
+        $this->where[] = "(MONTH($column) = ?)";
+        $this->params[] = $month;
+        return $this;
+    }
+
+    /**
+     * Filter by DAY($column). Pass 1-31.
+     */
+    public function whereDay(string $column, int|string $day): static
+    {
+        self::validateIdentifier($column);
+        $this->where[] = "(DAY($column) = ?)";
+        $this->params[] = $day;
+        return $this;
+    }
+
+    /**
+     * Filter by TIME($column). Operator follows the same defaulting rule as
+     * whereDate(): a non-operator arg becomes the value.
+     */
+    public function whereTime(string $column, string $operator, ?string $time = null): static
+    {
+        self::validateIdentifier($column);
+        if (!in_array(strtolower($operator), $this->validOperators)) {
+            $time = $operator;
+            $operator = "=";
+        }
+        $this->where[] = "(TIME($column) $operator ?)";
+        $this->params[] = $time;
         return $this;
     }
 
@@ -766,6 +944,78 @@ abstract class Model implements ModelInterface
     }
 
     /**
+     * Process the query result in batches of $size, passing each batch as an
+     * array of hydrated models to $callback. The callback receives
+     * ($models, $page) and may return false to stop iteration early.
+     *
+     * Requires an ORDER BY clause for deterministic pagination — without one,
+     * the database is free to return rows in any order, which makes
+     * LIMIT/OFFSET unsafe across pages. Add ->orderBy('id') or similar.
+     *
+     * Like paginate(), does NOT support groupBy() or having() — the LIMIT
+     * applies to grouped rows, not source rows, which breaks chunking.
+     *
+     * Returns true if iteration completed, false if the callback aborted.
+     *
+     * @throws InvalidArgumentException if $size < 1
+     * @throws RuntimeException if no orderBy/groupBy/having constraints violated
+     */
+    public function chunk(int $size, callable $callback): bool
+    {
+        if ($size < 1) {
+            throw new InvalidArgumentException(
+                "chunk(): \$size must be >= 1, got $size"
+            );
+        }
+        if (empty($this->orderBy)) {
+            throw new RuntimeException(
+                "chunk() requires an ORDER BY clause for deterministic "
+                . "pagination. Add ->orderBy(...) to the chain (commonly the "
+                . "primary key)."
+            );
+        }
+        if (!empty($this->groupBy) || !empty($this->having)) {
+            throw new RuntimeException(
+                "chunk() does not support groupBy() or having(). The LIMIT "
+                . "applies to grouped rows, which breaks chunking."
+            );
+        }
+
+        $page = 0;
+        do {
+            $offset = $page * $size;
+            $results = $this->qb
+                ->select($this->columns)
+                ->from($this->tableName)
+                ->where($this->where)
+                ->orWhere($this->orWhere)
+                ->orderBy($this->orderBy)
+                ->limit($size)
+                ->offset($offset)
+                ->params($this->params)
+                ->execute()
+                ->fetchAll(PDO::FETCH_OBJ);
+
+            if (!$results) {
+                break;
+            }
+
+            $models = array_map(fn($row) => static::hydrate($row), $results);
+            if (!empty($this->eagerLoad)) {
+                $this->loadRelations($models, $this->eagerLoad);
+            }
+
+            if ($callback($models, $page + 1) === false) {
+                return false;
+            }
+
+            $page++;
+        } while (count($results) === $size);
+
+        return true;
+    }
+
+    /**
      * Get an eager loaded relation
      */
     public function getRelation(string $name): mixed
@@ -1079,6 +1329,65 @@ abstract class Model implements ModelInterface
         return $this;
     }
 
+    /**
+     * Atomically increment $column by $amount on the current row using
+     * `SET col = col + ?`. Avoids the read-modify-write race that plain
+     * update() would have.
+     *
+     * Does NOT fire ModelUpdating/Updated events — that would require fetching
+     * old/new state, which defeats the atomicity. Call save()/update() if you
+     * need events.
+     */
+    public function increment(string $column, int $amount = 1): bool
+    {
+        return $this->adjustColumn($column, '+', $amount);
+    }
+
+    /**
+     * Atomically decrement $column by $amount on the current row. See
+     * increment() for caveats — same atomicity guarantee, same event bypass.
+     */
+    public function decrement(string $column, int $amount = 1): bool
+    {
+        return $this->adjustColumn($column, '-', $amount);
+    }
+
+    private function adjustColumn(string $column, string $op, int $amount): bool
+    {
+        self::validateIdentifier($column);
+        if ($this->id === null) {
+            return false;
+        }
+        $key = $this->primaryKey;
+        $sql = "UPDATE {$this->tableName} SET {$column} = {$column} {$op} ? WHERE {$key} = ?";
+        $result = db()->execute($sql, [$amount, $this->id]);
+        if ($result === false || $result === null) {
+            return false;
+        }
+        $this->loadAttributes($this->id);
+        return true;
+    }
+
+    /**
+     * Set updated_at to the current timestamp on the row, without altering
+     * any other columns. Bypasses model events for the same reason
+     * increment()/decrement() do.
+     */
+    public function touch(): bool
+    {
+        if ($this->id === null) {
+            return false;
+        }
+        $key = $this->primaryKey;
+        $sql = "UPDATE {$this->tableName} SET updated_at = ? WHERE {$key} = ?";
+        $result = db()->execute($sql, [date('Y-m-d H:i:s'), $this->id]);
+        if ($result === false || $result === null) {
+            return false;
+        }
+        $this->loadAttributes($this->id);
+        return true;
+    }
+
     public function delete(): bool
     {
         $attributes = $this->getAttributes();
@@ -1107,6 +1416,112 @@ abstract class Model implements ModelInterface
     public function getAttributes(): array
     {
         return $this->attributes;
+    }
+
+    /**
+     * Return the model's attributes with any populated relations folded in.
+     *
+     * Only relations already loaded (eagerly via with() or cached from a prior
+     * lazy method call) are included — unloaded relations are NOT triggered to
+     * load here. Child models recurse via toArray(), so nested relations are
+     * serialized too.
+     */
+    public function toArray(): array
+    {
+        $out = $this->attributes;
+        foreach ($this->relations as $name => $value) {
+            if ($value instanceof Model) {
+                $out[$name] = $value->toArray();
+            } elseif (is_array($value)) {
+                $out[$name] = array_map(
+                    fn($v) => $v instanceof Model ? $v->toArray() : $v,
+                    $value
+                );
+            } else {
+                $out[$name] = $value;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * JSON-encode the model via toArray(). Pass json_encode flags as needed.
+     */
+    public function toJson(int $flags = 0): string
+    {
+        return json_encode($this->toArray(), $flags);
+    }
+
+    /**
+     * JsonSerializable contract — lets the model json_encode cleanly without
+     * an explicit toArray() call site (json_encode($model) just works).
+     */
+    public function jsonSerialize(): mixed
+    {
+        return $this->toArray();
+    }
+
+    /**
+     * True if any attribute (or the given attribute) has changed since the
+     * row was loaded from the database. New attributes that didn't exist in
+     * the original payload count as dirty too.
+     */
+    public function isDirty(?string $column = null): bool
+    {
+        $dirty = $this->getDirty();
+        if ($column === null) {
+            return !empty($dirty);
+        }
+        return array_key_exists($column, $dirty);
+    }
+
+    /**
+     * Inverse of isDirty().
+     */
+    public function isClean(?string $column = null): bool
+    {
+        return !$this->isDirty($column);
+    }
+
+    /**
+     * Return only the attributes whose current value differs from the
+     * originally-loaded value (or whose key did not exist in the original).
+     */
+    public function getDirty(): array
+    {
+        $dirty = [];
+        foreach ($this->attributes as $key => $value) {
+            if (!array_key_exists($key, $this->originalAttributes)
+                || $this->originalAttributes[$key] !== $value) {
+                $dirty[$key] = $value;
+            }
+        }
+        return $dirty;
+    }
+
+    /**
+     * Get an attribute's value as it was when the row was last loaded.
+     * Returns the full original attribute map when $column is null.
+     */
+    public function getOriginal(?string $column = null): mixed
+    {
+        if ($column === null) {
+            return $this->originalAttributes;
+        }
+        return $this->originalAttributes[$column] ?? null;
+    }
+
+    /**
+     * Return a new instance with re-fetched data, leaving the current
+     * instance untouched. Use refresh() when you want to mutate in place.
+     * Returns null if the row no longer exists.
+     */
+    public function fresh(): ?static
+    {
+        if ($this->id === null) {
+            return null;
+        }
+        return static::find($this->id);
     }
 
     /**

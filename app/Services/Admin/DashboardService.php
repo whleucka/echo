@@ -72,8 +72,8 @@ class DashboardService
         $now = $this->now();
         $todayStart = $now->setTime(0, 0, 0)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
         $todayEnd = $now->setTime(23, 59, 59)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
-        return Activity::where('created_at', '>=', $todayStart)
-            ->andWhere('created_at', '<=', $todayEnd)
+        return Activity::query()
+            ->whereBetween('created_at', $todayStart, $todayEnd)
             ->count();
     }
 
@@ -476,8 +476,8 @@ class DashboardService
             $sevenDaysAgo = $this->now()->modify('-7 days')->format('Y-m-d H:i:s');
 
             // Use ORM for simple date-based count
-            $todayCount = Audit::where('created_at', '>=', $today . ' 00:00:00')
-                ->andWhere('created_at', '<=', $today . ' 23:59:59')
+            $todayCount = Audit::query()
+                ->whereBetween('created_at', $today . ' 00:00:00', $today . ' 23:59:59')
                 ->count();
 
             // GROUP BY queries still use raw SQL (analytics-specific)
@@ -580,8 +580,8 @@ class DashboardService
 
         // New users today
         $today = $this->now()->format('Y-m-d');
-        $newUsersToday = User::where('created_at', '>=', $today . ' 00:00:00')
-            ->andWhere('created_at', '<=', $today . ' 23:59:59')
+        $newUsersToday = User::query()
+            ->whereBetween('created_at', $today . ' 00:00:00', $today . ' 23:59:59')
             ->count();
 
         // Recent users (last 5 signups) - use ORM
@@ -678,8 +678,7 @@ class DashboardService
 
         // Sent today - use ORM
         $sentToday = EmailJob::where('status', 'sent')
-            ->andWhere('sent_at', '>=', $today . ' 00:00:00')
-            ->andWhere('sent_at', '<=', $today . ' 23:59:59')
+            ->whereBetween('sent_at', $today . ' 00:00:00', $today . ' 23:59:59')
             ->count();
 
         // Failed/exhausted in last 7 days - use ORM with whereRaw for IN clause
@@ -784,12 +783,12 @@ class DashboardService
         $tzOffset = $now->format('P');
 
         // -- Requests --
-        $totalRequests = Activity::where('created_at', '>=', $dayStart)
-            ->andWhere('created_at', '<=', $dayEnd)
+        $totalRequests = Activity::query()
+            ->whereBetween('created_at', $dayStart, $dayEnd)
             ->count();
 
-        $uniqueVisitors = Activity::where('created_at', '>=', $dayStart)
-            ->andWhere('created_at', '<=', $dayEnd)
+        $uniqueVisitors = Activity::query()
+            ->whereBetween('created_at', $dayStart, $dayEnd)
             ->count('DISTINCT ip');
 
         // Requests by hour (for sparkline-style summary)
@@ -815,13 +814,13 @@ class DashboardService
 
         // -- Users --
         $totalUsers = User::countAll();
-        $newUsers = User::where('created_at', '>=', $dayStart)
-            ->andWhere('created_at', '<=', $dayEnd)
+        $newUsers = User::query()
+            ->whereBetween('created_at', $dayStart, $dayEnd)
             ->count();
 
         // -- Audit events --
-        $auditTotal = Audit::where('created_at', '>=', $dayStart)
-            ->andWhere('created_at', '<=', $dayEnd)
+        $auditTotal = Audit::query()
+            ->whereBetween('created_at', $dayStart, $dayEnd)
             ->count();
 
         $auditByEvent = db()->fetchAll(
@@ -839,18 +838,17 @@ class DashboardService
 
         // -- Email queue --
         $emailsSent = EmailJob::where('status', 'sent')
-            ->andWhere('sent_at', '>=', $dayStart)
-            ->andWhere('sent_at', '<=', $dayEnd)
+            ->whereBetween('sent_at', $dayStart, $dayEnd)
             ->count();
 
-        $emailsFailed = EmailJob::where('last_attempt_at', '>=', $dayStart)
-            ->andWhere('last_attempt_at', '<=', $dayEnd)
+        $emailsFailed = EmailJob::query()
+            ->whereBetween('last_attempt_at', $dayStart, $dayEnd)
             ->whereRaw("status IN ('failed', 'exhausted')")
             ->count();
 
         // -- File uploads --
-        $uploadsCount = FileInfo::where('created_at', '>=', $dayStart)
-            ->andWhere('created_at', '<=', $dayEnd)
+        $uploadsCount = FileInfo::query()
+            ->whereBetween('created_at', $dayStart, $dayEnd)
             ->count();
 
         $uploadsSize = db()->fetch(
@@ -911,8 +909,8 @@ class DashboardService
             $today = $this->now()->format('Y-m-d');
 
             // Today's uploads count
-            $todayCount = FileInfo::where('created_at', '>=', $today . ' 00:00:00')
-                ->andWhere('created_at', '<=', $today . ' 23:59:59')
+            $todayCount = FileInfo::query()
+                ->whereBetween('created_at', $today . ' 00:00:00', $today . ' 23:59:59')
                 ->count();
 
             // Today's total size (raw SQL for SUM)
