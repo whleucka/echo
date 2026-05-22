@@ -354,26 +354,29 @@ abstract class Model implements ModelInterface
     }
 
     /**
-     * Specify relationships to eager load
+     * Add eager loading to a query chain.
      *
-     * @param string ...$relations Relation method names to eager load
-     * @return static
+     * Instance-only by design: a static factory was removed to eliminate the
+     * Model::with('x')->where(...) foot-gun, where static where() created a
+     * fresh model and silently dropped the eagerLoad. Start chains with
+     * query(), where(), whereIn(), or find() instead, then chain with().
+     *
+     *   Model::query()->with('x')->where(...)->get()   // OK
+     *   Model::where(...)->with('x')->get()            // OK
      */
-    public static function with(string ...$relations): static
-    {
-        $class = static::class;
-        $model = new $class();
-        $model->eagerLoad = $relations;
-        return $model;
-    }
-
-    /**
-     * Add eager loading to an existing query
-     */
-    public function load(string ...$relations): static
+    public function with(string ...$relations): static
     {
         $this->eagerLoad = array_merge($this->eagerLoad, $relations);
         return $this;
+    }
+
+    /**
+     * Alias of with(). Retained for back-compat with callers that adopted
+     * load() before the static with() factory was demoted.
+     */
+    public function load(string ...$relations): static
+    {
+        return $this->with(...$relations);
     }
 
     public function refresh(): static

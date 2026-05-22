@@ -150,6 +150,37 @@ class ModelTest extends TestCase
         $this->assertSame(["admin"], $sql["params"]);
     }
 
+    // ─── with() is instance-only ────────────────────────────────
+    //
+    // Static with() was removed to prevent the Model::with('x')->where(...)
+    // foot-gun (static where() would have dropped the eagerLoad). Chains now
+    // start with query()/where()/whereIn()/find() and add with() later.
+
+    public function testWithIsChainableAfterQuery()
+    {
+        $model = User::query();
+        $this->assertSame($model, $model->with('avatar'));
+    }
+
+    public function testWithIsChainableAfterWhere()
+    {
+        $model = User::where('id', '1');
+        $this->assertSame($model, $model->with('avatar'));
+    }
+
+    public function testLoadStillWorksAsAlias()
+    {
+        $model = User::query();
+        $this->assertSame($model, $model->load('avatar'));
+    }
+
+    public function testStaticWithCallIsNoLongerAvailable()
+    {
+        // Demoted to instance-only; static call should fail with a PHP Error.
+        $this->expectException(\Error::class);
+        User::with('avatar');
+    }
+
     public function testAndWhereInChained()
     {
         $sql = User::where("role", "admin")
