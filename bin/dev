@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Wrapper that runs docker compose with the dev override(s) applied.
+# Use exactly like `docker compose`, e.g.:
+#   ./bin/dev up -d --build
+#   ./bin/dev down
+#   ./bin/dev logs -f nginx
+#
+# Loads:
+#   - docker-compose.yml          (base)
+#   - docker-compose.dev.yml      (Traefik + proxy network)
+#   - docker-compose.local.yml    (project-specific extras, if present)
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+files=(-f docker-compose.yml -f docker-compose.dev.yml)
+[[ -f docker-compose.local.yml ]] && files+=(-f docker-compose.local.yml)
+
+exec docker compose "${files[@]}" "$@"

@@ -1,0 +1,26 @@
+# Development overrides — Traefik-based routing on *.localhost
+# Use with: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Or via ./bin/dev wrapper.
+#
+# Requires:
+#   - The shared Traefik stack at ~/Projects/traefik to be running first
+#     (it owns the external `proxy` network).
+#   - DEV_HOSTNAME set in .env (e.g. DEV_HOSTNAME=echo).
+#     The nginx config inside the container accepts *.localhost,
+#     so subdomains like admin.<host>.localhost also route correctly.
+
+services:
+  nginx:
+    networks:
+      - net
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.${DEV_HOSTNAME:?DEV_HOSTNAME must be set in .env}.rule=HostRegexp(`^(.+\.)?${DEV_HOSTNAME}\.localhost$`)
+      - traefik.http.routers.${DEV_HOSTNAME}.entrypoints=web
+      - traefik.http.services.${DEV_HOSTNAME}.loadbalancer.server.port=80
+
+networks:
+  proxy:
+    external: true
