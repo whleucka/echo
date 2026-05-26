@@ -441,7 +441,6 @@ nav#nav-sidebar header h4 {
   margin-right: auto;
 }
 #modal .modal-dialog {
-  max-height: calc(100vh - 1rem);
   display: flex;
   flex-direction: column;
 }
