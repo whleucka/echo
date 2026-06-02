@@ -11,8 +11,6 @@ use App\Models\User;
 
 class DashboardService
 {
-    private \DateTimeZone $appTimezone;
-
     /**
      * Request-level cache for expensive queries called by multiple widgets
      */
@@ -20,8 +18,6 @@ class DashboardService
 
     public function __construct(private SystemHealthService $healthService)
     {
-        $tz = config('app.timezone') ?? 'UTC';
-        $this->appTimezone = new \DateTimeZone($tz);
     }
 
     /**
@@ -36,11 +32,11 @@ class DashboardService
     }
 
     /**
-     * Get current date/time in app timezone
+     * Get current date/time (in the app timezone configured at bootstrap)
      */
     private function now(): \DateTimeImmutable
     {
-        return new \DateTimeImmutable('now', $this->appTimezone);
+        return new \DateTimeImmutable('now');
     }
 
     public function getUsersCount(): int
@@ -70,8 +66,8 @@ class DashboardService
     public function getTodayRequests(): int
     {
         $now = $this->now();
-        $todayStart = $now->setTime(0, 0, 0)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
-        $todayEnd = $now->setTime(23, 59, 59)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $todayStart = $now->setTime(0, 0, 0)->format('Y-m-d H:i:s');
+        $todayEnd = $now->setTime(23, 59, 59)->format('Y-m-d H:i:s');
         return Activity::query()
             ->whereBetween('created_at', $todayStart, $todayEnd)
             ->count();
@@ -80,19 +76,18 @@ class DashboardService
     public function getTodayRequestsChart(): array
     {
         $now = $this->now();
-        $todayStart = $now->setTime(0, 0, 0)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
-        $todayEnd = $now->setTime(23, 59, 59)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
-        $tzOffset = $now->format('P'); // e.g., "+05:00" or "-08:00"
+        $todayStart = $now->setTime(0, 0, 0)->format('Y-m-d H:i:s');
+        $todayEnd = $now->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
         $data = db()->fetchAll(
             "SELECT
-                HOUR(CONVERT_TZ(created_at, '+00:00', ?)) AS hour,
+                HOUR(created_at) AS hour,
                 COUNT(*) AS total
             FROM activity
             WHERE created_at BETWEEN ? AND ?
             GROUP BY hour
             ORDER BY hour",
-            [$tzOffset, $todayStart, $todayEnd]
+            [$todayStart, $todayEnd]
         );
 
         $hours = range(0, 23);
@@ -162,25 +157,24 @@ class DashboardService
     public function getWeekRequestsChart(): array
     {
         $now = $this->now();
-        $tzOffset = $now->format('P');
 
-        // Compute ISO week boundaries (Mon-Sun) in UTC so the index is used
+        // Compute ISO week boundaries (Mon-Sun) so the index on created_at is used
         $dayOfWeek = (int)$now->format('N'); // 1=Mon, 7=Sun
         $weekStart = $now->modify('-' . ($dayOfWeek - 1) . ' days')->setTime(0, 0, 0)
-            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+            ->format('Y-m-d H:i:s');
         $weekEnd = $now->modify('+' . (7 - $dayOfWeek) . ' days')->setTime(23, 59, 59)
-            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+            ->format('Y-m-d H:i:s');
 
         $data = db()->fetchAll(
             "SELECT
-                MIN(DAYNAME(CONVERT_TZ(created_at, '+00:00', ?))) AS day_name,
-                DATE(CONVERT_TZ(created_at, '+00:00', ?)) AS day_date,
+                MIN(DAYNAME(created_at)) AS day_name,
+                DATE(created_at) AS day_date,
                 COUNT(*) AS total
             FROM activity
             WHERE created_at BETWEEN ? AND ?
             GROUP BY day_date
             ORDER BY day_date",
-            [$tzOffset, $tzOffset, $weekStart, $weekEnd]
+            [$weekStart, $weekEnd]
         );
 
         $labels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -245,23 +239,22 @@ class DashboardService
     public function getMonthRequestsChart(): array
     {
         $now = $this->now();
-        $tzOffset = $now->format('P');
 
-        // Compute month boundaries in UTC so the index on created_at is used
+        // Compute month boundaries so the index on created_at is used
         $monthStart = $now->modify('first day of this month')->setTime(0, 0, 0)
-            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+            ->format('Y-m-d H:i:s');
         $monthEnd = $now->modify('last day of this month')->setTime(23, 59, 59)
-            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+            ->format('Y-m-d H:i:s');
 
         $data = db()->fetchAll(
             "SELECT
-                DAY(CONVERT_TZ(created_at, '+00:00', ?)) AS day_number,
+                DAY(created_at) AS day_number,
                 COUNT(*) AS total
             FROM activity
             WHERE created_at BETWEEN ? AND ?
             GROUP BY day_number
             ORDER BY day_number",
-            [$tzOffset, $monthStart, $monthEnd]
+            [$monthStart, $monthEnd]
         );
 
         $daysInMonth = (int)$now->format('t');
@@ -324,28 +317,27 @@ class DashboardService
     public function getYTDRequestsChart(): array
     {
         $now = $this->now();
-        $tzOffset = $now->format('P');
 
-        // Compute Jan 1 in local TZ, convert to UTC so the index is used
+        // Compute Jan 1 so the index on created_at is used
         $yearStart = $now->modify('first day of January')->setTime(0, 0, 0)
-            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+            ->format('Y-m-d H:i:s');
         $yearEnd = $now->setTime(23, 59, 59)
-            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+            ->format('Y-m-d H:i:s');
 
         $data = db()->fetchAll(
-            "SELECT DATE_FORMAT(CONVERT_TZ(created_at, '+00:00', ?), '%Y-%m') AS month, COUNT(*) AS total
+            "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS total
             FROM activity
             WHERE created_at BETWEEN ? AND ?
             GROUP BY month
             ORDER BY month",
-            [$tzOffset, $yearStart, $yearEnd]
+            [$yearStart, $yearEnd]
         );
 
         $labels = [];
         $payload = [];
 
         foreach ($data as $row) {
-            $dt = \DateTimeImmutable::createFromFormat('Y-m', $row['month'], $this->appTimezone);
+            $dt = \DateTimeImmutable::createFromFormat('Y-m', $row['month']);
             $labels[] = $dt->format('M Y');
             $payload[] = (int)$row['total'];
         }
@@ -612,18 +604,17 @@ class DashboardService
     public function getUserActivityHeatmap(): array
     {
         $now = $this->now();
-        $tzOffset = $now->format('P');
-        $weekAgo = $now->modify('-7 days')->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $weekAgo = $now->modify('-7 days')->format('Y-m-d H:i:s');
 
         $data = db()->fetchAll(
             "SELECT
-                DAYOFWEEK(CONVERT_TZ(created_at, '+00:00', ?)) as dow,
-                HOUR(CONVERT_TZ(created_at, '+00:00', ?)) as hour,
+                DAYOFWEEK(created_at) as dow,
+                HOUR(created_at) as hour,
                 COUNT(*) as count
             FROM activity
             WHERE created_at >= ?
             GROUP BY dow, hour",
-            [$tzOffset, $tzOffset, $weekAgo]
+            [$weekAgo]
         );
 
         $matrix = [];
@@ -718,11 +709,11 @@ class DashboardService
         $now = $this->now();
 
         $since = match ($range) {
-            'today' => $now->setTime(0, 0, 0)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
-            '7d'    => $now->modify('-7 days')->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
-            '30d'   => $now->modify('-30 days')->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
-            'year'  => $now->modify('first day of January')->setTime(0, 0, 0)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
-            default => $now->modify('-7 days')->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+            'today' => $now->setTime(0, 0, 0)->format('Y-m-d H:i:s'),
+            '7d'    => $now->modify('-7 days')->format('Y-m-d H:i:s'),
+            '30d'   => $now->modify('-30 days')->format('Y-m-d H:i:s'),
+            'year'  => $now->modify('first day of January')->setTime(0, 0, 0)->format('Y-m-d H:i:s'),
+            default => $now->modify('-7 days')->format('Y-m-d H:i:s'),
         };
 
         $data = db()->fetchAll(
@@ -780,7 +771,6 @@ class DashboardService
         $date = $yesterday->format('Y-m-d');
         $dayStart = $date . ' 00:00:00';
         $dayEnd = $date . ' 23:59:59';
-        $tzOffset = $now->format('P');
 
         // -- Requests --
         $totalRequests = Activity::query()
@@ -794,13 +784,13 @@ class DashboardService
         // Requests by hour (for sparkline-style summary)
         $hourlyData = db()->fetchAll(
             "SELECT
-                HOUR(CONVERT_TZ(created_at, '+00:00', ?)) AS hour,
+                HOUR(created_at) AS hour,
                 COUNT(*) AS total
             FROM activity
             WHERE created_at BETWEEN ? AND ?
             GROUP BY hour
             ORDER BY hour",
-            [$tzOffset, $dayStart, $dayEnd]
+            [$dayStart, $dayEnd]
         );
 
         $peakHour = 0;
@@ -974,8 +964,8 @@ class DashboardService
     {
         return $this->cached('http_status_summary', function () {
             $now = $this->now();
-            $todayStart = $now->setTime(0, 0, 0)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
-            $todayEnd = $now->setTime(23, 59, 59)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+            $todayStart = $now->setTime(0, 0, 0)->format('Y-m-d H:i:s');
+            $todayEnd = $now->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
             // Today's counts by status category
             $categories = db()->fetchAll(
@@ -1004,7 +994,7 @@ class DashboardService
 
             // Top error paths (4xx and 5xx) in last 7 days
             $weekStart = $now->modify('-7 days')->setTime(0, 0, 0)
-                ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+                ->format('Y-m-d H:i:s');
 
             $topErrors = db()->fetchAll(
                 "SELECT uri, status_code, COUNT(*) AS total
@@ -1057,18 +1047,17 @@ class DashboardService
     public function getStatusCodeChart(): array
     {
         $now = $this->now();
-        $tzOffset = $now->format('P');
 
         $dayOfWeek = (int)$now->format('N');
         $weekStart = $now->modify('-' . ($dayOfWeek - 1) . ' days')->setTime(0, 0, 0)
-            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+            ->format('Y-m-d H:i:s');
         $weekEnd = $now->modify('+' . (7 - $dayOfWeek) . ' days')->setTime(23, 59, 59)
-            ->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+            ->format('Y-m-d H:i:s');
 
         $data = db()->fetchAll(
             "SELECT
-                DATE(CONVERT_TZ(created_at, '+00:00', ?)) AS day_date,
-                MIN(DAYNAME(CONVERT_TZ(created_at, '+00:00', ?))) AS day_name,
+                DATE(created_at) AS day_date,
+                MIN(DAYNAME(created_at)) AS day_name,
                 CASE
                     WHEN status_code BETWEEN 200 AND 299 THEN '2xx'
                     WHEN status_code BETWEEN 300 AND 399 THEN '3xx'
@@ -1082,7 +1071,7 @@ class DashboardService
                 AND status_code IS NOT NULL
             GROUP BY day_date, category
             ORDER BY day_date",
-            [$tzOffset, $tzOffset, $weekStart, $weekEnd]
+            [$weekStart, $weekEnd]
         );
 
         $labels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];

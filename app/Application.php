@@ -18,6 +18,10 @@ class Application implements ApplicationInterface
         $dotenv = Dotenv\Dotenv::createImmutable(config("paths.root"));
         $dotenv->safeLoad();
 
+        // Run the whole app in the configured timezone so PHP date handling
+        // agrees with the database (the db container runs in the same TZ).
+        date_default_timezone_set(config("app.timezone") ?? "UTC");
+
         // Register and boot service providers
         $this->bootProviders();
     }
