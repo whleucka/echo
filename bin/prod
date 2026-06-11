@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Wrapper that runs docker compose with the prod override applied.
+# Use exactly like `docker compose`, e.g.:
+#   ./bin/prod up -d --build
+#   ./bin/prod down
+#   ./bin/prod logs -f nginx
+#
+# Loads:
+#   - docker-compose.yml          (base)
+#   - docker-compose.prod.yml     (Traefik + TLS, restart policies, resource limits)
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+files=(-f docker-compose.yml -f docker-compose.prod.yml)
+
+exec docker compose "${files[@]}" "$@"
