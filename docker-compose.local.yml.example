@@ -1,0 +1,32 @@
+# Template for a personal, machine-specific compose override.
+#
+# Copy to docker-compose.local.yml (gitignored) to enable it; ./bin/dev loads
+# that file automatically when present. Use it for niceties that depend on YOUR
+# machine and shouldn't be committed — the example below routes the app through
+# a shared Traefik proxy so it answers on *.localhost, alongside the host port
+# docker-compose.dev.yml already publishes.
+#
+#   cp docker-compose.local.yml.example docker-compose.local.yml
+#   ./bin/dev up -d
+#
+# Requires:
+#   - The shared Traefik stack at ~/Projects/traefik running first
+#     (it owns the external `proxy` network).
+#   - DEV_HOSTNAME set in .env (e.g. DEV_HOSTNAME=echo → http://echo.localhost).
+#     nginx accepts *.localhost, so admin.<host>.localhost also routes correctly.
+
+services:
+  nginx:
+    networks:
+      - net
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.${DEV_HOSTNAME:?DEV_HOSTNAME must be set in .env}.rule=HostRegexp(`^(.+\.)?${DEV_HOSTNAME}\.localhost$`)
+      - traefik.http.routers.${DEV_HOSTNAME}.entrypoints=web
+      - traefik.http.services.${DEV_HOSTNAME}.loadbalancer.server.port=80
+
+networks:
+  proxy:
+    external: true

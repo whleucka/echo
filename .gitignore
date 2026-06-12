@@ -3,6 +3,9 @@ composer.phar
 
 .env
 
+# Local-only compose override (e.g. personal Traefik routing)
+/docker-compose.local.yml
+
 # PHPUnit
 .phpunit.cache/
 
